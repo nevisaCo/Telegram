@@ -15,8 +15,13 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -27,6 +32,7 @@ import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Property;
 import android.util.SparseIntArray;
 import android.view.View;
@@ -55,17 +61,31 @@ import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 
+import com.finalsoft.Config;
+import com.finalsoft.ui.tab.FolderSettingController;
+import com.finalsoft.ui.tab.FolderIconHelper;
+
 public class FilterTabsView extends FrameLayout {
+
+    private static final String TAG = Config.TAG + "ftv";
 
     public interface FilterTabsViewDelegate {
         void onPageSelected(int page, boolean forward);
+
         void onPageScrolled(float progress);
+
         void onSamePageSelected();
+
         int getTabCounter(int tabId);
+
         boolean didSelectTab(TabView tabView, boolean selected);
+
         boolean isTabMenuVisible();
+
         void onDeletePressed(int id);
+
         void onPageReorder(int fromId, int toId);
+
         boolean canPerformActions();
     }
 
@@ -75,10 +95,39 @@ public class FilterTabsView extends FrameLayout {
         public int titleWidth;
         public int counter;
 
-        public Tab(int i, String t) {
+        public Tab(int i, String t, String emotion) {
             id = i;
             title = t;
+
+            initIcon(emotion);
         }
+
+
+        //region customized:
+         FolderIconHelper.TabStatus tabStatus;
+        private int icon;
+
+        public int getIcon() {
+            return icon;
+        }
+
+        private void initIcon(String emotion) {
+            int icon = 0;
+
+            tabStatus = FolderIconHelper.getInstance().getStatus(UserConfig.selectedAccount);
+            Log.i(TAG, "initIcon: "+ emotion + ",tab status: " + tabStatus + ", account:" + UserConfig.selectedAccount);
+
+            if (emotion!=null && !emotion.isEmpty() && tabStatus != FolderIconHelper.TabStatus.TextOnly) {
+                icon = FolderIconHelper.getInstance().getIcons(emotion);
+            }
+            if (tabStatus == FolderIconHelper.TabStatus.IconOnly) {
+                title = "";
+            }
+
+            this.icon = icon;
+        }
+        //endregion
+
 
         public int getWidth(boolean store) {
             int width = titleWidth = (int) Math.ceil(textPaint.measureText(title));
@@ -100,7 +149,18 @@ public class FilterTabsView extends FrameLayout {
                 int countWidth = Math.max(AndroidUtilities.dp(10), counterWidth) + AndroidUtilities.dp(10);
                 width += countWidth + AndroidUtilities.dp(6);
             }
+
+            //region customized:
+            if (tabStatus == FolderIconHelper.TabStatus.IconOnly) {
+                if (FolderSettingController.getInstance().getFixTab(UserConfig.selectedAccount)) {
+                    return 0;
+                }
+                return Math.max(AndroidUtilities.dp(30), width);
+            }
+            //endregion
+
             return Math.max(AndroidUtilities.dp(40), width);
+
         }
 
         public boolean setTitle(String newTitle) {
@@ -161,8 +221,12 @@ public class FilterTabsView extends FrameLayout {
         private float animateFromTabWidth;
         private float lastWidth;
 
+        FolderIconHelper.TabStatus tabDisplayStatus ;
+
         public TabView(Context context) {
             super(context);
+            tabDisplayStatus = FolderIconHelper.getInstance().getStatus(UserConfig.selectedAccount);
+            Log.i(TAG, "TabView: " + tabDisplayStatus);
         }
 
         public void setTab(Tab tab, int position) {
@@ -203,6 +267,7 @@ public class FilterTabsView extends FrameLayout {
         @SuppressLint("DrawAllocation")
         @Override
         protected void onDraw(Canvas canvas) {
+
             if (currentTab.id != Integer.MAX_VALUE && editingAnimationProgress != 0) {
                 canvas.save();
                 float p = editingAnimationProgress * (currentPosition % 2 == 0 ? 1.0f : -1.0f);
@@ -280,7 +345,6 @@ public class FilterTabsView extends FrameLayout {
             }
 
 
-
             if (currentTab.id != Integer.MAX_VALUE && (isEditing || editingStartAnimationProgress != 0)) {
                 countWidth = (int) (countWidth + (AndroidUtilities.dp(20) - countWidth) * editingStartAnimationProgress);
             }
@@ -291,14 +355,16 @@ public class FilterTabsView extends FrameLayout {
                 textX = textX * changeProgress + animateFromTextX * (1f - changeProgress);
             }
 
+
             if (!TextUtils.equals(currentTab.title, currentText)) {
-                currentText = currentTab.title;
+                currentText = tabDisplayStatus == FolderIconHelper.TabStatus.IconOnly ? "" : currentTab.title;
                 CharSequence text = Emoji.replaceEmoji(currentText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(15), false);
                 textLayout = new StaticLayout(text, textPaint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                 textHeight = textLayout.getHeight();
                 textOffsetX = (int) -textLayout.getLineLeft(0);
             }
 
+            initCustomEdition(canvas, textX);//customized:
 
             float titleOffsetX = 0;
             if (animateTextChange) {
@@ -335,6 +401,7 @@ public class FilterTabsView extends FrameLayout {
                     canvas.restore();
                 }
             }
+
 
             if (animateCounterEnter || counterText != null || currentTab.id != Integer.MAX_VALUE && (isEditing || editingStartAnimationProgress != 0)) {
                 if (aBackgroundColorKey == null) {
@@ -374,6 +441,15 @@ public class FilterTabsView extends FrameLayout {
                     counterPaint.setAlpha(255);
                 }
 
+                //customized:
+                if (tabDisplayStatus == FolderIconHelper.TabStatus.IconOnly) {
+                    countTop = 0;
+                    titleWidth = 0;
+                    x = textX + titleWidth + AndroidUtilities.dp(18);
+                } else if (tabDisplayStatus == FolderIconHelper.TabStatus.TextAndIcon) {
+                    countTop = (getMeasuredHeight() - AndroidUtilities.dp(35)) / 2;
+                    x = textX + titleWidth + AndroidUtilities.dp(8);
+                }
 
                 float w = (animateCounterReplace && animateFromCountWidth != countWidth) ? animateFromCountWidth * (1f - changeProgress) + countWidth * changeProgress : countWidth;
                 if (animateCounterReplace) {
@@ -457,6 +533,40 @@ public class FilterTabsView extends FrameLayout {
             lastTabWidth = tabWidth;
             lastWidth = getMeasuredWidth();
         }
+
+        //customized:\
+        Paint iconPaint = new Paint();
+
+        private void initCustomEdition(Canvas canvas, float textX) {
+            if (tabDisplayStatus == FolderIconHelper.TabStatus.TextOnly) {
+                return;
+            }
+            currentText = tabDisplayStatus == FolderIconHelper.TabStatus.IconOnly ? "" : currentTab.title;
+
+            textOffsetX = (int) -textLayout.getLineLeft(0) + (tabDisplayStatus == FolderIconHelper.TabStatus.TextAndIcon ? AndroidUtilities.dp(5) : 0);
+
+            if (currentTab.getIcon() > 0) {
+                try {
+                    float left = 0;
+                    Bitmap bitmap = BitmapFactory.decodeResource(getResources(), currentTab.getIcon());
+                    int xy = AndroidUtilities.dp(18);
+                    float top = (getMeasuredHeight() - textHeight) / 2f;
+                    if (tabDisplayStatus == FolderIconHelper.TabStatus.IconOnly) {
+                        left = (getMeasuredWidth() - AndroidUtilities.dp(24)) / 2f;
+                        xy = AndroidUtilities.dp(24);
+                        top = (getMeasuredHeight() - textHeight - 20) / 2f;
+                    }
+
+                    bitmap = Bitmap.createScaledBitmap(bitmap, xy, xy, true);
+                    ColorFilter filter = new PorterDuffColorFilter(textPaint.getColor(), PorterDuff.Mode.SRC_IN);
+                    iconPaint.setColorFilter(filter);
+                    canvas.drawBitmap(bitmap, left, top, iconPaint);
+                } catch (Exception e) {
+                    Log.e(TAG, "TabView > onDraw: ", e);
+                }
+            }
+        }
+
 
         public boolean animateChange() {
             boolean changed = false;
@@ -712,6 +822,7 @@ public class FilterTabsView extends FrameLayout {
 
     public FilterTabsView(Context context) {
         super(context);
+
         textCounterPaint.setTextSize(AndroidUtilities.dp(13));
         textCounterPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textPaint.setTextSize(AndroidUtilities.dp(15));
@@ -760,13 +871,13 @@ public class FilterTabsView extends FrameLayout {
                 boolean changesPending = !mPendingChanges.isEmpty();
                 boolean additionsPending = !mPendingAdditions.isEmpty();
                 if (removalsPending || movesPending || additionsPending || changesPending) {
-                   ValueAnimator valueAnimator = ValueAnimator.ofFloat(0.1f);
-                   valueAnimator.addUpdateListener(valueAnimator12 -> {
-                       listView.invalidate();
-                       invalidate();
-                   });
-                   valueAnimator.setDuration(getMoveDuration());
-                   valueAnimator.start();
+                    ValueAnimator valueAnimator = ValueAnimator.ofFloat(0.1f);
+                    valueAnimator.addUpdateListener(valueAnimator12 -> {
+                        listView.invalidate();
+                        invalidate();
+                    });
+                    valueAnimator.setDuration(getMoveDuration());
+                    valueAnimator.start();
                 }
                 super.runPendingAnimations();
             }
@@ -949,7 +1060,7 @@ public class FilterTabsView extends FrameLayout {
         return animatingIndicator;
     }
 
-    private void scrollToTab(int id, int position) {
+    public void scrollToTab(int id, int position) {
         boolean scrollingForward = currentPosition < position;
         scrollingToChild = -1;
         previousPosition = currentPosition;
@@ -1017,7 +1128,11 @@ public class FilterTabsView extends FrameLayout {
         selectedTabId = -1;
     }
 
-    public void addTab(int id, int stableId, String text) {
+    public void addTab(int id, int stableId, String text, int emotion) {
+        addTab(id, stableId, text, emotion + "");
+    }
+
+    public void addTab(int id, int stableId, String text, String emotion) {
         int position = tabs.size();
         if (position == 0 && selectedTabId == -1) {
             selectedTabId = id;
@@ -1029,7 +1144,7 @@ public class FilterTabsView extends FrameLayout {
             currentPosition = position;
         }
 
-        Tab tab = new Tab(id, text);
+        Tab tab = new Tab(id, text, emotion);
         allTabsWidth += tab.getWidth(true) + AndroidUtilities.dp(32);
         tabs.add(tab);
     }

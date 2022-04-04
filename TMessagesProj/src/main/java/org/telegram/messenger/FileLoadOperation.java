@@ -11,6 +11,8 @@ package org.telegram.messenger;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
+import com.finalsoft.SharedStorage;
+
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
@@ -175,7 +177,9 @@ public class FileLoadOperation {
 
     public interface FileLoadOperationDelegate {
         void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
+
         void didFailedLoadingFile(FileLoadOperation operation, int state);
+
         void didChangedLoadProgress(FileLoadOperation operation, long uploadedSize, long totalSize);
     }
 
@@ -248,6 +252,8 @@ public class FileLoadOperation {
         currentType = ConnectionsManager.FileTypePhoto;
         totalBytesCount = size;
         ext = extension != null ? extension : "jpg";
+
+        originalFileName = null;
     }
 
     public FileLoadOperation(SecureDocument secureDocument) {
@@ -335,6 +341,11 @@ public class FileLoadOperation {
             }
             if (ext.length() <= 1) {
                 ext = FileLoader.getExtensionByMimeType(documentLocation.mime_type);
+            }
+
+            //Customized:
+            if (ext.length() >= 2 && SharedStorage.keepOriginalFileName()) {
+                originalFileName = FileLoader.getAttachFileName(documentLocation, ext);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -738,6 +749,11 @@ public class FileLoadOperation {
         requestInfos = new ArrayList<>(currentMaxDownloadRequests);
         delayedRequestInfos = new ArrayList<>(currentMaxDownloadRequests - 1);
         state = stateDownloading;
+
+        //customized: keep original file name on read files
+        if (originalFileName != null && !originalFileName.isEmpty()) {
+            fileNameFinal = originalFileName;
+        }
 
         if (parentObject instanceof TLRPC.TL_theme) {
             TLRPC.TL_theme theme = (TLRPC.TL_theme) parentObject;
@@ -1702,7 +1718,7 @@ public class FileLoadOperation {
                 state != stateDownloading ||
                 streamPriorityStartOffset == 0 && (
                         !nextPartWasPreloaded && (requestInfos.size() + delayedRequestInfos.size() >= currentMaxDownloadRequests) ||
-                        isPreloadVideoOperation && (requestedBytesCount > preloadMaxBytes || moovFound != 0 && requestInfos.size() > 0))) {
+                                isPreloadVideoOperation && (requestedBytesCount > preloadMaxBytes || moovFound != 0 && requestInfos.size() > 0))) {
             return;
         }
         int count = 1;
@@ -1970,4 +1986,11 @@ public class FileLoadOperation {
     public void setDelegate(FileLoadOperationDelegate delegate) {
         this.delegate = delegate;
     }
+
+
+    //region Customized:
+    private String originalFileName = "";
+    //endregion
+
+
 }

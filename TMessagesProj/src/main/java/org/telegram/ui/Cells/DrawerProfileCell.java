@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.ImageLocation.TYPE_BIG;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -32,15 +34,25 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.controller.DrawerMenuItemsHideController;
+import com.finalsoft.controller.GhostController;
+import com.finalsoft.ui.settings.GhostSettingActivity;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -101,6 +113,10 @@ public class DrawerProfileCell extends FrameLayout {
         phoneTextView.setSingleLine(true);
         phoneTextView.setGravity(Gravity.LEFT);
         addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 76, 9));
+
+
+        int lm = addCustomIcon(context);        //Customized: add cloud icon in profile cell
+
 
         arrowView = new ImageView(context);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);
@@ -180,13 +196,14 @@ public class DrawerProfileCell extends FrameLayout {
             }
             switchTheme(themeInfo, toDark);
         });
-        addView(darkThemeView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 90));
+        addView(darkThemeView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, lm, 0));
 
         if (Theme.getEventType() == 0) {
             snowflakesEffect = new SnowflakesEffect(0);
             snowflakesEffect.setColorKey(Theme.key_chats_menuName);
         }
     }
+
 
     private void switchTheme(Theme.ThemeInfo themeInfo, boolean toDark) {
         int[] pos = new int[2];
@@ -277,7 +294,7 @@ public class DrawerProfileCell extends FrameLayout {
                 darkBackColor = (Theme.getServiceMessageColor() & 0x00ffffff) | 0x50000000;
             }
         } else {
-            int visibility = drawCatsShadow? VISIBLE : INVISIBLE;
+            int visibility = drawCatsShadow ? VISIBLE : INVISIBLE;
             if (shadowView.getVisibility() != visibility) {
                 shadowView.setVisibility(visibility);
             }
@@ -335,8 +352,11 @@ public class DrawerProfileCell extends FrameLayout {
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setForUserOrChat(user, avatarDrawable);
 
+        setCustomUserData(user, avatarDrawable);//customized:
+
         applyBackground(true);
     }
+
 
     public String applyBackground(boolean force) {
         String currentTag = (String) getTag();
@@ -365,4 +385,152 @@ public class DrawerProfileCell extends FrameLayout {
         arrowView.setContentDescription(accountsShown ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
     }
 
+
+    //region Customized class
+    private BackupImageView bgAvatarImageView;
+
+    private ImageView cloudView;
+    private ImageView mediaView;
+    private ImageView ghostView;
+    private ImageView gridView;
+
+
+    public void toggleGhostMode() {
+        if (ghostView == null) {
+            return;
+        }
+        if (GhostController.status()) {
+            ghostView.setImageResource(BuildVars.GHOST_ON_ICON);
+        } else {
+            ghostView.setImageResource(BuildVars.GHOST_OFF_ICON);
+        }
+
+    }
+
+    public void toggleGridMode() {
+        if (gridView == null || !Config.DRAWER_GRID_FEATURE) {
+            return;
+        }
+        if (!DrawerMenuItemsHideController.getInstance().is(DrawerLayoutAdapter.SHOW_GRID_MODE)) {
+            gridView.setImageResource(R.drawable.ic_grid_off);
+        } else {
+            gridView.setImageResource(R.drawable.ic_grid_on);
+        }
+    }
+
+    public void setOnArrowClickListener(final OnClickListener onClickListener) {
+        arrowView.setOnClickListener(v -> {
+            accountsShown = !accountsShown;
+            arrowView.setImageResource(accountsShown ? R.drawable.collapse_up : R.drawable.menu_expand);
+            onClickListener.onClick(DrawerProfileCell.this);
+            arrowView.setContentDescription(accountsShown ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
+        });
+
+        //region Customized: add cloud message in profile cell
+        if (darkThemeView != null) {
+            darkThemeView.setOnLongClickListener(view -> {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 4);
+                return true;
+            });
+        }
+
+        //endregion
+
+    }
+
+    private int addCustomIcon(Context context) {
+        if (phoneTextView != null) {
+            phoneTextView.setVisibility(SharedStorage.showPhoneNumber() ? VISIBLE : GONE);
+        }
+
+        boolean bigAvatar = !DrawerMenuItemsHideController.getInstance().is(DrawerLayoutAdapter.BIG_AVATAR);
+        if (bigAvatar) {
+            bgAvatarImageView = new BackupImageView(context);
+            addView(bgAvatarImageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                    LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 0));
+
+            avatarImageView.setOnClickListener(view -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 2));
+            avatarImageView.setOnLongClickListener(view -> {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 3);
+                return true;
+            });
+
+        }
+        int wh = 48;
+        int lm = 0;
+        if (BuildVars.PROFILE_CELL_ICONS_FEATURE) {
+            lm = 40;
+            cloudView = new ImageView(context);
+            cloudView.setScaleType(ImageView.ScaleType.CENTER);
+            cloudView.setContentDescription(LocaleController.getString("SavedMessages", R.string.SavedMessages));
+            cloudView.setImageResource(R.drawable.menu_saved);
+            cloudView.setPadding(10, 10, 10, 10);
+            addView(cloudView, LayoutHelper.createFrame(wh, wh, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
+            cloudView.setOnClickListener(v -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 0));
+
+
+            mediaView = new ImageView(context);
+            mediaView.setScaleType(ImageView.ScaleType.CENTER);
+            mediaView.setImageResource(R.drawable.msg_media);
+            mediaView.setContentDescription(LocaleController.getString("SavedMedia", R.string.SavedMedia));
+            addView(mediaView, LayoutHelper.createFrame(wh, wh, Gravity.RIGHT | Gravity.CENTER_VERTICAL,
+                    0, 0, lm, 0));
+            lm += 40;
+            mediaView.setOnClickListener(v -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 1));
+
+            boolean show_ghost = SharedStorage.showGhostMode() && SharedStorage.ghostModeActive() && SharedStorage.showGhostInDrawer();
+            if (show_ghost) {
+                ghostView = new ImageView(context);
+                ghostView.setScaleType(ImageView.ScaleType.CENTER);
+
+                toggleGhostMode();
+                ghostView.setContentDescription("Ghost Mode");
+                addView(ghostView, LayoutHelper.createFrame(wh, wh, Gravity.RIGHT | Gravity.CENTER_VERTICAL,
+                        0, 0, lm, 0));
+                lm += 40;
+                ghostView.setOnClickListener(v -> {
+                    if (GhostController.toggle()) {
+                        ghostView.setImageResource(BuildVars.GHOST_ON_ICON);
+                    } else {
+                        ghostView.setImageResource(BuildVars.GHOST_OFF_ICON);
+                    }
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateGhostMode, GhostController.DRAWER);
+                });
+                ghostView.setOnLongClickListener(view -> {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 5);
+                    return true;
+                });
+            }
+
+            if (Config.DRAWER_GRID_FEATURE) {
+                gridView = new ImageView(context);
+                gridView.setScaleType(ImageView.ScaleType.CENTER);
+                toggleGridMode();
+                gridView.setContentDescription("Ghost Mode");
+                addView(gridView, LayoutHelper.createFrame(wh, wh, Gravity.RIGHT | Gravity.CENTER_VERTICAL,
+                        0, 0, lm, 0));
+                lm += 40;
+                gridView.setOnClickListener(v -> {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 11);
+                });
+            }
+
+        }
+
+
+        return lm;
+    }
+
+    private void setCustomUserData(TLRPC.User user, AvatarDrawable avatarDrawable) {
+        String fpn = SharedStorage.fakePhoneNumber();
+        if (!fpn.isEmpty()) {
+            phoneTextView.setText(PhoneFormat.getInstance().format("+" + fpn));
+        }
+        phoneTextView.setVisibility(SharedStorage.showPhoneNumber() ? VISIBLE : GONE);
+        if (bgAvatarImageView != null) {
+            bgAvatarImageView.setImage(ImageLocation.getForUser(user, TYPE_BIG), "0_0", avatarDrawable, user);
+        }
+
+    }
+    //endregion
 }

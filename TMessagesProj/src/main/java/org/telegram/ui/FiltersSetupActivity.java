@@ -11,6 +11,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -29,6 +30,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -49,7 +52,14 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finalsoft.Config;
+import com.finalsoft.helper.TextViewHelper;
+import com.finalsoft.ui.tab.InternalFilters;
+import com.finalsoft.ui.tab.FolderIconHelper;
+import com.finalsoft.ui.tab.FolderSettingsActivity;
+
 public class FiltersSetupActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+    private String TAG = Config.TAG + "fsa";
 
     private RecyclerListView listView;
     private ListAdapter adapter;
@@ -179,7 +189,13 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
 
             textView.setText(filter.filter.title);
             valueTextView.setText(filter.description);
+
+            int icon = FolderIconHelper.getInstance().getIcons(filter.filter.emoticon);
+            Log.i("!q2w3e4r", "setFilter: emot:" + filter.filter.emoticon + "," + icon);
+            TextViewHelper.getInstance().setIcons(textView, icon);
+
         }
+
 
         public TLRPC.TL_dialogFilterSuggested getSuggestedFilter() {
             return suggestedFilter;
@@ -346,6 +362,13 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             valueTextView.setText(info);
             //valueTextView.setVisibility(VISIBLE);
             needDivider = divider;
+
+            //region customized:
+            int icon = FolderIconHelper.getInstance().getIcons(filter.emoticon);
+            Log.i("!q2w3e4r", "setFilter: emot1:" + filter.emoticon + "," + icon);
+            TextViewHelper.getInstance().setIcons(textView, icon);
+            //endregion
+
         }
 
         public MessagesController.DialogFilter getCurrentFilter() {
@@ -474,6 +497,9 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 presentFragment(new FilterCreateActivity());
             }
         });
+
+
+        createSettingMenu();//customized:
 
         return fragmentView;
     }
@@ -636,6 +662,17 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                         MessagesController.DialogFilter filter = new MessagesController.DialogFilter();
                         filter.name = suggested.filter.title;
                         filter.id = 2;
+
+                        //customized:
+                        filter.emoticon = suggested.filter.emoticon;
+                        if (suggested.filter.flags == InternalFilters.FAV ||
+                                suggested.filter.flags == InternalFilters.MINE ||
+                                suggested.filter.flags == InternalFilters.MEGA_GROUP ||
+                                suggested.filter.flags == InternalFilters.SCHEDULED ||
+                                suggested.filter.flags == InternalFilters.ONLINE) {
+                            filter.alwaysShow.addAll(InternalFilters.getAlwaysShow());
+                        }
+
                         while (getMessagesController().dialogFiltersById.get(filter.id) != null) {
                             filter.id++;
                         }
@@ -884,4 +921,15 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
 
         return themeDescriptions;
     }
+
+
+    private void createSettingMenu() {
+        ActionBarMenu menu = actionBar.createMenu();
+        ActionBarMenuItem settingItem;
+        settingItem = menu.addItem(0, R.drawable.menu_settings);
+        settingItem.setOnClickListener(view -> {
+            presentFragment(new FolderSettingsActivity());
+        });
+    }
+
 }

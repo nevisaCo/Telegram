@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">تيليجرام</string>
     <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">العربية</string>
     <string name="English">الإنجليزية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
     <string name="ContinueOnThisLanguage">الاستمرار باللغة العربية</string>
-    <!--signin view-->
+     <!--signin view-->
     <string name="YourPhone">رقمك</string>
     <string name="StartText">يرجى تأكيد رمز بلدك وإدخال رقم هاتفك.</string>
     <string name="ChooseCountry">اختر دولة</string>

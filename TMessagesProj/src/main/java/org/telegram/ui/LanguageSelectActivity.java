@@ -8,6 +8,24 @@
 
 package org.telegram.ui;
 
+import android.util.Log;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.LanguageCell;
+
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -19,6 +37,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,6 +50,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -70,6 +90,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
     private ArrayList<LocaleController.LocaleInfo> searchResult;
     private ArrayList<LocaleController.LocaleInfo> sortedLanguages;
     private ArrayList<LocaleController.LocaleInfo> unofficialLanguages;
+
 
     @Override
     public boolean onFragmentCreate() {
@@ -270,15 +291,20 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             }
         });
 
+        initCustomUi();//customized
+
         return fragmentView;
     }
+
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.suggestedLangpack) {
             if (listAdapter != null) {
                 fillLanguages();
-                AndroidUtilities.runOnUIThread(() -> { listAdapter.notifyDataSetChanged(); });
+                AndroidUtilities.runOnUIThread(() -> {
+                    listAdapter.notifyDataSetChanged();
+                });
             }
         }
     }
@@ -315,7 +341,10 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         }
         Collections.sort(sortedLanguages, comparator);
         Collections.sort(unofficialLanguages, comparator);
+
+        fillMyLanguage();//customized:
     }
+
 
     @Override
     public void onResume() {
@@ -351,7 +380,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 //                } catch (Exception e) {
 //                    FileLog.e(e);
 //                }
-                processSearch(query);
+            processSearch(query);
 //                }
 //            }, 100, 300);
         }
@@ -425,9 +454,9 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             showButtonCheck = new TextCheckCell(context);
             showButtonCheck.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
             showButtonCheck.setTextAndCheck(
-                LocaleController.getString("ShowTranslateButton", R.string.ShowTranslateButton),
-                value,
-                value
+                    LocaleController.getString("ShowTranslateButton", R.string.ShowTranslateButton),
+                    value,
+                    value
             );
             showButtonCheck.setOnClickListener(e -> {
                 preferences.edit().putBoolean("translate_button", !getValue()).apply();
@@ -471,6 +500,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         private boolean getValue() {
             return preferences.getBoolean("translate_button", false);
         }
+
         private ArrayList<String> getRestrictedLanguages() {
             String currentLang = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
             ArrayList<String> langCodes = new ArrayList<>(RestrictedLanguagesSelectActivity.getRestrictedLanguages());
@@ -494,7 +524,8 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             if (langCodes.size() == 1) {
                 try {
                     doNotTranslateCellValue = LocaleController.getInstance().getLanguageFromDict(langCodes.get(0)).name;
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
             if (doNotTranslateCellValue == null)
                 doNotTranslateCellValue = String.format(LocaleController.getPluralString("Languages", getRestrictedLanguages().size()), getRestrictedLanguages().size());
@@ -554,11 +585,12 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 setLayoutParams(lp);
             }
         }
+
         int height() {
             return Math.max(AndroidUtilities.dp(40), header.getMeasuredHeight()) +
-                   Math.max(AndroidUtilities.dp(50), showButtonCheck.getMeasuredHeight()) +
-                   Math.max(Math.max(AndroidUtilities.dp(50), doNotTranslateCell.getMeasuredHeight()), (info2.getMeasuredHeight() <= 0 ? AndroidUtilities.dp(51) : info2.getMeasuredHeight())) +
-                   (info.getMeasuredHeight() <= 0 ? AndroidUtilities.dp(62) : info.getMeasuredHeight());/* + header2.getHeight()*/
+                    Math.max(AndroidUtilities.dp(50), showButtonCheck.getMeasuredHeight()) +
+                    Math.max(Math.max(AndroidUtilities.dp(50), doNotTranslateCell.getMeasuredHeight()), (info2.getMeasuredHeight() <= 0 ? AndroidUtilities.dp(51) : info2.getMeasuredHeight())) +
+                    (info.getMeasuredHeight() <= 0 ? AndroidUtilities.dp(62) : info.getMeasuredHeight());/* + header2.getHeight()*/
         }
 
         @Override
@@ -627,7 +659,8 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             View view;
             switch (viewType) {
                 case 0: {
-//                    view = new LanguageCell(mContext, false);
+//                    view = new Langua
+//                    geCell(mContext, false);
                     view = new TextRadioCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
@@ -680,6 +713,10 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                         textSettingsCell.setTextAndValueAndCheck(localeInfo.name, localeInfo.nameEnglish, false, false, !last);
                     }
                     textSettingsCell.setChecked(localeInfo == LocaleController.getInstance().getCurrentLocaleInfo());
+
+                    setCustomSelected(localeInfo, textSettingsCell); //region Customized:
+
+
                     break;
                 }
                 case 1: {
@@ -719,6 +756,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
         }
     }
 
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
@@ -748,4 +786,144 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
         return themeDescriptions;
     }
+
+
+    //region Customized:
+    public enum Type {
+        APP,
+        V2T,
+        TRANSLATE,
+        PERSONAL,
+        TRANSLATE_2_ME
+    }
+
+    private Type type;
+    private static String TAG = Config.TAG + "lang";
+    private String typeLocalShortName;
+    private long did = 0;
+
+    public LanguageSelectActivity() {
+        type = Type.APP;
+    }
+
+    public LanguageSelectActivity(Type type) {
+        this.type = type;
+        if (type == Type.V2T) {
+            typeLocalShortName = SharedStorage.v2tLocalShortName();
+        } else if (type == Type.TRANSLATE) {
+            typeLocalShortName = SharedStorage.translateShortName();
+        } else if (type == Type.TRANSLATE_2_ME) {
+            typeLocalShortName = SharedStorage.translateToMeShortName();
+        }
+    }
+
+    public LanguageSelectActivity(Type type, long dialog_id) {
+        this.type = type;
+        did = dialog_id;
+        if (type == Type.PERSONAL) {
+            typeLocalShortName = SharedStorage.userTranslateTarget(dialog_id);
+            Log.i(TAG, "LanguageSelectActivity: typeLocalShortName:" + typeLocalShortName);
+        } else if (type == Type.TRANSLATE_2_ME) {
+            typeLocalShortName = SharedStorage.translateToMeShortName();
+        }
+    }
+
+    MessagesStorage.IntCallback callback;
+
+    public void setCallback(MessagesStorage.IntCallback callback) {
+        this.callback = callback;
+    }
+
+    private void initCustomUi() {
+        if (type == Type.APP) {
+            Log.i(TAG, "initCustomUi:type is APP , return ");
+            return;
+        }
+        String title = LocaleController.getString("Language", R.string.Language);
+        if (type == Type.TRANSLATE || type == Type.TRANSLATE_2_ME) {
+            title = LocaleController.getString("Voice2TextLanguage", R.string.Voice2TextLanguage);
+        } else if (type == Type.V2T) {
+            title = LocaleController.getString("Translate", R.string.Translate);
+        } else if (type == Type.PERSONAL) {
+            title = LocaleController.getString("Translate", R.string.Translate);
+        }
+
+        actionBar.setTitle(title);
+
+
+        listView.setOnItemClickListener((view, position) -> {
+            Log.i(TAG, "initCustomUi: clicked");
+            try {
+                if (getParentActivity() == null || parentLayout == null || !(view instanceof TextRadioCell)) {
+                    return;
+                }
+                boolean search = listView.getAdapter() == searchListViewAdapter;
+                if (!search) {
+                    position -= 2;
+                }
+                LocaleController.LocaleInfo localeInfo;
+                if (search) {
+                    localeInfo = searchResult.get(position);
+                } else if (!unofficialLanguages.isEmpty() && position >= 0 && position < unofficialLanguages.size()) {
+                    localeInfo = unofficialLanguages.get(position);
+                } else {
+                    if (!unofficialLanguages.isEmpty()) {
+                        position -= unofficialLanguages.size() + 1;
+                    }
+                    localeInfo = sortedLanguages.get(position);
+                }
+                if (localeInfo != null) {
+                    if (type == Type.V2T) {
+                        SharedStorage.v2tLocalShortName(localeInfo.shortName);
+                        typeLocalShortName = localeInfo.shortName;
+                    } else if (type == Type.TRANSLATE) {
+                        SharedStorage.translateShortName(localeInfo.shortName);
+                        typeLocalShortName = localeInfo.shortName;
+                    } else if (type == Type.TRANSLATE_2_ME) {
+                        SharedStorage.translateToMeShortName(localeInfo.shortName);
+                        typeLocalShortName = localeInfo.shortName;
+                    } else if (type == Type.PERSONAL) {
+                        SharedStorage.userTranslateTarget(did, localeInfo.shortName);
+                        typeLocalShortName = localeInfo.shortName;
+                        getNotificationCenter().postNotificationName(NotificationCenter.updatePersonalTargetLanguage);
+                    }
+                    Log.i(TAG, "initCustomUi: " + typeLocalShortName);
+
+                    finishFragment();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+
+
+
+        });
+    }
+
+    private void fillMyLanguage() {
+
+        if (type != Type.APP && type != Type.PERSONAL) {
+            LocaleController.LocaleInfo li = new LocaleController.LocaleInfo();
+            li.shortName = "";
+            li.name = LocaleController.getString("v2tDeviceLanguage", R.string.v2tDeviceLanguage);
+            li.nameEnglish = "Use device selected language for ";
+            if (type == Type.V2T) {
+                li.nameEnglish += "voice to text";
+            } else {
+                li.nameEnglish += "translate target";
+            }
+            li.serverIndex = 0;
+            sortedLanguages.add(0, li);
+        }
+    }
+
+    private void setCustomSelected(LocaleController.LocaleInfo localeInfo, TextRadioCell textRadioCell) {
+        if (type != Type.APP) {
+            boolean select = localeInfo.shortName.trim().toLowerCase().equals(typeLocalShortName.trim().toLowerCase());
+            Log.i(TAG, "onBindViewHolder: select:" + select + " , typeLocalShortName:" + typeLocalShortName);
+            textRadioCell.setChecked(select);
+        }
+        //endregion
+    }
+    //endregion
 }

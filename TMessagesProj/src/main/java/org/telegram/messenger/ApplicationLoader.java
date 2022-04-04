@@ -30,10 +30,14 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDex;
 
+import androidx.multidex.MultiDex;
+
+import com.finalsoft.SharedStorage;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -45,7 +49,7 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 
-public class ApplicationLoader extends Application {
+public class ApplicationLoader extends com.finalsoft.ApplicationLoader {
 
     @SuppressLint("StaticFieldLeak")
     public static volatile Context applicationContext;
@@ -227,7 +231,7 @@ public class ApplicationLoader extends Application {
         if (preferences.contains("pushService")) {
             enabled = preferences.getBoolean("pushService", true);
         } else {
-            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
+            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", true);
         }
         if (enabled) {
             try {
@@ -461,6 +465,14 @@ public class ApplicationLoader extends Application {
     }
 
     public static boolean isNetworkOnlineRealtime() {
+        //region Customized:
+        boolean offStatus = SharedStorage.turnOff();
+//        Log.i(TAG, "isNetworkOnline: offStatus:" + offStatus);
+        if (offStatus) {
+            return false;
+        }
+        //endregion
+
         try {
             ConnectivityManager connectivityManager = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();

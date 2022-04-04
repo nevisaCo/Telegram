@@ -43,6 +43,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
 
+
 import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -53,10 +54,21 @@ import androidx.core.content.LocusIdCompat;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
+
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.controller.HiddenController;
+import com.finalsoft.helper.AnsweringMachine;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -75,6 +87,7 @@ import java.util.concurrent.CountDownLatch;
 public class NotificationsController extends BaseController {
 
     public static final String EXTRA_VOICE_REPLY = "extra_voice_reply";
+    private static final String TAG = Config.TAG + "nc";
     public static String OTHER_NOTIFICATIONS_CHANNEL = null;
 
     private static DispatchQueue notificationsQueue = new DispatchQueue("notificationsQueue");
@@ -131,6 +144,15 @@ public class NotificationsController extends BaseController {
     private int notificationId;
     private String notificationGroup;
 
+    //region Customized:
+    private boolean showSponsor = SharedStorage.showProxySponsor();
+    private boolean notificationsOff = SharedStorage.offNotifications();
+    private boolean notificationsTextHide = SharedStorage.hideNotificationsText();
+    private boolean hideMode = HiddenController.getInstance().isActive();
+    private String newText = SharedStorage.newMessageText();
+    private boolean auto_answer = SharedStorage.chatSettings(SharedStorage.keys.AUTO_ANSWER);
+    //endregion
+
     static {
         if (Build.VERSION.SDK_INT >= 26 && ApplicationLoader.applicationContext != null) {
             notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
@@ -139,7 +161,7 @@ public class NotificationsController extends BaseController {
         }
         audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
     }
-    
+
     private static volatile NotificationsController[] Instance = new NotificationsController[UserConfig.MAX_ACCOUNT_COUNT];
 
     public static NotificationsController getInstance(int num) {
@@ -157,6 +179,7 @@ public class NotificationsController extends BaseController {
 
     public NotificationsController(int instance) {
         super(instance);
+
         notificationId = currentAccount + 1;
         notificationGroup = "messages" + (currentAccount == 0 ? "" : currentAccount);
         SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
@@ -388,6 +411,15 @@ public class NotificationsController extends BaseController {
                 if (sparseArray == null) {
                     continue;
                 }
+
+                //Customized:
+                long dialog_id = -key;
+
+                if (!showSponsor && getMessagesController().isPromoDialog(dialog_id, false)) {
+                    Log.i(TAG, "removeDeletedMessagesFromNotifications: proxy message aborted!");
+                    continue;
+                }
+                //endregion
                 ArrayList<Integer> mids = deletedMessages.get(key);
                 for (int b = 0, N = mids.size(); b < N; b++) {
                     int mid = mids.get(b);
@@ -463,6 +495,12 @@ public class NotificationsController extends BaseController {
             for (int a = 0; a < deletedMessages.size(); a++) {
                 long key = deletedMessages.keyAt(a);
                 long dialogId = -key;
+                //Customized:
+                if (!showSponsor && getMessagesController().isPromoDialog(dialogId, false)) {
+                    Log.i(TAG, "removeDeletedHisoryFromNotifications: proxy message aborted!");
+                    continue;
+                }
+
                 long id = deletedMessages.get(key);
                 Integer currentCount = pushDialogs.get(dialogId);
                 if (currentCount == null) {
@@ -706,6 +744,8 @@ public class NotificationsController extends BaseController {
             }
             return;
         }
+        boolean showSponsor = SharedStorage.showProxySponsor();//Customized:
+
         ArrayList<MessageObject> popupArrayAdd = new ArrayList<>(0);
         notificationsQueue.postRunnable(() -> {
             boolean added = false;
@@ -727,6 +767,14 @@ public class NotificationsController extends BaseController {
                 int mid = messageObject.getId();
                 long randomId = messageObject.isFcmMessage() ? messageObject.messageOwner.random_id : 0;
                 long dialogId = messageObject.getDialogId();
+
+                //region Customized: aborted on proxy sponsor new message
+                if (!showSponsor && getMessagesController().isPromoDialog(dialogId, false)) {
+                    Log.i(TAG, "processNewMessages: proxy message aborted!");
+                    continue;
+                }
+                //endregion
+
                 boolean isChannel;
                 if (messageObject.isFcmMessage()) {
                     isChannel = messageObject.localChannel;
@@ -840,6 +888,11 @@ public class NotificationsController extends BaseController {
                     sparseBooleanArray.put(mid, true);
                     getMessagesController().checkUnreadReactions(dialogId, sparseBooleanArray);
                 }
+
+                //Customized: answering machine
+                if (auto_answer) {
+                    AnsweringMachine.ProcessMessages(messageObject);
+                }
             }
 
             if (added) {
@@ -938,6 +991,12 @@ public class NotificationsController extends BaseController {
                 long dialogId = dialogsToUpdate.keyAt(b);
                 Integer currentCount = pushDialogs.get(dialogId);
                 int newCount = dialogsToUpdate.get(dialogId);
+
+                //Customized:
+                if (!showSponsor && getMessagesController().isPromoDialog(dialogId, false)) {
+                    Log.i(TAG, "processDialogsUpdateRead: proxy message aborted!");
+                    continue;
+                }
 
                 if (DialogObject.isChatDialog(dialogId)) {
                     TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
@@ -1078,6 +1137,13 @@ public class NotificationsController extends BaseController {
                         personalCount++;
                     }
                     long dialog_id = messageObject.getDialogId();
+
+                    //Customized:
+                    if (!showSponsor && getMessagesController().isPromoDialog(dialog_id, false)) {
+                        Log.i(TAG, "processLoadedUnreadMessages: proxy message aborted!");
+                        continue;
+                    }
+
                     long original_dialog_id = dialog_id;
                     if (messageObject.messageOwner.mentioned) {
                         dialog_id = messageObject.getFromChatId();
@@ -1112,6 +1178,13 @@ public class NotificationsController extends BaseController {
             }
             for (int a = 0; a < dialogs.size(); a++) {
                 long dialog_id = dialogs.keyAt(a);
+
+                //Customized:
+                if (!showSponsor && getMessagesController().isPromoDialog(dialog_id, false)) {
+                    Log.i(TAG, "processLoadedUnreadMessages: proxy message aborted!");
+                    continue;
+                }
+
                 int index = settingsCache.indexOfKey(dialog_id);
                 boolean value;
                 if (index >= 0) {
@@ -1147,6 +1220,14 @@ public class NotificationsController extends BaseController {
                     long dialogId = messageObject.getDialogId();
                     long originalDialogId = dialogId;
                     long randomId = messageObject.messageOwner.random_id;
+
+
+                    //Customized:
+                    if (!showSponsor && getMessagesController().isPromoDialog(dialogId, false)) {
+                        Log.i(TAG, "processLoadedUnreadMessages: proxy message aborted!");
+                        continue;
+                    }
+
                     if (messageObject.messageOwner.mentioned) {
                         dialogId = messageObject.getFromChatId();
                     }
@@ -1243,6 +1324,8 @@ public class NotificationsController extends BaseController {
                             }
                         } else {
                             count += controller.total_unread_count;
+//                            Log.i(TAG, "getTotalAllUnreadCount: controller.total_unread_count:" + controller.total_unread_count);
+
                         }
                     } else {
                         if (controller.showBadgeMuted) {
@@ -1264,11 +1347,14 @@ public class NotificationsController extends BaseController {
                             }
                         } else {
                             count += controller.pushDialogs.size();
+//                            Log.i(TAG, "getTotalAllUnreadCount: controller.pushDialogs.size():" + controller.pushDialogs.size());
                         }
                     }
                 }
             }
         }
+//        Log.i(TAG, "getTotalAllUnreadCount: " + count);
+        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateTabCounter));
         return count;
     }
 
@@ -3351,6 +3437,7 @@ public class NotificationsController extends BaseController {
             dismissNotification();
             return;
         }
+        boolean isHide;
         try {
             getConnectionsManager().resumeNetworkMaybe();
 
@@ -3363,6 +3450,21 @@ public class NotificationsController extends BaseController {
             }
 
             long dialog_id = lastMessageObject.getDialogId();
+
+            //region Customized: off notifications if:
+            isHide = hideMode && HiddenController.getInstance().is(dialog_id);
+
+            if (getMessagesController().isPromoDialog(dialog_id, true) && !showSponsor) {
+                Log.i("finalsoftnc", "showOrUpdateNotification: proxy dialog , showSponsor:" + showSponsor);
+                dismissNotification();
+
+                return;
+            }
+            if (notificationsOff) {
+                dismissNotification();
+                return;
+            }
+            //endregion
             boolean isChannel = false;
             long override_dialog_id = dialog_id;
             if (lastMessageObject.messageOwner.mentioned) {
@@ -3411,7 +3513,7 @@ public class NotificationsController extends BaseController {
             } else {
                 chatName = UserObject.getUserName(user);
             }
-            boolean passcode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
+            boolean passcode =isHide ? isHide : AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
             if (DialogObject.isEncryptedDialog(dialog_id) || pushDialogs.size() > 1 || passcode) {
                 if (passcode) {
                     if (chatId != 0) {
@@ -3446,6 +3548,16 @@ public class NotificationsController extends BaseController {
             }
 
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
+/*                    .setContentTitle(name)
+                    .setSmallIcon(R.drawable.notification)
+                    .setAutoCancel(true)
+                    .setNumber(total_unread_count)
+                    .setContentIntent(isHide ? null : contentIntent)
+                    .setGroup(notificationGroup)
+                    .setGroupSummary(true)
+                    .setShowWhen(true)
+                    .setWhen(((long) lastMessageObject.messageOwner.date) * 1000)
+                    .setColor(0xff11acfa);*/
 
             int silent = 2;
             String lastMessage = null;
@@ -3453,7 +3565,8 @@ public class NotificationsController extends BaseController {
             if (pushMessages.size() == 1) {
                 MessageObject messageObject = pushMessages.get(0);
                 boolean[] text = new boolean[1];
-                String message = lastMessage = getStringForMessage(messageObject, false, text, null);
+                //Customized: finalsoft
+                String message = lastMessage = (notificationsTextHide || isHide) ? newText : getStringForMessage(messageObject, false, text, null);
                 silent = messageObject.messageOwner.silent ? 1 : 0;
                 if (message == null) {
                     return;
@@ -3473,13 +3586,15 @@ public class NotificationsController extends BaseController {
                 mBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message));
             } else {
                 mBuilder.setContentText(detailText);
+                Log.i(TAG, "showOrUpdateNotification: detailText:" + detailText);
                 NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
                 inboxStyle.setBigContentTitle(name);
                 int count = Math.min(10, pushMessages.size());
                 boolean[] text = new boolean[1];
                 for (int i = 0; i < count; i++) {
                     MessageObject messageObject = pushMessages.get(i);
-                    String message = getStringForMessage(messageObject, false, text, null);
+                    //Customized:
+                    String message = (notificationsTextHide || isHide) ? newText : getStringForMessage(messageObject, false, text, null);
                     if (message == null || messageObject.messageOwner.date <= dismissDate) {
                         continue;
                     }
@@ -3699,7 +3814,7 @@ public class NotificationsController extends BaseController {
             dismissIntent.putExtra("currentAccount", currentAccount);
             mBuilder.setDeleteIntent(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 1, dismissIntent, PendingIntent.FLAG_UPDATE_CURRENT));
 
-            if (photoPath != null) {
+            if (photoPath != null && !isHide) {
                 BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50");
                 if (img != null) {
                     mBuilder.setLargeIcon(img.getBitmap());
@@ -3833,7 +3948,7 @@ public class NotificationsController extends BaseController {
                     mBuilder.addAction(R.drawable.ic_ab_reply, LocaleController.getString("Reply", R.string.Reply), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT));
                 }
             }
-            showExtraNotifications(mBuilder, detailText, dialog_id, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
+            showExtraNotifications(mBuilder, detailText, dialog_id, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType,isHide);
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e(e);
@@ -3886,7 +4001,7 @@ public class NotificationsController extends BaseController {
     }
 
     @SuppressLint("InlinedApi")
-    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
+    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType, boolean isHide) {
         if (Build.VERSION.SDK_INT >= 26) {
             notificationBuilder.setChannelId(validateChannelId(lastDialogId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType));
         }
@@ -3970,7 +4085,7 @@ public class NotificationsController extends BaseController {
         int maxCount = 7;
         LongSparseArray<Person> personCache = new LongSparseArray<>();
         for (int b = 0, size = sortedDialogs.size(); b < size; b++) {
-            if (holders.size() >= maxCount) {
+            if (holders.size() >= 15) {
                 break;
             }
             long dialogId = sortedDialogs.get(b);
@@ -4393,7 +4508,7 @@ public class NotificationsController extends BaseController {
             NotificationCompat.Builder builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
                     .setContentTitle(name)
                     .setSmallIcon(R.drawable.notification)
-                    .setContentText(text.toString())
+                    .setContentText(isHide ? newText : text.toString())
                     .setAutoCancel(true)
                     .setNumber(messageObjects.size())
                     .setColor(0xff11acfa)
@@ -4401,7 +4516,7 @@ public class NotificationsController extends BaseController {
                     .setWhen(date)
                     .setShowWhen(true)
                     .setStyle(messagingStyle)
-                    .setContentIntent(contentIntent)
+                    .setContentIntent(isHide ? null : contentIntent)
                     .extend(wearableExtender)
                     .setSortKey(String.valueOf(Long.MAX_VALUE - date))
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE);

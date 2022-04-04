@@ -33,6 +33,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -48,8 +49,10 @@ import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -104,6 +107,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 
+import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.controller.HiddenController;
+import com.finalsoft.ui.ShareToolTextCheckCell;
+import com.finalsoft.ui.adapter.ShareToolsLayoutAdapter;
+import com.finalsoft.helper.ShareHelper;
+import com.finalsoft.ui.ShareToolTextImageCell;
+import com.finalsoft.ui.settings.ForwardSettingActivity;
+
 public class ShareAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
     private FrameLayout frameLayout;
@@ -138,6 +155,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private RectF rect = new RectF();
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+
 
     private TLRPC.TL_exportedMessageLink exportedMessageLink;
     private boolean loadingLink;
@@ -308,9 +326,12 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         public SearchField(Context context) {
             super(context);
 
+            //customized
+            addView(addSelectAllIcon(context), LayoutHelper.createFrame(40, 36, Gravity.RIGHT | Gravity.TOP, 5, 11, 10, 0));
+
             searchBackground = new View(context);
             searchBackground.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(18), getThemedColor(darkTheme ? Theme.key_voipgroup_searchBackground : Theme.key_dialogSearchBackground)));
-            addView(searchBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 14, 11, 14, 0));
+            addView(searchBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 14, 11, 14 + 50, 0));
 
             searchIconImageView = new ImageView(context);
             searchIconImageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -330,7 +351,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             clearSearchImageView.setScaleX(0.1f);
             clearSearchImageView.setScaleY(0.1f);
             clearSearchImageView.setAlpha(0.0f);
-            addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0));
+            addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14 + 50, 0));
             clearSearchImageView.setOnClickListener(v -> {
                 updateSearchAdapter = true;
                 searchEditText.setText("");
@@ -351,7 +372,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             searchEditText.setCursorColor(getThemedColor(darkTheme ? Theme.key_voipgroup_searchText : Theme.key_featuredStickers_addedIcon));
             searchEditText.setCursorSize(AndroidUtilities.dp(20));
             searchEditText.setCursorWidth(1.5f);
-            addView(searchEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.TOP, 16 + 38, 9, 16 + 30, 0));
+            addView(searchEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.TOP, 16 + 38, 9, 16 + 80, 0));
             searchEditText.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -416,6 +437,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             AndroidUtilities.hideKeyboard(searchEditText);
         }
     }
+
 
     public static ShareAlert createShareAlert(final Context context, MessageObject messageObject, final String text, boolean channel, final String copyLink, boolean fullScreen) {
         ArrayList<MessageObject> arrayList;
@@ -687,6 +709,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     }
                 } else {
                     commentTextView.hideEmojiView();
+                    editTextMessage.hideEmojiView();
+
                     if (pickerBottomLayout != null) {
                         pickerBottomLayout.setVisibility(GONE);
                         if (sharesCountLayout != null) {
@@ -1109,6 +1133,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         } else {
             shadow[1].setAlpha(0.0f);
         }
+        initForwardUi(context, sizeNotifierFrameLayout); //customized
 
         frameLayout2 = new FrameLayout(context) {
 
@@ -1241,6 +1266,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         writeButtonContainer.setScaleY(0.2f);
         writeButtonContainer.setAlpha(0.0f);
         containerView.addView(writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 10));
+
+        shareHelper = new ShareHelper(context);
 
         ImageView writeButton = new ImageView(context);
         Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), getThemedColor(Theme.key_dialogFloatingButton), getThemedColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_dialogFloatingButton));
@@ -1389,6 +1416,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
     private boolean showSendersName = true;
     private ActionBarPopupWindow sendPopupWindow;
+
     private boolean onSendLongClick(View view) {
         if (parentFragment == null) {
             return false;
@@ -1527,13 +1555,62 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
         }
 
+        //region Customized: edit message on send
+
+        boolean isCaption = sendText;
+        Log.i(TAG, "ShareAlert: isCaption: " + isCaption + " , sendText:" + sendText);
+        boolean fromMyName = !quote;
+        String msgTxt = editTextMessage.getText().toString();
+
+        //endregion
         if (sendingMessageObjects != null) {
+            Log.i(TAG, "ShareAlert: 1");
+
+            for (int a = 0; a < selectedDialogs.size(); a++) {
+                Log.i(TAG, "ShareAlert: i:" + a);
+
+                long key = selectedDialogs.keyAt(a);
+                if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                    SendMessagesHelper.getInstance(currentAccount)
+                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, true, 0, null);
+                }
+                if (fromMyName && sendingMessageObjects.get(0).messageOwner != null) {
+                    if (isCaption && smart) {
+                        msgTxt = shareHelper.doSmartMessage(msgTxt, key);
+                        Log.i(TAG, "doSmartMessage > result message:" + msgTxt);
+                    }
+                    Log.i(TAG, "ShareAlert: 2");
+                    SendMessagesHelper.getInstance(currentAccount).processProForward(sendingMessageObjects.get(0), key, isCaption, msgTxt);
+                } else {
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, false, false, false, 0);
+                    Log.i(TAG, "ShareAlert: 3");
+                }
+            }
+
+        } else if (sendingText != null) {
+            Log.i(TAG, "ShareAlert: 4");
+            for (int a = 0; a < selectedDialogs.size(); a++) {
+                long key = selectedDialogs.keyAt(a);
+                if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                    SendMessagesHelper.getInstance(currentAccount)
+                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, true, 0, null);
+                }
+                if (fromMyName) {
+                    Log.i(TAG, "ShareAlert: 5");
+                    SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(sendingMessageObjects.get(0), key);
+                } else {
+                    Log.i(TAG, "ShareAlert: 6");
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText[a], key, null, null, null, true, null, null, null, true, 0, null);
+                }
+            }
+        }
+/*        if (sendingMessageObjects != null) {
             for (int a = 0; a < selectedDialogs.size(); a++) {
                 long key = selectedDialogs.keyAt(a);
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                     SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, withSound, 0, null);
                 }
-                SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0);
+                SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName, false, withSound, 0);
             }
             onSend(selectedDialogs, sendingMessageObjects.size());
         } else {
@@ -1553,16 +1630,19 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 }
             }
             onSend(selectedDialogs, 1);
-        }
+        }*/
         if (delegate != null) {
             delegate.didShare();
         }
         dismiss();
+
+
     }
 
     protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count) {
 
     }
+
 
     private int getCurrentTop() {
         if (gridView.getChildCount() != 0) {
@@ -1585,12 +1665,20 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         if (commentTextView != null) {
             commentTextView.onDestroy();
         }
+        if (editTextMessage != null) {
+            editTextMessage.onDestroy();
+        }
     }
 
     @Override
     public void onBackPressed() {
         if (commentTextView != null && commentTextView.isPopupShowing()) {
             commentTextView.hidePopup(true);
+            return;
+        }
+
+        if (editTextMessage != null && editTextMessage.isPopupShowing()) {
+            editTextMessage.hidePopup(true);
             return;
         }
         super.onBackPressed();
@@ -1800,11 +1888,16 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         if (commentTextView != null) {
             AndroidUtilities.hideKeyboard(commentTextView.getEditText());
         }
+
+        if (editTextMessage != null) {
+            AndroidUtilities.hideKeyboard(editTextMessage.getEditText());
+        }
         super.dismiss();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogsNeedReload);
     }
 
-    private class ShareDialogsAdapter extends RecyclerListView.SelectionAdapter {
+
+    public class ShareDialogsAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
         private int currentCount;
@@ -1815,6 +1908,20 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             this.context = context;
             fetchDialogs();
         }
+
+        //region Customized
+        private boolean select_all = false;
+
+        public void selectAll(LongSparseArray<TLRPC.Dialog> select) {
+            select_all = select != null;
+            notifyDataSetChanged();
+            if (select_all) {
+                for (TLRPC.Dialog dialog : dialogs) {
+                    select.put(dialog.id, dialog);
+                }
+            }
+        }
+        //endregion
 
         public void fetchDialogs() {
             dialogs.clear();
@@ -1910,6 +2017,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 ShareDialogCell cell = (ShareDialogCell) holder.itemView;
                 TLRPC.Dialog dialog = getItem(position);
                 cell.setDialog(dialog.id, selectedDialogs.indexOfKey(dialog.id) >= 0, null);
+                cell.setChecked(select_all, true); //Customized:
             }
         }
 
@@ -1983,6 +2091,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         }
 
         boolean internalDialogsIsSearching = false;
+
         private void searchDialogsInternal(final String query, final int searchId) {
             MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
                 try {
@@ -2189,16 +2298,36 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     topBeforeSwitch = getCurrentTop();
                     searchAdapter.notifyDataSetChanged();
                 }
+                ArrayList<DialogSearchResult> resultTemp = new ArrayList<>();//customized
                 for (int a = 0; a < result.size(); a++) {
                     DialogSearchResult obj = (DialogSearchResult) result.get(a);
                     if (obj.object instanceof TLRPC.User) {
                         TLRPC.User user = (TLRPC.User) obj.object;
+                        //customized
+                        if (HiddenController.getInstance().isActive() && HiddenController.getInstance().is((long) user.id)) {
+                            resultTemp.add(obj);
+                            continue;
+                        }
+
                         MessagesController.getInstance(currentAccount).putUser(user, true);
                     } else if (obj.object instanceof TLRPC.Chat) {
                         TLRPC.Chat chat = (TLRPC.Chat) obj.object;
+
+                        //customized
+                        if (HiddenController.getInstance().isActive() && HiddenController.getInstance().is(chat.id)) {
+                            resultTemp.add(obj);
+                            continue;
+                        }
+
                         MessagesController.getInstance(currentAccount).putChat(chat, true);
                     }
                 }
+
+                //customized: remove hide items
+                for (DialogSearchResult d : resultTemp) {
+                    result.remove(d);
+                }
+
                 boolean becomeEmpty = !searchResult.isEmpty() && result.isEmpty();
                 boolean isEmpty = searchResult.isEmpty() && result.isEmpty();
                 if (becomeEmpty) {
@@ -2573,11 +2702,209 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 searchAdapter.searchDialogs(searchView.searchEditText.getText().toString());
             } else {
                 if (lastOffset == Integer.MAX_VALUE) {
-                    layoutManager.scrollToPositionWithOffset(0,  0);
+                    layoutManager.scrollToPositionWithOffset(0, 0);
                 } else {
                     layoutManager.scrollToPositionWithOffset(0, 0);
                 }
             }
         }
     }
+
+
+    //region Customized
+    private static final String TAG = Config.TAG + "sa";
+    private int currentAccount = UserConfig.selectedAccount;
+    private ShareToolsLayoutAdapter shareToolsLayoutAdapter;
+    private RecyclerListView toolsListView;
+    private EditTextEmoji editTextMessage;
+    private ImageButton imgSaveBtn;
+
+    boolean sendText = true;
+    boolean editText = false;
+    boolean smart = true;
+    boolean quote = false;
+//    private LinearLayout editFrame;
+
+    boolean selectAll = false;
+
+    ShareHelper shareHelper;
+
+    private ImageView addSelectAllIcon(Context context) {
+        //region Customized:
+        ImageView imgSelectAll = new ImageView(context);
+        imgSelectAll.setColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon));
+        imgSelectAll.setImageResource(R.drawable.ic_select_all);
+        imgSelectAll.setOnClickListener(v -> {
+            if (editText) {
+                AndroidUtilities.hideKeyboard(editTextMessage.getEditText());
+                editTextMessage.setVisibility(View.GONE);
+                imgSaveBtn.setVisibility(View.GONE);
+                gridView.setVisibility(View.VISIBLE);
+                editText = false;
+            }
+
+            if (!selectAll) {
+                Toast.makeText(context, "Select All", Toast.LENGTH_SHORT).show();
+                selectAll = true;
+                imgSelectAll.setColorFilter(Theme.getColor(Theme.key_chats_unreadCounter));
+                listAdapter.selectAll(selectedDialogs);
+            } else {
+                Toast.makeText(context, "UnSelect All", Toast.LENGTH_SHORT).show();
+                selectAll = false;
+                imgSelectAll.setColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon));
+                listAdapter.selectAll(null);
+                selectedDialogs.clear();
+            }
+            updateSelectedCount(2);
+        });
+
+        return imgSelectAll;
+        //endregion
+    }
+
+    private void initForwardUi(Context context, SizeNotifierFrameLayout sizeNotifierFrameLayout) {
+        //region Customized: add pro forward tools
+        boolean proShare = SharedStorage.forwardSetting(ShareHelper.ACTIVE);
+        if (proShare && sendingMessageObjects != null) {
+            if (pickerBottomLayout != null) {
+                pickerBottomLayout.setVisibility(View.GONE);
+            }
+
+
+            sendText = sendingMessageObjects.get(0).messageOwner.media == null ||
+                    sendingMessageObjects.get(0).messageOwner.media instanceof TLRPC.TL_messageMediaEmpty ||
+                    sendingMessageObjects.get(0).messageOwner.media instanceof TLRPC.TL_messageMediaWebPage;
+            Log.i(TAG, "ShareAlert > sendText: " + sendText);
+            CharSequence messageText = null;
+            boolean show_text_row = true;
+            if (sendText) {
+                messageText = sendingMessageObjects.get(0).messageText;
+                show_text_row = false;
+            } else {
+                messageText = sendingMessageObjects.get(0).caption;
+/*                String mime_type = sendingMessageObjects.get(0).messageOwner.media.document.mime_type;
+                if (mime_type.contains("stiker")){
+
+                }*/
+            }
+            if (messageText != null && !messageText.toString().isEmpty()) {
+                sendText = true;
+            }
+            boolean show_edit_text = sendingMessageObjects.size() == 1 /*&& messageText != null*/;
+            shareToolsLayoutAdapter = new ShareToolsLayoutAdapter(context, sendText, editText, smart, quote, show_edit_text, show_text_row);
+
+            toolsListView = new RecyclerListView(context);
+            toolsListView.setAdapter(shareToolsLayoutAdapter);
+            LinearLayoutManager lm = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
+            toolsListView.setLayoutManager(lm);
+            toolsListView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackgroundGray));
+
+            toolsListView.setOnItemClickListener((view, position) -> {
+                int index = shareToolsLayoutAdapter.getId(position);
+                boolean status = false;
+                if (index == ShareToolsLayoutAdapter.EDIT_TEXT) {
+                    status = editText;
+                    editText = !status;
+                    editTextMessage.setVisibility(status ? View.GONE : View.VISIBLE);
+                    imgSaveBtn.setVisibility(status ? View.GONE : View.VISIBLE);
+                    gridView.setVisibility(status ? View.VISIBLE : View.GONE);
+                    if (!status) {
+                        sendText = true;
+                        quote = false;
+                    }
+                } else if (index == ShareToolsLayoutAdapter.QUOTE) {
+                    status = quote;
+                    quote = !status;
+                    if (!status) {
+                        editText = false;
+                        sendText = true;
+                        smart = false;
+                    }
+                } else if (index == ShareToolsLayoutAdapter.SMART) {
+                    status = smart;
+                    smart = !status;
+                    if (!status) {
+                        sendText = true;
+                        quote = false;
+
+                    }
+                } else if (index == ShareToolsLayoutAdapter.SEND_TEXT) {
+                    status = sendText;
+                    sendText = !status;
+                    if (status) {
+                        quote = false;
+                        editText = false;
+                        smart = false;
+                    }
+                }
+
+                if (view instanceof ShareToolTextCheckCell) {
+                    ShareToolTextCheckCell textCheckCell = (ShareToolTextCheckCell) view;
+                    textCheckCell.setChecked(!status);
+                }
+                shareToolsLayoutAdapter.update(sendText, editText, smart, quote);
+            });
+
+            toolsListView.setOnItemLongClickListener((view, position) -> {
+                if (context instanceof LaunchActivity) {
+                    ((LaunchActivity) context).presentFragment(new ForwardSettingActivity());
+                }
+                return true;
+            });
+
+            containerView.addView(toolsListView,
+                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+
+            //region Edit Text
+            editTextMessage = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG);
+            editTextMessage.onResume();
+            EditTextBoldCursor editText1 = editTextMessage.getEditText();
+            editText1.setMaxLines(20);
+            editText1.setSingleLine(false);
+            editText1.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            editText1.setPadding(10, 10, 10, 20);
+            editTextMessage.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+
+
+            imgSaveBtn = new ImageButton(context);
+            imgSaveBtn.setImageResource(R.drawable.msg_check);
+            imgSaveBtn.setColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon));
+            imgSaveBtn.setOnClickListener(view -> {
+                AndroidUtilities.hideKeyboard(editTextMessage.getEditText());
+                editTextMessage.setVisibility(View.GONE);
+                imgSaveBtn.setVisibility(View.GONE);
+                gridView.setVisibility(View.VISIBLE);
+                editText = false;
+            });
+            imgSaveBtn.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
+
+
+            if (sendingMessageObjects.size() == 1) {
+                editTextMessage.setText(messageText);
+
+                containerView.addView(editTextMessage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                        LayoutHelper.WRAP_CONTENT,
+                        Gravity.BOTTOM, 0, 0, 0, 44));
+
+                containerView.addView(imgSaveBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                        44,
+                        Gravity.BOTTOM, 0, 0, 0, 0));
+
+
+                if (!editText) {
+                    editTextMessage.setVisibility(View.GONE);
+                    imgSaveBtn.setVisibility(View.GONE);
+                    gridView.setVisibility(View.VISIBLE);
+                } else {
+                    gridView.setVisibility(View.GONE);
+                }
+
+            }
+            //endregion
+        }
+
+
+        //endregion
+    }
+    //endregion
 }

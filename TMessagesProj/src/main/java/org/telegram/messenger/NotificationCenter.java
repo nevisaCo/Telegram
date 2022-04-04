@@ -238,6 +238,17 @@ public class NotificationCenter {
     public static final int onDatabaseOpened = totalEvents++;
     public static final int onDownloadingFilesChanged = totalEvents++;
 
+    //region Customized: add custom not index
+    public static final int openSavedMessage = totalEvents++;//150
+    public static final int updateTabCounter = totalEvents++;
+    public static final int showAdmobInterstitial = totalEvents++;
+    public static final int showAdmobVideo = totalEvents++;
+    public static final int updateFragmentSettings = totalEvents++;
+    public static final int updateGhostMode = totalEvents++;
+    public static final int updatePersonalTargetLanguage = totalEvents++;
+    public static final int updateDialogIcons = totalEvents++;
+    //endregion
+
     private SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> addAfterBroadcast = new SparseArray<>();

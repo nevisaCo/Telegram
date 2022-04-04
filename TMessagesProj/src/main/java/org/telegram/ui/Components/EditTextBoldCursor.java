@@ -341,6 +341,7 @@ public class EditTextBoldCursor extends EditTextEffects {
         if (cursorDrawable == null) {
             try {
                 gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xff54a1db, 0xff54a1db});
+                //todo: commented below condition for load emojies in chat activity in last version
                 if (Build.VERSION.SDK_INT >= 29) {
                     setTextCursorDrawable(gradientDrawable);
                 }

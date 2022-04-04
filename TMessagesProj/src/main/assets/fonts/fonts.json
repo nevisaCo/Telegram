@@ -1,0 +1,20 @@
+[
+  {"title":"افسانه","file":"afsaneh", "ln":"fa"},
+  {"title":"یکان ضخیم","file":"byekan", "ln":"fa"},
+  {"title":"دستنویس","file":"dastnevis", "ln":"fa"},
+  {"title":"هما","file":"homa", "ln":"fa"},
+  {"title":"ایران سانس","file":"iransans", "ln":"fa"},
+  {"title":"لاله زار","file":"LalezarRegular", "ln":"fa"},
+  {"title":"مروارید","file":"morvarid", "ln":"fa"},
+  {"title":"mw bold","file":"mw_bold", "ln":"en"},
+  {"title":"Oswald Regular","file":"OswaldRegular", "ln":"en"},
+  {"title":"poppins_reg","file":"poppins_reg", "ln":"en"},
+  {"title":"r italic","file":"ritalic", "ln":"en"},
+  {"title":"r medium","file":"rmedium", "ln":"en"},
+  {"title":"r medium italic","file":"rmediumitalic", "ln":"en"},
+  {"title":"r mono","file":"rmono", "ln":"en"},
+  {"title":"شبنم","file":"Shabnam", "ln":"fa"},
+  {"title":"شبنم ضخیم","file":"ShabnamBold", "ln":"fa"},
+  {"title":"شبنم متوسط","file":"ShabnamMedium", "ln":"fa"},
+  {"title":"شبنم نازک","file":"ShabnamThin", "ln":"fa"}
+]

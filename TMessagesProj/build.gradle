@@ -40,6 +40,33 @@ dependencies {
     implementation files('libs/libgsaverification-client.aar')
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+
+    //region Customized:
+    implementation 'com.google.firebase:firebase-core:18.0.0'
+    implementation 'com.google.firebase:firebase-analytics:18.0.0'
+
+    implementation 'com.google.firebase:firebase-ads:19.5.0'
+
+    implementation 'com.squareup.picasso:picasso:2.71828'
+
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.android.volley:volley:1.2.1'
+
+    //flurry remote config
+    implementation 'com.flurry.android:analytics:12.5.0@aar'
+
+    //device shake detection
+    implementation 'com.squareup:seismic:1.0.2'
+
+    //persian date picker
+//    implementation 'com.mohamadamin:persianmaterialdatetimepicker:1.2.1'
+
+    implementation 'com.squareup.picasso:picasso:2.71828'
+
+    implementation 'com.google.android.play:core:1.8.3'
+
+
+    //endregion
 }
 
 android {
@@ -47,7 +74,7 @@ android {
     buildToolsVersion '31.0.0'
     ndkVersion "21.4.7075529"
 
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = PACKAGE_NAME
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
@@ -61,10 +88,12 @@ android {
         disable 'MissingTranslation'
         disable 'ExtraTranslation'
         disable 'BlockedPrivateApi'
+        checkReleaseBuilds false //Customized:
     }
 
     dexOptions {
         jumboMode = true
+//        javaMaxHeapSize "4g" //Customized:
     }
 
     compileOptions {
@@ -95,7 +124,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
+//            applicationIdSuffix ".beta"
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
@@ -136,7 +165,7 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
+//            applicationIdSuffix ".beta"
             minifyEnabled true
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -300,11 +329,11 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 2600
+    defaultConfig.versionCode = 2600 * Integer.parseInt(VERSION_RATIO)
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = "app.apk"
+            outputFileName = PACKAGE_NAME + "_" +defaultConfig.versionName + "_"+ defaultConfig.versionCode + ".apk"
             output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
         }
     }
@@ -329,6 +358,29 @@ android {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
+
+        //region Customized Properties
+        manifestPlaceholders = [
+                admobAppId     : ADMOB_APPLICATION_ID,
+                admobAppIdDebug: "ca-app-pub-3940256099942544~3347511713",
+                mapApiKey      : MAP_API_KEY,
+                repositoryId   : REPOSITORY_ID,
+                repositoryRsa  : REPOSITORY_RSA
+        ]
+
+        buildConfigField "Integer", "MAX_ACCOUNT_COUNT", MAX_ACCOUNT_COUNT
+        buildConfigField "Integer", "APP_ID", APP_ID
+        buildConfigField "String", "APP_HASH", APP_HASH
+        buildConfigField "String", "OFFICIAL_CHANNELS", OFFICIAL_CHANNELS
+        buildConfigField "String", "SUPPORT_GROUP", SUPPORT_GROUP
+        buildConfigField "String", "DEFAULT_FONT", DEFAULT_FONT
+        buildConfigField "String", "FLURRY_APP_ID", FLURRY_APP_ID
+        buildConfigField "String", "PREF_NAME", PREF_NAME
+        buildConfigField "String", "DOMAIN_URL", DOMAIN_URL
+        buildConfigField "String", "PROXY_URL", DOMAIN_URL
+        buildConfigField "String", "TAG", TAG
+        //endregion
+
     }
 }
 

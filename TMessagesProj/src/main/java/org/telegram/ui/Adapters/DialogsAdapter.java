@@ -63,6 +63,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
+import com.finalsoft.Config;
+import com.finalsoft.controller.AdmobController;
+import com.finalsoft.ui.admob.DialogAddCell;
+import com.finalsoft.ui.admob.NativeAddCell;
+import com.google.android.gms.ads.AdLoader;
+
 public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     public final static int VIEW_TYPE_DIALOG = 0,
         VIEW_TYPE_FLICKER = 1,
@@ -99,6 +105,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private boolean isReordering;
     private long lastSortTime;
     private PullForegroundDrawable pullForegroundDrawable;
+    private AdLoader adLoader;
+    private boolean AdLoaded;
 
     private Drawable arrowDrawable;
 
@@ -403,6 +411,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 DialogCell dialogCell = new DialogCell(parentFragment, mContext, true, false, currentAccount, null);
                 dialogCell.setArchivedPullAnimation(pullForegroundDrawable);
                 dialogCell.setPreloader(preloader);
+                dialogCell.updateGhostMode();
                 view = dialogCell;
                 break;
             case VIEW_TYPE_FLICKER:
@@ -476,6 +485,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 break;
             case VIEW_TYPE_LAST_EMPTY: {
                 view = new LastEmptyView(mContext);
+                break;
+            }case NATIVE: {
+                view = new NativeAddCell(mContext);
                 break;
             }
             case VIEW_TYPE_NEW_CHAT_HINT: {
@@ -652,6 +664,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 cell.setOffsetFromImage(75);
                 break;
             }
+            case NATIVE: {
+                NativeAddCell nativeAdView = (NativeAddCell) holder.itemView;
+                DialogAddCell dialog = (DialogAddCell) getItem(i);
+                nativeAdView.setAdd(dialog.getAd());
+                break;
+            }
         }
         if (i >= dialogsCount + 1) {
             holder.itemView.setAlpha(1f);
@@ -734,10 +752,16 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         if (folderId == 0 && dialogsCount > 10 && i == currentCount - 2 && dialogsType == 0) {
             return VIEW_TYPE_NEW_CHAT_HINT;
         }
-        int size = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen).size();
+        ArrayList<TLRPC.Dialog> dialogsArray = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen);
+        int size = dialogsArray.size();
         if (i == size) {
             if (!forceShowEmptyCell && dialogsType != 7 && dialogsType != 8 && !MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId)) {
                 return VIEW_TYPE_FLICKER;
+/*                if (!hideTab) {
+                    if (dialogsType > 3) {
+                        return size > 0 ? 10 : 5;
+                    }
+                }*/
             } else if (size == 0) {
                 return VIEW_TYPE_EMPTY;
             } else {
@@ -746,6 +770,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         } else if (i > size) {
             return VIEW_TYPE_LAST_EMPTY;
         }
+
+        //customized
+        if (nativeAds && size > 0 && dialogsArray.get(i) instanceof DialogAddCell) {
+            return NATIVE;
+        }
+
         return VIEW_TYPE_DIALOG;
     }
 
@@ -774,6 +804,13 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     public void setArchivedPullDrawable(PullForegroundDrawable drawable) {
         pullForegroundDrawable = drawable;
     }
+
+
+    //region Customized:
+    private final static int NATIVE = 20;
+    private final static String TAG = Config.TAG + "dad";
+    private boolean nativeAds = AdmobController.getInstance().getShowNative("DialogAdapter");
+    //endregion
 
     public void didDatabaseCleared() {
         if (preloader != null) {

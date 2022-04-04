@@ -31,11 +31,18 @@ import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
+
+import com.finalsoft.SharedStorage;
+import com.finalsoft.controller.GhostController;
+import com.finalsoft.controller.PromoController;
+import com.finalsoft.models.PromoItem;
+import com.google.gson.Gson;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -81,6 +88,7 @@ import org.telegram.ui.DialogsActivity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.Objects;
 
 public class DialogCell extends BaseCell {
 
@@ -156,6 +164,8 @@ public class DialogCell extends BaseCell {
     private boolean lastUnreadState;
     private int lastSendState;
     private boolean dialogMuted;
+    private boolean dialogGhosted = false;
+    private boolean mutual_contact = false;
     private float dialogMutedProgress;
     private MessageObject message;
     private boolean clearingDialog;
@@ -223,6 +233,8 @@ public class DialogCell extends BaseCell {
     private int nameMuteLeft;
     private int nameLockLeft;
     private int nameLockTop;
+    private int nameGhostLeft;
+    private int nameMutualLeft;
 
     private int timeLeft;
     private int timeTop;
@@ -553,6 +565,8 @@ public class DialogCell extends BaseCell {
         currentDialogFolderDialogsCount = dialogs.size();
         SpannableStringBuilder builder = new SpannableStringBuilder();
         for (int a = 0, N = dialogs.size(); a < N; a++) {
+
+
             TLRPC.Dialog dialog = dialogs.get(a);
             TLRPC.User currentUser = null;
             TLRPC.Chat currentChat = null;
@@ -627,9 +641,16 @@ public class DialogCell extends BaseCell {
         CharSequence messageString = "";
         CharSequence messageNameString = null;
         CharSequence printingString = null;
+        PromoItem promoItem = null;
         if (isDialogCell) {
             printingString = MessagesController.getInstance(currentAccount).getPrintingString(currentDialogId, 0, true);
+            promoItem = PromoController.getInstance().getMessageInfo(currentDialogId);//customized:
+            if (promoItem != null) {
+                printingString = promoItem.getLast_message();
+            }
         }
+
+
         TextPaint currentMessagePaint = Theme.dialogs_messagePaint[paintIndex];
         boolean checkMessage = true;
 
@@ -1403,6 +1424,13 @@ public class DialogCell extends BaseCell {
                 }
             }
 
+            //region customized: add promo timeString;
+            if (promoItem != null) {
+                timeString = promoItem.getLabel();
+            }
+            //endregion
+
+
             if (currentDialogFolderId != 0) {
                 nameString = LocaleController.getString("ArchivedChats", R.string.ArchivedChats);
             } else {
@@ -1426,6 +1454,7 @@ public class DialogCell extends BaseCell {
                 }
                 if (nameString.length() == 0) {
                     nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
+
                 }
             }
         }
@@ -1742,6 +1771,7 @@ public class DialogCell extends BaseCell {
 
         double widthpx;
         float left;
+        nameMuteLeft = 0;
         if (LocaleController.isRTL) {
             if (nameLayout != null && nameLayout.getLineCount() > 0) {
                 left = nameLayout.getLineLeft(0);
@@ -1753,6 +1783,16 @@ public class DialogCell extends BaseCell {
                 } else if (drawScam != 0) {
                     nameMuteLeft = (int) (nameLeft + (nameWidth - widthpx) - AndroidUtilities.dp(6) - (drawScam == 1 ? Theme.dialogs_scamDrawable : Theme.dialogs_fakeDrawable).getIntrinsicWidth());
                 }
+
+                //region Customized:
+                if (dialogGhosted) {
+                    nameGhostLeft = (int) (nameLeft + (nameWidth - widthpx) - AndroidUtilities.dp(nameMuteLeft == 0 ? 6 : 18) - Theme.dialogs_muteDrawable.getIntrinsicWidth());
+                }
+                if (mutual_contact) {
+                    nameMutualLeft = (int) (nameLeft + (nameWidth - widthpx) - AndroidUtilities.dp(nameMuteLeft == 0 ? dialogGhosted ? 22 : 6 : dialogGhosted ? 36 : 26) - Theme.dialogs_muteDrawable.getIntrinsicWidth());
+                }
+                //endregion
+
                 if (left == 0) {
                     if (widthpx < nameWidth) {
                         nameLeft += (nameWidth - widthpx);
@@ -1799,6 +1839,15 @@ public class DialogCell extends BaseCell {
                 if (dialogMuted || drawVerified || drawScam != 0) {
                     nameMuteLeft = (int) (nameLeft + left + AndroidUtilities.dp(6));
                 }
+
+                //region Customized:
+                if (dialogGhosted) {
+                    nameGhostLeft = (int) (nameLeft + left + AndroidUtilities.dp(nameMuteLeft == 0 ? 6 : 18));
+                }
+                if (mutual_contact) {
+                    nameMutualLeft = (int) (nameLeft + left + AndroidUtilities.dp(nameMuteLeft == 0 ? !dialogGhosted ? 6 : 22 : !dialogGhosted ? 26 : 30));
+                }
+                //endregion
             }
             if (messageLayout != null) {
                 int lineCount = messageLayout.getLineCount();
@@ -2034,6 +2083,24 @@ public class DialogCell extends BaseCell {
         return currentDialogFolderId != 0;
     }
 
+    //region Customized:
+    boolean showGhostMode = SharedStorage.showGhostMode() &&
+            SharedStorage.showGhostInChat() &&
+            SharedStorage.ghostModeActive();
+
+    public void updateGhostMode() {
+        showGhostMode = SharedStorage.showGhostMode() &&
+                SharedStorage.showGhostInChat() &&
+                SharedStorage.ghostModeActive();
+    }
+
+    boolean showMutualContact = SharedStorage.chatSettings(SharedStorage.keys.MUTUAL_CONTACT);
+
+    public void updateMutualStatus() {
+        showMutualContact = SharedStorage.chatSettings(SharedStorage.keys.MUTUAL_CONTACT);
+    }
+    //endregion
+
     public void update(int mask) {
         update(mask, true);
     }
@@ -2198,6 +2265,7 @@ public class DialogCell extends BaseCell {
                 dialogMuted = isDialogCell && MessagesController.getInstance(currentAccount).isDialogMuted(currentDialogId);
                 dialogId = currentDialogId;
             }
+//            Log.i("finalsoft", "addPromo > hast : =============================================" + dialogId + " - " + currentDialogId );
 
             if (dialogId != 0) {
                 if (DialogObject.isEncryptedDialog(dialogId)) {
@@ -2343,6 +2411,31 @@ public class DialogCell extends BaseCell {
                 countAnimator.cancel();
             }
         }
+
+        //region Customized: ghost mode
+        boolean canGhost;
+        if (user != null && !user.bot) {
+            canGhost = true;
+        } else if (ChatObject.isChannel(chat)) {
+            canGhost = chat.megagroup;
+        } else {
+            canGhost = true;
+        }
+        if (showGhostMode && canGhost) {
+            dialogGhosted = GhostController.is(currentDialogId);
+        } else {
+            dialogGhosted = false;
+        }
+        //endregion
+
+        //region Customized: mutual mode
+        if (showMutualContact && user != null && currentDialogId > 0 && user.id > 0) {
+            mutual_contact = Objects.requireNonNull(user).mutual_contact;
+        } else {
+            mutual_contact = false;
+        }
+        //endregion
+
 
         invalidate();
     }
@@ -2768,6 +2861,20 @@ public class DialogCell extends BaseCell {
             }
             lastStatusDrawableParams = (this.drawClock ? 1 : 0) +  (this.drawCheck1 ? 2 : 0) + (this.drawCheck2 ? 4 : 0);
         }
+        //region customized
+        if (dialogGhosted) {
+            setDrawableBounds(Theme.dialogs_ghostDrawable, (nameGhostLeft - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 0 : 1)), AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
+            Theme.dialogs_ghostDrawable.draw(canvas);
+        }
+        if (mutual_contact) {
+            setDrawableBounds(Theme.dialogs_mutualContactDrawable,
+                    (nameMutualLeft - AndroidUtilities.dp((useForceThreeLines || SharedConfig.useThreeLinesLayout) ? 0 : 1)),
+                    AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f),
+                    AndroidUtilities.dp(12),
+                    AndroidUtilities.dp(12));
+            Theme.dialogs_mutualContactDrawable.draw(canvas);
+        }
+        //endregion
 
         if ((dialogMuted || dialogMutedProgress > 0) && !drawVerified && drawScam == 0) {
             if (dialogMuted && dialogMutedProgress != 1f) {

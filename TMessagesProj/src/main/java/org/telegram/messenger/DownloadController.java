@@ -237,9 +237,9 @@ public class DownloadController extends BaseController implements NotificationCe
     public DownloadController(int instance) {
         super(instance);
         SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
-        String defaultLow = "1_1_1_1_1048576_512000_512000_524288_0_0_1_1_50";
-        String defaultMedium = "13_13_13_13_1048576_10485760_1048576_524288_1_1_1_0_100";
-        String defaultHigh = "13_13_13_13_1048576_15728640_3145728_524288_1_1_1_0_100";
+        String defaultLow = !ApplicationLoader.GLOBAL_AUTO_DOWNLOAD ? "1_1_1_1_1048576_512000_512000_524288_0_0_0_1_50" : "1_1_1_1_1048576_512000_512000_524288_0_0_1_1_50";
+        String defaultMedium = !ApplicationLoader.GLOBAL_AUTO_DOWNLOAD ? "13_13_13_13_1048576_10485760_1048576_524288_1_1_0_0_100" : "13_13_13_13_1048576_10485760_1048576_524288_1_1_1_0_100";
+        String defaultHigh = !ApplicationLoader.GLOBAL_AUTO_DOWNLOAD ? "13_13_13_13_1048576_15728640_3145728_524288_1_1_0_0_100" : "13_13_13_13_1048576_15728640_3145728_524288_1_1_1_0_100";
         lowPreset = new Preset(preferences.getString("preset0", defaultLow), defaultLow);
         mediumPreset = new Preset(preferences.getString("preset1", defaultMedium), defaultMedium);
         highPreset = new Preset(preferences.getString("preset2", defaultHigh), defaultHigh);
@@ -282,7 +282,7 @@ public class DownloadController extends BaseController implements NotificationCe
             roamingMaxFileSize[2] = preferences.getInt("roamingMaxDownloadSize" + 2, lowPreset.sizes[PRESET_SIZE_NUM_VIDEO]);
             roamingMaxFileSize[3] = preferences.getInt("roamingMaxDownloadSize" + 3, lowPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
 
-            boolean globalAutodownloadEnabled = preferences.getBoolean("globalAutodownloadEnabled", true);
+            boolean globalAutodownloadEnabled = preferences.getBoolean("globalAutodownloadEnabled", ApplicationLoader.GLOBAL_AUTO_DOWNLOAD);
             mobilePreset = new Preset(mobileDataDownloadMask, mediumPreset.sizes[PRESET_SIZE_NUM_PHOTO], mobileMaxFileSize[2], mobileMaxFileSize[3], true, true, globalAutodownloadEnabled, false, 100);
             wifiPreset = new Preset(wifiDownloadMask, highPreset.sizes[PRESET_SIZE_NUM_PHOTO], wifiMaxFileSize[2], wifiMaxFileSize[3], true, true, globalAutodownloadEnabled, false, 100);
             roamingPreset = new Preset(roamingDownloadMask, lowPreset.sizes[PRESET_SIZE_NUM_PHOTO], roamingMaxFileSize[2], roamingMaxFileSize[3], false, false, globalAutodownloadEnabled, true, 50);

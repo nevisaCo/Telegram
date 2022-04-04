@@ -46,6 +46,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -99,7 +100,21 @@ import java.util.HashMap;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finalsoft.SharedStorage;
+import com.finalsoft.ShowDialogActivity;
+import com.finalsoft.controller.AdmobController;
+import com.finalsoft.helper.AdDialogHelper;
+import com.finalsoft.proxy.Communication;
+
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
+    public void loadDefault() {
+        searchItem.setSearchFieldHint(LocaleController.getString("SearchImages", R.string.SearchImages));
+        String defaultKey = SharedStorage.profileImageDefaultKey();
+        if (recentSearches.size() == 0) {
+            processSearch(defaultKey, false);
+        }
+    }
 
     public interface PhotoPickerActivityDelegate {
         void selectedPhotosChanged();
@@ -484,6 +499,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             actionBar.setTitle(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
         } else if (type == 1) {
             actionBar.setTitle(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
+        } else if (type == 2) {
+            actionBar.setTitle(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -775,7 +792,41 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         sizeNotifierFrameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
         listView.setAdapter(listAdapter = new ListAdapter(context));
         listView.setGlowColor(Theme.getColor(dialogBackgroundKey));
+
+        //customized:
+        boolean showAdmob =  AdmobController.getInstance().getShowAdmob();
+        int imageCost = SharedStorage.imageEditorCost();
+        boolean video_error = SharedStorage.admobVideoErrorList();
+
         listView.setOnItemClickListener((view, position) -> {
+
+            //region Customized: show admob
+            if (showAdmob && imageCost > 0 && view instanceof PhotoAttachPhotoCell) {
+                int myRewards = SharedStorage.rewardes();
+                if (myRewards >= imageCost) {
+                    myRewards = myRewards - imageCost;
+                    SharedStorage.rewardes(myRewards);
+                    Toast.makeText(getParentActivity(), String.format(LocaleController.getString("ShowInventory", R.string.ShowInventory), imageCost, myRewards), Toast.LENGTH_SHORT).show();
+                } else {
+                    new AdDialogHelper(getParentActivity()).show(null, String.format(LocaleController.getString("GetCoinsText", R.string.GetCoinsText),
+                            myRewards,
+                            imageCost,
+                            video_error ? 0 : SharedStorage.videoRewards(),
+                            SharedStorage.interstitialRewards()
+                    ), param -> {
+                        if (param == 1) {
+                            //video
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobVideo, AdmobController.REWARD);
+                        } else {
+                            //interstitial
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.REWARD);
+                        }
+                    },false);
+                    return;
+                }
+            }
+            //endregion
+
             if (selectedAlbum == null && searchResult.isEmpty()) {
                 if (position < recentSearches.size()) {
                     String text = recentSearches.get(position);
@@ -1303,7 +1354,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         if (editText.getText().length() == 0) {
             return;
         }
-        String text = editText.getText().toString();
+        processSearch(editText.getText().toString(), true);
+    }
+
+    private void processSearch(String text, boolean saveRecent) {
         for (int a = 0, N = recentSearches.size(); a < N; a++) {
             String str = recentSearches.get(a);
             if (str.equalsIgnoreCase(text)) {
@@ -1315,7 +1369,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         while (recentSearches.size() > 20) {
             recentSearches.remove(recentSearches.size() - 1);
         }
-        saveRecentSearch();
+        if (saveRecent) saveRecentSearch();
         searchResult.clear();
         searchResultKeys.clear();
         imageSearchEndReached = true;

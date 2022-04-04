@@ -13,6 +13,8 @@ import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Base64;
 
+import com.finalsoft.Config;
+
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 
@@ -21,7 +23,7 @@ import java.util.Arrays;
 public class UserConfig extends BaseController {
 
     public static int selectedAccount;
-    public final static int MAX_ACCOUNT_COUNT = 3;
+    public final static int MAX_ACCOUNT_COUNT = Config.MAX_ACCOUNT_COUNT;
 
     private final Object sync = new Object();
     private boolean configLoaded;

@@ -27,7 +27,10 @@ import android.view.View;
 import androidx.core.content.FileProvider;
 import androidx.exifinterface.media.ExifInterface;
 
+import com.finalsoft.SharedStorage;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -68,7 +71,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             ID_RECORD_VIDEO = 4;
 
     public BaseFragment parentFragment;
-    private ImageUpdaterDelegate delegate;
+    public ImageUpdaterDelegate delegate;
     private ChatAttachAlert chatAttachAlert;
 
     private int currentAccount = UserConfig.selectedAccount;
@@ -231,6 +234,12 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         uploadAfterSelect = value;
     }
 
+    LaunchActivity launchActivity;
+
+    public void init(LaunchActivity launchActivity) {
+        this.launchActivity = launchActivity;
+    }
+
     public void onResume() {
         if (chatAttachAlert != null) {
             chatAttachAlert.onResume();
@@ -258,7 +267,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     }
 
     public void openSearch() {
-        if (parentFragment == null) {
+        if (parentFragment == null && launchActivity == null) {
             return;
         }
         final HashMap<Object, Object> photos = new HashMap<>();
@@ -317,9 +326,14 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         if (showingFromDialog) {
             parentFragment.showAsSheet(fragment);
         } else {
+            if (launchActivity!=null){
+                launchActivity.presentFragment(fragment);
+                return;
+            }
             parentFragment.presentFragment(fragment);
         }
     }
+
 
     private void openAttachMenu(DialogInterface.OnDismissListener onDismissListener) {
         if (parentFragment == null || parentFragment.getParentActivity() == null) {
@@ -918,4 +932,6 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     public void setShowingFromDialog(boolean b) {
         showingFromDialog = b;
     }
+
+
 }

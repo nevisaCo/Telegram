@@ -16,6 +16,13 @@
  */
 package org.telegram.messenger.time;
 
+import android.util.Log;
+
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.helper.PersianCalender;
+import com.finalsoft.ui.settings.ChatSettingActivity;
+
 import java.text.DateFormat;
 import java.text.FieldPosition;
 import java.text.Format;
@@ -91,6 +98,7 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
             return new FastDateFormat(pattern, timeZone, locale);
         }
     };
+    private static final String TAG = Config.TAG + "fdf";
 
     private final FastDatePrinter printer;
     private final FastDateParser parser;
@@ -418,7 +426,7 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
      */
     @Override
     public String format(final long millis) {
-        return printer.format(millis);
+        return native_date ? nativeDate(millis) : printer.format(millis);
     }
 
     /**
@@ -429,8 +437,33 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
      */
     @Override
     public String format(final Date date) {
-        return printer.format(date);
+        return native_date ? nativeDate(date) : printer.format(date);
     }
+
+    //region Customized: native calendar
+    boolean native_date = SharedStorage.selectedCalendar() == ChatSettingActivity.IRANIAN;
+
+    static PersianCalender persianCalender = new PersianCalender();
+
+    private String nativeDate(long millis) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(millis);
+        return nativeDate(calendar);
+    }
+
+    private String nativeDate(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return nativeDate(calendar);
+    }
+
+    private String nativeDate(Calendar calendar) {
+        String p = getPattern();
+        String d = persianCalender.getDate(calendar, p);
+        Log.i(TAG, "nativeDate: format:" + p + " --- > " + d);
+        return d;
+    }
+    //endregion
 
     /**
      * <p>Formats a {@code Calendar} object.</p>
@@ -440,7 +473,7 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
      */
     @Override
     public String format(final Calendar calendar) {
-        return printer.format(calendar);
+        return native_date ? nativeDate(calendar) : printer.format(calendar);
     }
 
     /**
@@ -454,6 +487,7 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
      */
     @Override
     public StringBuffer format(final long millis, final StringBuffer buf) {
+        Log.i(TAG, "format: buffer:" + buf);
         return printer.format(millis, buf);
     }
 
@@ -609,5 +643,9 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
      */
     protected StringBuffer applyRules(final Calendar calendar, final StringBuffer buf) {
         return printer.applyRules(calendar, buf);
+    }
+
+    public void updateCalendar() {
+        native_date = SharedStorage.selectedCalendar() == ChatSettingActivity.IRANIAN;
     }
 }

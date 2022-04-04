@@ -98,5 +98,65 @@
 -dontwarn javax.annotation.**
 
 # Use -keep to explicitly keep any other classes shrinking would remove
--dontoptimize
--dontobfuscate
+#-dontoptimize
+#-dontobfuscate
+-keepclasseswithmembernames class * { native <methods>; }
+-keepattributes SourceFile
+
+-keep class org.apache.http.** { *; }
+-keep interface org.apache.http.** { *; }
+-dontwarn org.apache.http.**
+
+-keep class androidx.** { *; }
+-keep interface androidx.** { *; }
+-dontwarn androidx.**
+
+-keep class com.google.** { *; }
+-keep interface com.google.** { *; }
+-dontwarn com.google.**
+
+-keep class org.checkerframework.** { *; }
+-keep class net.hockeyapp.android.** { *; }
+-keep class com.googlecode.** { *; }
+-keep class com.stripe.** { *; }
+
+-keep class org.telegram.messenger.** { *; }
+-keep class org.telegram.PhoneFormat.** { *; }
+-keep class org.telegram.SQLite.** { *; }
+-keep class org.telegram.tgnet.** { *; }
+-dontwarn org.telegram.messenger.**
+-dontwarn org.telegram.PhoneFormat.**
+-dontwarn org.telegram.SQLite.**
+-dontwarn org.telegram.tgnet.**
+-keep class org.telegram.ui.ActionBar.** { *; }
+-keep class org.telegram.ui.Components.** { *; }
+-keep class org.telegram.ui.ProfileActivity.** { *; }
+-keep class org.telegram.ui.PhotoViewer.** { *; }
+-keepclassmembers class org.telegram.ui.NotificationsSettingsActivity { <fields>; }
+-keepclassmembers class org.telegram.ui.PrivacySettingsActivity { <fields>; }
+-keepclassmembers class org.telegram.ui.DataSettingsActivity { <fields>; }
+-keepclassmembers class org.telegram.ui.ThemeActivity { <fields>; }
+-keepclassmembers class org.telegram.ui.CacheControlActivity { <fields>; }
+-keepclassmembers class org.telegram.ui.StickersActivity { <fields>; }
+
+#-keepclassmembers class turbogram.SettingsGeneralActivity { <fields>; }
+#-keepclassmembers class turbogram.SettingsDialogsActivity { <fields>; }
+#-keepclassmembers class turbogram.SettingsMessagesActivity { <fields>; }
+#-keepclassmembers class turbogram.SettingsProfileActivity { <fields>; }
+#-keepclassmembers class turbogram.SettingsContactsActivity { <fields>; }
+#-keepclassmembers class turbogram.StorageSettingsActivity { <fields>; }
+#-keepclassmembers class turbogram.ToastSettingsActivity { <fields>; }
+#-keepclassmembers class turbogram.BackupRestoreActivity { <fields>; }
+#-keepclassmembers class turbogram.ToolbarSettingsActivity { <fields>; }
+#-keepclassmembers class turbogram.ChatbarSettingsActivity { <fields>; }
+#-keepclassmembers class turbogram.EmojiSettingsActivity { <fields>; }
+#-keepclassmembers class turbogram.ForwardSettingsActivity { <fields>; }
+#-keep class turbogram.Components.Fam.** { *; }
+#-dontwarn turbogram.Components.Fam.**
+
+-keep class com.airbnb.** { *; }
+-keep class com.magnetadservices.sdk.** { *; }
+-keep class !com.google.android.gms.ads.** { *; }
+
+-keep class de.jurihock.** { *; }
+-dontwarn de.jurihock.**

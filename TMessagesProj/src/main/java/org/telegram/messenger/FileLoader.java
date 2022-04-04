@@ -9,8 +9,12 @@
 package org.telegram.messenger;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
+
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
 
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -30,8 +34,11 @@ public class FileLoader extends BaseController {
     public interface FileLoaderDelegate {
         void fileUploadProgressChanged(FileUploadOperation operation, String location, long uploadedSize, long totalSize, boolean isEncrypted);
         void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv, long totalFileSize);
+
         void fileDidFailedUpload(String location, boolean isEncrypted);
+
         void fileDidLoaded(String location, File finalFile, int type);
+
         void fileDidFailedLoad(String location, int state);
         void fileLoadProgressChanged(FileLoadOperation operation, String location, long uploadedSize, long totalSize);
     }
@@ -86,6 +93,7 @@ public class FileLoader extends BaseController {
     private ConcurrentHashMap<Integer, Object> parentObjectReferences = new ConcurrentHashMap<>();
 
     private static volatile FileLoader[] Instance = new FileLoader[UserConfig.MAX_ACCOUNT_COUNT];
+
     public static FileLoader getInstance(int num) {
         FileLoader localInstance = Instance[num];
         if (localInstance == null) {
@@ -413,15 +421,15 @@ public class FileLoader extends BaseController {
                 int index = downloadQueue.indexOf(operation);
                 if (index >= 0) {
                     downloadQueue.remove(index);
-                        if (operation.start()) {
-                            count.put(datacenterId, count.get(datacenterId) + 1);
+                    if (operation.start()) {
+                        count.put(datacenterId, count.get(datacenterId) + 1);
+                    }
+                    if (queueType == QUEUE_TYPE_FILE) {
+                        if (operation.wasStarted() && !activeFileLoadOperation.contains(operation)) {
+                            pauseCurrentFileLoadOperations(operation);
+                            activeFileLoadOperation.add(operation);
                         }
-                        if (queueType == QUEUE_TYPE_FILE) {
-                            if (operation.wasStarted() && !activeFileLoadOperation.contains(operation)) {
-                                pauseCurrentFileLoadOperations(operation);
-                                activeFileLoadOperation.add(operation);
-                            }
-                        }
+                    }
                 } else {
                     pauseCurrentFileLoadOperations(operation);
                     operation.start();
@@ -822,7 +830,7 @@ public class FileLoader extends BaseController {
         final CountDownLatch semaphore = new CountDownLatch(1);
         final FileLoadOperation[] result = new FileLoadOperation[1];
         fileLoaderQueue.postRunnable(() -> {
-            result[0] = loadFileInternal(document, null, null, document == null && location != null ? location.location : null, location, parentObject, document == null && location != null ? "mp4" : null, document == null && location != null ? location.currentSize : 0, 1, stream, offset, priority,  document == null ? 1 : 0);
+            result[0] = loadFileInternal(document, null, null, document == null && location != null ? location.location : null, location, parentObject, document == null && location != null ? "mp4" : null, document == null && location != null ? location.currentSize : 0, 1, stream, offset, priority, document == null ? 1 : 0);
             semaphore.countDown();
         });
         try {
@@ -1196,7 +1204,7 @@ public class FileLoader extends BaseController {
         return getAttachFileName(attach, null);
     }
 
-    public static String getAttachFileName(TLObject attach, String ext) {
+    public static String getAttachFileName(TLObject attach, String ext, boolean fake) {
         return getAttachFileName(attach, null, ext);
     }
 
@@ -1221,6 +1229,7 @@ public class FileLoader extends BaseController {
             }
         } else if (attach instanceof SecureDocument) {
             SecureDocument secureDocument = (SecureDocument) attach;
+
             return secureDocument.secureFile.dc_id + "_" + secureDocument.secureFile.id + ".jpg";
         } else if (attach instanceof TLRPC.TL_secureFile) {
             TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) attach;
@@ -1437,4 +1446,37 @@ public class FileLoader extends BaseController {
     public void clearRecentDownloadedFiles() {
         getDownloadController().clearRecentDownloadedFiles();
     }
+
+
+    //region customized:
+    static boolean keepOriginalFileName = SharedStorage.keepOriginalFileName();
+    private static final String TAG = Config.TAG + "fl";
+
+    public static String getAttachFileName(TLObject attach, String ext) {
+        if (keepOriginalFileName) {
+            try {
+                if (attach instanceof TLRPC.Document) {
+                    TLRPC.Document document = (TLRPC.Document) attach;
+                    String ofn = getDocumentFileName(document);
+                    if (ofn != null && !ofn.isEmpty()) {
+                        Log.d(TAG, "getAttachFileName: file name:" + ofn);
+                        return ofn;
+                    }
+                }
+                if (attach instanceof TLRPC.Document) {
+
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "getAttachFileName: ", e);
+            }
+        }
+        String fn = getAttachFileName(attach, ext, false);
+/*        String scn = "";
+        if (attach != null && attach.getClass() != null) {
+            scn = attach.getClass().getName() + " > ";
+        }
+        Log.d(TAG, "getAttachFileName: return original file name! , " + scn + fn);*/
+        return fn;
+    }
+    //endregion
 }

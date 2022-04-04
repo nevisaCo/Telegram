@@ -363,6 +363,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
+            public void didPressAttachButton() {
+
+            }
+
+            @Override
             public void needSendTyping() {
                 if (currentMessageObject != null) {
                     MessagesController.getInstance(currentMessageObject.currentAccount).sendTyping(currentMessageObject.getDialogId(), 0, 0, classGuid);
@@ -390,7 +395,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void didPressAttachButton() {
+            public void didPressedVoice2TextButton() {
 
             }
 
@@ -417,6 +422,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             @Override
             public void onUpdateSlowModeButton(View button, boolean show, CharSequence time) {
 
+            }
+
+            @Override
+            public boolean didLongPressedVoice2TextButton() {
+                return false;
             }
 
             @Override

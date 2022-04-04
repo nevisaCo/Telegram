@@ -31,6 +31,7 @@ import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -50,6 +51,8 @@ import android.widget.TextView;
 
 import androidx.annotation.IdRes;
 import androidx.core.os.CancellationSignal;
+
+import com.finalsoft.Config;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -803,7 +806,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 onPasscodeError();
                 return;
             }
-            if (!SharedConfig.checkPasscode(password)) {
+            if (!SharedConfig.checkPasscode(password , hideMode)) {
                 SharedConfig.increaseBadPasscodeTries();
                 if (SharedConfig.passcodeRetryInMs > 0) {
                     checkRetryTextView();
@@ -1099,7 +1102,6 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             }
         }
     }
-
     public void onShow(boolean fingerprint, boolean animated) {
         onShow(fingerprint, animated, -1, -1, null, null);
     }
@@ -1135,8 +1137,14 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             numberFrameLayouts.get(11).setVisibility(fingerprintView.getVisibility());
         }
     }
-
+    private boolean hideMode = false;
     public void onShow(boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {
+        onShow(false,fingerprint,animated,x,y,onShow,onStart);
+    }
+
+    public void onShow(boolean hideMode,boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {
+        this.hideMode = hideMode;
+        Log.i(Config.TAG + "pass", "onShow: hidemode:"+hideMode);
         checkFingerprintButton();
         checkRetryTextView();
         Activity parentActivity = (Activity) getContext();

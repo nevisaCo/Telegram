@@ -43,6 +43,8 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
+import com.finalsoft.SharedStorage;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -232,12 +234,19 @@ public class ProxySettingsActivity extends BaseFragment {
                         enabled = preferences.getBoolean("proxy_enabled", false);
                         SharedConfig.saveProxyList();
                     }
+
+                    SharedStorage.proxyCustomStatus(addingNewProxy);//customized:
+
                     if (addingNewProxy || SharedConfig.currentProxy == currentProxyInfo) {
                         editor.putString("proxy_ip", currentProxyInfo.address);
                         editor.putString("proxy_pass", currentProxyInfo.password);
                         editor.putString("proxy_user", currentProxyInfo.username);
                         editor.putInt("proxy_port", currentProxyInfo.port);
                         editor.putString("proxy_secret", currentProxyInfo.secret);
+                        editor.putBoolean("proxy_limit", false);
+                        editor.putBoolean("proxy_show_sponsor", false);
+                        editor.putInt("proxy_points", 0);
+                        editor.putString("proxy_name", currentProxyInfo.name);
                         ConnectionsManager.setProxySettings(enabled, currentProxyInfo.address, currentProxyInfo.port, currentProxyInfo.username, currentProxyInfo.password, currentProxyInfo.secret);
                     }
                     editor.commit();

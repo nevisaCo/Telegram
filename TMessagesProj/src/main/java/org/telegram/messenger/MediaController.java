@@ -58,6 +58,7 @@ import android.view.WindowManager;
 import android.webkit.MimeTypeMap;
 import android.widget.FrameLayout;
 
+import com.finalsoft.SharedStorage;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
@@ -858,7 +859,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         recordQueue.postRunnable(() -> {
             try {
-                sampleRate = 16000;
+                sampleRate = BuildVars.VOICE_CHANGER_FEATURE ? SharedStorage.voiceBitRate() : 16000;
                 int minBuferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
                 if (minBuferSize <= 0) {
                     minBuferSize = 1280;
@@ -4961,7 +4962,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         void didWriteData(long availableSize, float progress);
     }
-
+    public void setBitRate(int bitRate) {
+        sampleRate = bitRate;
+    }
     public static class PlaylistGlobalSearchParams {
         final String query;
         final FiltersView.MediaFilterData filter;

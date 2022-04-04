@@ -28,6 +28,8 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
+import android.util.Base64;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -50,7 +52,17 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -102,9 +114,11 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     @IntDef({
             TYPE_MANAGE_CODE_SETTINGS,
             TYPE_SETUP_CODE,
-            TYPE_ENTER_CODE_TO_MANAGE_SETTINGS
+            TYPE_ENTER_CODE_TO_MANAGE_SETTINGS,
+            TYPE_HIDE
     })
-    public @interface PasscodeActivityType {}
+    public @interface PasscodeActivityType {
+    }
 
     private final static int ID_SWITCH_TYPE = 1;
 
@@ -159,12 +173,17 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         AndroidUtilities.updateViewVisibilityAnimated(passcodesDoNotMatchTextView, false);
     };
 
+
     private Runnable onShowKeyboardCallback;
 
     public PasscodeActivity(@PasscodeActivityType int type) {
         super();
         this.type = type;
+        if (type == TYPE_HIDE) {
+            hideMode = true;
+        }
     }
+
 
     @Override
     public boolean onFragmentCreate() {
@@ -298,7 +317,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                                     finishFragment();
                                 }).create();
                         alertDialog.show();
-                        ((TextView)alertDialog.getButton(Dialog.BUTTON_POSITIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                        ((TextView) alertDialog.getButton(Dialog.BUTTON_POSITIVE)).setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                     } else if (position == changePasscodeRow) {
                         presentFragment(new PasscodeActivity(TYPE_SETUP_CODE));
                     } else if (position == autoLockRow) {
@@ -393,7 +412,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                                 finishFragment();
                             } else if (id == ID_SWITCH_TYPE) {
                                 currentPasswordType = currentPasswordType == SharedConfig.PASSCODE_TYPE_PIN ? SharedConfig.PASSCODE_TYPE_PASSWORD : SharedConfig.PASSCODE_TYPE_PIN;
-                                AndroidUtilities.runOnUIThread(()->{
+                                AndroidUtilities.runOnUIThread(() -> {
                                     switchItem.setText(LocaleController.getString(currentPasswordType == SharedConfig.PASSCODE_TYPE_PIN ? R.string.PasscodeSwitchToPassword : R.string.PasscodeSwitchToPIN));
                                     switchItem.setIcon(currentPasswordType == SharedConfig.PASSCODE_TYPE_PIN ? R.drawable.msg_permissions : R.drawable.msg_pin_code);
                                     showKeyboard();
@@ -519,10 +538,12 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 AtomicBoolean isPasswordShown = new AtomicBoolean(false);
                 passwordEditText.addTextChangedListener(new TextWatcher() {
                     @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    }
 
                     @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
                     @Override
                     public void afterTextChanged(Editable s) {
@@ -573,10 +594,12 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     }
 
                     @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
                     @Override
-                    public void afterTextChanged(Editable s) {}
+                    public void afterTextChanged(Editable s) {
+                    }
                 });
 
                 passwordEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
@@ -600,7 +623,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     @Override
                     protected void processNextPressed() {
                         if (passcodeSetStep == 0) {
-                            postDelayed(()->processNext(), 260);
+                            postDelayed(() -> processNext(), 260);
                         } else {
                             processDone();
                         }
@@ -621,10 +644,12 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         }
 
                         @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        }
 
                         @Override
-                        public void afterTextChanged(Editable s) {}
+                        public void afterTextChanged(Editable s) {
+                        }
                     });
                     f.setOnFocusChangeListener((v, hasFocus) -> {
                         keyboardView.setEditText(f);
@@ -701,8 +726,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     /**
      * Sets custom keyboard visibility
      *
-     * @param visible   If it should be visible
-     * @param animate   If change should be animated
+     * @param visible If it should be visible
+     * @param animate If change should be animated
      */
     private void setCustomKeyboardVisible(boolean visible, boolean animate) {
         if (visible) {
@@ -748,8 +773,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     /**
      * Sets floating button visibility
      *
-     * @param visible   If it should be visible
-     * @param animate   If change should be animated
+     * @param visible If it should be visible
+     * @param animate If change should be animated
      */
     private void setFloatingButtonVisible(boolean visible, boolean animate) {
         if (floatingButtonAnimator != null) {
@@ -808,7 +833,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         }
         for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
             CodeNumberField field = codeFieldContainer.codeField[i];
-            field.postDelayed(()-> field.animateSuccessProgress(1f), i * 75L);
+            field.postDelayed(() -> field.animateSuccessProgress(1f), i * 75L);
         }
         codeFieldContainer.postDelayed(() -> {
             for (CodeNumberField f : codeFieldContainer.codeField) {
@@ -1002,7 +1027,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 onPasscodeError();
 
                 codeFieldContainer.removeCallbacks(hidePasscodesDoNotMatch);
-                codeFieldContainer.post(()->{
+                codeFieldContainer.post(() -> {
                     codeFieldContainer.postDelayed(hidePasscodesDoNotMatch, 3000);
                     postedHidePasscodesDoNotMatch = true;
                 });
@@ -1011,6 +1036,30 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
             boolean isFirst = SharedConfig.passcodeHash.length() == 0;
             try {
+                //region Customized: hidden mode
+                if (hideMode) {
+                    byte[] salt = new byte[16];
+                    Utilities.random.nextBytes(salt);
+                    byte[] passcodeBytes = firstPassword.getBytes("UTF-8");
+                    byte[] bytes = new byte[32 + passcodeBytes.length];
+                    System.arraycopy(salt, 0, bytes, 0, 16);
+                    System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+                    System.arraycopy(salt, 0, bytes, passcodeBytes.length + 16, 16);
+
+                    String s = String.format("%s,%s",
+                            Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length)),
+                            Base64.encodeToString(salt, Base64.DEFAULT));
+                    SharedStorage.hiddenModePassCode(s);
+                    Log.i(TAG, "processDone: pass:" + s);
+                    getMediaDataController().buildShortcuts();
+                    finishFragment();
+//                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
+                    passwordEditText.clearFocus();
+                    AndroidUtilities.hideKeyboard(passwordEditText);
+                    return;
+                }
+                //endregion
+
                 SharedConfig.passcodeSalt = new byte[16];
                 Utilities.random.nextBytes(SharedConfig.passcodeSalt);
                 byte[] passcodeBytes = firstPassword.getBytes("UTF-8");
@@ -1091,7 +1140,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         if (getParentActivity() == null) return;
         try {
             fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         if (isPinCode()) {
             for (CodeNumberField f : codeFieldContainer.codeField) {
                 f.animateErrorProgress(1f);
@@ -1099,7 +1149,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         } else {
             outlinePasswordView.animateError(1f);
         }
-        AndroidUtilities.shakeViewSpring(isPinCode() ? codeFieldContainer : outlinePasswordView, isPinCode() ? 10 : 4, () -> AndroidUtilities.runOnUIThread(()->{
+        AndroidUtilities.shakeViewSpring(isPinCode() ? codeFieldContainer : outlinePasswordView, isPinCode() ? 10 : 4, () -> AndroidUtilities.runOnUIThread(() -> {
             if (isPinCode()) {
                 for (CodeNumberField f : codeFieldContainer.codeField) {
                     f.animateErrorProgress(0f);
@@ -1319,4 +1369,10 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
     }
+
+    //region Customized:
+    private static final String TAG = Config.TAG + "pass";
+    private boolean hideMode = false;
+    public final static int TYPE_HIDE = 4;
+    //endregion
 }

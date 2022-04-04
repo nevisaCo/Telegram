@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import static com.finalsoft.ui.PrivacyActivity.ACTION_TYPE_PRIVACY_AGREEMENT;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -53,6 +55,7 @@ import android.text.method.PasswordTransformationMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.util.Base64;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -74,6 +77,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Space;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 import androidx.annotation.IntDef;
@@ -81,7 +85,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.proxy.Communication;
+import com.finalsoft.proxy.ProxyController;
+import com.finalsoft.ui.PrivacyActivity;
+
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -100,11 +111,15 @@ import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -116,6 +131,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.CustomPhoneKeyboardView;
@@ -126,6 +142,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.ProxyDrawable;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SimpleThemeDescription;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -155,7 +172,9 @@ import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressLint("HardwareIds")
-public class LoginActivity extends BaseFragment {
+public class LoginActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+    private static final String TAG = Config.TAG + "logina";
+
     private final static int SHOW_DELAY = SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_AVERAGE ? 150 : 100;
 
     public final static int AUTH_TYPE_MESSAGE = 1,
@@ -189,7 +208,8 @@ public class LoginActivity extends BaseFragment {
             AUTH_TYPE_CALL,
             AUTH_TYPE_MISSED_CALL
     })
-    public @interface AuthType {}
+    public @interface AuthType {
+    }
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
@@ -206,14 +226,16 @@ public class LoginActivity extends BaseFragment {
             VIEW_NEW_PASSWORD_STAGE_2,
             VIEW_CODE_MISSED_CALL
     })
-    private @interface ViewNumber {}
+    private @interface ViewNumber {
+    }
 
     @IntDef({
             COUNTRY_STATE_NOT_SET_OR_VALID,
             COUNTRY_STATE_EMPTY,
             COUNTRY_STATE_INVALID
     })
-    private @interface CountryState {}
+    private @interface CountryState {
+    }
 
     @ViewNumber
     private int currentViewNum;
@@ -245,7 +267,7 @@ public class LoginActivity extends BaseFragment {
     private VerticalPositionAutoAnimator floatingAutoAnimator;
     private RadialProgressView floatingProgressView;
     private int progressRequestId;
-    private boolean[] doneButtonVisible = new boolean[] {true, false};
+    private boolean[] doneButtonVisible = new boolean[]{true, false};
 
     private AlertDialog cancelDeleteProgressDialog;
 
@@ -367,6 +389,9 @@ public class LoginActivity extends BaseFragment {
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+
+        removeObserver();//customized:
+
         for (int a = 0; a < views.length; a++) {
             if (views[a] != null) {
                 views[a].onDestroyActivity();
@@ -382,6 +407,7 @@ public class LoginActivity extends BaseFragment {
             }
         }
     }
+
 
     @Override
     public View createView(Context context) {
@@ -573,6 +599,8 @@ public class LoginActivity extends BaseFragment {
         backButtonView.setPadding(padding, padding, padding, padding);
         sizeNotifierFrameLayout.addView(backButtonView, LayoutHelper.createFrame(32, 32, Gravity.LEFT | Gravity.TOP, 16, 16, 0, 0));
 
+        initActionBarMenuItems(context);
+
         radialProgressView = new RadialProgressView(context);
         radialProgressView.setSize(AndroidUtilities.dp(20));
         radialProgressView.setAlpha(0);
@@ -640,6 +668,7 @@ public class LoginActivity extends BaseFragment {
 
         return fragmentView;
     }
+
 
     private boolean isCustomKeyboardForceDisabled() {
         return AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y || AndroidUtilities.isTablet() || AndroidUtilities.isAccessibilityTouchExplorationEnabled();
@@ -763,7 +792,7 @@ public class LoginActivity extends BaseFragment {
         if (requestCode == 6) {
             checkPermissions = false;
             if (currentViewNum == VIEW_PHONE_INPUT) {
-                ((PhoneView)views[currentViewNum]).confirmedNumber = true;
+                ((PhoneView) views[currentViewNum]).confirmedNumber = true;
                 views[currentViewNum].onNextPressed(null);
             }
         } else if (requestCode == BasePermissionsActivity.REQUEST_CODE_CALLS) {
@@ -939,7 +968,7 @@ public class LoginActivity extends BaseFragment {
                 TextWatcher textWatcher = new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                        editText.post(()-> {
+                        editText.post(() -> {
                             editText.removeTextChangedListener(this);
                             editText.removeCallbacks(timeoutCallbackRef.get());
                             timeoutCallbackRef.get().run();
@@ -947,10 +976,12 @@ public class LoginActivity extends BaseFragment {
                     }
 
                     @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
                     @Override
-                    public void afterTextChanged(Editable s) {}
+                    public void afterTextChanged(Editable s) {
+                    }
                 };
 
                 outlineTextContainerView.animateError(1f);
@@ -958,7 +989,7 @@ public class LoginActivity extends BaseFragment {
                     outlineTextContainerView.animateError(0f);
                     view.setTag(R.id.timeout_callback, null);
                     if (editText != null) {
-                        editText.post(()-> editText.removeTextChangedListener(textWatcher));
+                        editText.post(() -> editText.removeTextChangedListener(textWatcher));
                     }
                 };
                 timeoutCallbackRef.set(timeoutCallback);
@@ -1934,7 +1965,7 @@ public class LoginActivity extends BaseFragment {
                 });
             }
 
-            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+            if (/*BuildVars.DEBUG_PRIVATE_VERSION*/true) {
                 testBackendCheckBox = new CheckBoxCell(context, 2);
                 testBackendCheckBox.setText("Test Backend", "", testBackend, false);
                 addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? Build.VERSION.SDK_INT >= 21 ? 56 : 60 : 0), 0));
@@ -1953,6 +1984,67 @@ public class LoginActivity extends BaseFragment {
                 bottomSpacer.setMinimumHeight(AndroidUtilities.dp(bottomMargin));
                 addView(bottomSpacer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
             }
+
+
+            //region Refresh Proxy
+            if (BuildVars.LOGIN_PROXY_CHECKBOX_FEATURE) {
+                try {
+                    CheckBoxCell checkBox = new CheckBoxCell(context, 2);
+
+                    checkBox.setText(LocaleController.getString("UseProxySettings", R.string.UseProxySettings), "", SharedStorage.proxyServer() && SharedStorage.proxyCustomStatus(), false);
+                    addView(checkBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 5, 0, 10));
+                    checkBox.setOnClickListener(view -> {
+                        boolean status = !SharedStorage.proxyServer();
+                        SharedStorage.proxyServer(status);
+                        SharedStorage.proxyCustomStatus(status);
+
+                        SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
+                        editor.putBoolean("proxy_enabled", status);
+                        editor.apply();
+
+
+                        checkBox.setChecked(status, true);
+                        if (status) {
+                            ProxyController.getInstance().change("login- enabled proxy server");
+                        } else {
+                            ConnectionsManager.setProxySettings(false, "", 1080, "", "", "");
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+                        }
+
+                    });
+                    TextView txtInfo = new TextView(context);
+                    txtInfo.setText(LocaleController.getString("UseProxyServerInfo", R.string.UseProxyServerInfo));
+                    txtInfo.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+                    txtInfo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                    txtInfo.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+                    txtInfo.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+                    addView(txtInfo, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 0, 80, 10));
+                } catch (Exception e) {
+                    Log.e(TAG, "PhoneView > proxy server ui error:", e);
+                }
+            }
+
+
+            if (BuildVars.BIG_REFRESH_LOGIN_FEATURE) {
+                imgRefreshProxy = new ImageView(context);
+                addView(imgRefreshProxy, LayoutHelper.createLinear(110,
+                        110, Gravity.CENTER_HORIZONTAL,
+                        0, 28, 0, 10));
+                imgRefreshProxy.setOnClickListener(view -> doRefreshOfflineProxy());
+                imgRefreshProxy.setColorFilter(Theme.getColor(Theme.key_actionBarDefault));
+
+                refreshStatus = new TextView(context);
+                refreshStatus.setTextColor(Theme.getColor(Theme.key_wallet_redText));
+                refreshStatus.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                refreshStatus.setGravity(Gravity.CENTER_HORIZONTAL);
+                refreshStatus.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+                addView(refreshStatus, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
+                        Gravity.CENTER_HORIZONTAL,
+                        0, 5, 0, 10));
+                doRefreshUi(-1);
+            }
+
+            //endregion
 
             HashMap<String, String> languageMap = new HashMap<>();
 
@@ -2036,11 +2128,14 @@ public class LoginActivity extends BaseFragment {
 
                                 countriesArray.add(countryWithCode);
                                 codesMap.put(c.country_codes.get(k).country_code, countryWithCode);
+
                                 if (c.country_codes.get(k).patterns.size() > 0) {
                                     phoneFormatMap.put(c.country_codes.get(k).country_code, c.country_codes.get(k).patterns);
                                 }
                             }
                         }
+
+                        initTestNumber();
                     }
                 });
             }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -2100,6 +2195,21 @@ public class LoginActivity extends BaseFragment {
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         }
 
+        //region customized:
+        private void initTestNumber() {
+            CountrySelectActivity.Country countryWithCode = new CountrySelectActivity.Country();
+            countryWithCode.name = "Test Number";
+            countryWithCode.code = "999";
+            countryWithCode.shortname = "TG";
+
+            countriesArray.add(countryWithCode);
+
+            codesMap.put("999", countryWithCode);
+
+            phoneFormatMap.put("999", Collections.singletonList("-- - ----"));
+        }
+        //endregion
+
         public void selectCountry(CountrySelectActivity.Country country) {
             ignoreOnTextChange = true;
             String code = country.code;
@@ -2122,7 +2232,8 @@ public class LoginActivity extends BaseFragment {
                     }
 
                     @Override
-                    public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {}
+                    public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+                    }
                 }, flag.length(), flag.length() + 1, 0);
             }
             sb.append(country.name);
@@ -2202,7 +2313,7 @@ public class LoginActivity extends BaseFragment {
             String phoneCode = codeField.getText().toString();
             if (!confirmedNumber) {
                 if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y && !isCustomKeyboardVisible() && sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
-                    keyboardHideCallback = () -> postDelayed(()-> onNextPressed(code), 200);
+                    keyboardHideCallback = () -> postDelayed(() -> onNextPressed(code), 200);
                     AndroidUtilities.hideKeyboard(fragmentView);
                     return;
                 }
@@ -2237,7 +2348,8 @@ public class LoginActivity extends BaseFragment {
                             boolean allowCall = getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
                             boolean allowCancelCall = getParentActivity().checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED;
                             boolean allowReadCallLog = Build.VERSION.SDK_INT < Build.VERSION_CODES.P || getParentActivity().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
-                            boolean allowReadPhoneNumbers = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED;;
+                            boolean allowReadPhoneNumbers = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getParentActivity().checkSelfPermission(Manifest.permission.READ_PHONE_NUMBERS) == PackageManager.PERMISSION_GRANTED;
+                            ;
                             if (checkPermissions) {
                                 permissionsItems.clear();
                                 if (!allowCall) {
@@ -2285,9 +2397,9 @@ public class LoginActivity extends BaseFragment {
                             }
                         }
 
-                        confirmView.animateProgress(()->{
+                        confirmView.animateProgress(() -> {
                             confirmView.dismiss();
-                            AndroidUtilities.runOnUIThread(()-> {
+                            AndroidUtilities.runOnUIThread(() -> {
                                 onNextPressed(code);
                                 floatingProgressView.sync(confirmView.floatingProgressView);
                             }, 150);
@@ -2372,7 +2484,7 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
-            boolean testBackend = BuildVars.DEBUG_PRIVATE_VERSION && getConnectionsManager().isTestBackend();
+            boolean testBackend = /*BuildVars.DEBUG_PRIVATE_VERSION &&*/ getConnectionsManager().isTestBackend();
             if (testBackend != LoginActivity.this.testBackend) {
                 getConnectionsManager().switchBackend(false);
                 testBackend = LoginActivity.this.testBackend;
@@ -2517,6 +2629,7 @@ public class LoginActivity extends BaseFragment {
         }
 
         private boolean numberFilled;
+
         public void fillNumber() {
             if (numberFilled) {
                 return;
@@ -2887,7 +3000,7 @@ public class LoginActivity extends BaseFragment {
             timeText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(10));
             timeText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             timeText.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-            timeText.setOnClickListener(v-> {
+            timeText.setOnClickListener(v -> {
                 if (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_MISSED_CALL) {
                     timeText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
                     if (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_MISSED_CALL) {
@@ -2976,7 +3089,7 @@ public class LoginActivity extends BaseFragment {
                     new AlertDialog.Builder(context)
                             .setTitle(LocaleController.getString(R.string.RestorePasswordNoEmailTitle))
                             .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("DidNotGetTheCodeInfo", R.string.DidNotGetTheCodeInfo, phone)))
-                            .setNeutralButton(LocaleController.getString(R.string.DidNotGetTheCodeHelpButton), (dialog, which)->{
+                            .setNeutralButton(LocaleController.getString(R.string.DidNotGetTheCodeHelpButton), (dialog, which) -> {
                                 try {
                                     PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
                                     String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
@@ -2992,7 +3105,7 @@ public class LoginActivity extends BaseFragment {
                                 }
                             })
                             .setPositiveButton(LocaleController.getString(R.string.Close), null)
-                            .setNegativeButton(LocaleController.getString(R.string.DidNotGetTheCodeEditNumberButton), (dialog, which)-> setPage(VIEW_PHONE_INPUT, true, null, true))
+                            .setNegativeButton(LocaleController.getString(R.string.DidNotGetTheCodeEditNumberButton), (dialog, which) -> setPage(VIEW_PHONE_INPUT, true, null, true))
                             .show();
                 }
             });
@@ -3021,7 +3134,8 @@ public class LoginActivity extends BaseFragment {
             }
 
             String timeTextColorTag = (String) timeText.getTag();
-            if (timeTextColorTag == null) timeTextColorTag = Theme.key_windowBackgroundWhiteGrayText6;
+            if (timeTextColorTag == null)
+                timeTextColorTag = Theme.key_windowBackgroundWhiteGrayText6;
             timeText.setTextColor(Theme.getColor(timeTextColorTag));
 
             problemText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
@@ -3094,11 +3208,11 @@ public class LoginActivity extends BaseFragment {
                 }
                 isDotsAnimationVisible = true;
                 if (hintDrawable.getCurrentFrame() != hintDrawable.getFramesCount() - 1) {
-                    hintDrawable.setOnAnimationEndListener(()-> AndroidUtilities.runOnUIThread(()-> tryShowProgress(reqId, animate)));
+                    hintDrawable.setOnAnimationEndListener(() -> AndroidUtilities.runOnUIThread(() -> tryShowProgress(reqId, animate)));
                     return;
                 }
 
-                starsToDotsDrawable.setOnAnimationEndListener(()-> AndroidUtilities.runOnUIThread(()->{
+                starsToDotsDrawable.setOnAnimationEndListener(() -> AndroidUtilities.runOnUIThread(() -> {
                     blueImageView.setAutoRepeat(true);
                     dotsDrawable.setCurrentFrame(0, false);
                     dotsDrawable.setAutoRepeat(1);
@@ -3126,8 +3240,8 @@ public class LoginActivity extends BaseFragment {
                 isDotsAnimationVisible = false;
                 blueImageView.setAutoRepeat(false);
                 dotsDrawable.setAutoRepeat(0);
-                dotsDrawable.setOnFinishCallback(()-> AndroidUtilities.runOnUIThread(()->{
-                    dotsToStarsDrawable.setOnAnimationEndListener(()-> AndroidUtilities.runOnUIThread(()->{
+                dotsDrawable.setOnFinishCallback(() -> AndroidUtilities.runOnUIThread(() -> {
+                    dotsToStarsDrawable.setOnAnimationEndListener(() -> AndroidUtilities.runOnUIThread(() -> {
                         blueImageView.setAutoRepeat(false);
                         blueImageView.setAnimation(hintDrawable);
                     }));
@@ -3200,10 +3314,12 @@ public class LoginActivity extends BaseFragment {
                     }
 
                     @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
                     @Override
-                    public void afterTextChanged(Editable s) {}
+                    public void afterTextChanged(Editable s) {
+                    }
                 });
 
                 f.setOnFocusChangeListener((v, hasFocus) -> {
@@ -3314,14 +3430,14 @@ public class LoginActivity extends BaseFragment {
 
             if (currentType == AUTH_TYPE_MISSED_CALL) {
                 String pref = prefix;
-                for  (int i = 0; i < length; i++) {
+                for (int i = 0; i < length; i++) {
                     pref += "0";
                 }
                 pref = PhoneFormat.getInstance().format("+" + pref);
-                for  (int i = 0; i < length; i++) {
+                for (int i = 0; i < length; i++) {
                     int index = pref.lastIndexOf("0");
                     if (index >= 0) {
-                        pref = pref.substring(0,  index);
+                        pref = pref.substring(0, index);
                     }
                 }
                 pref = pref.replaceAll("\\)", "");
@@ -3493,7 +3609,7 @@ public class LoginActivity extends BaseFragment {
                     tryHideProgress(false);
                     nextPressed = false;
                     if (error == null) {
-                        animateSuccess(()-> new AlertDialog.Builder(getParentActivity())
+                        animateSuccess(() -> new AlertDialog.Builder(getParentActivity())
                                 .setTitle(LocaleController.getString(R.string.CancelLinkSuccessTitle))
                                 .setMessage(LocaleController.formatString("CancelLinkSuccess", R.string.CancelLinkSuccess, PhoneFormat.getInstance().format("+" + phone)))
                                 .setPositiveButton(LocaleController.getString(R.string.Close), null)
@@ -3647,9 +3763,9 @@ public class LoginActivity extends BaseFragment {
         private void animateSuccess(Runnable callback) {
             for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
                 int finalI = i;
-                codeFieldContainer.postDelayed(()-> codeFieldContainer.codeField[finalI].animateSuccessProgress(1f), i * 75L);
+                codeFieldContainer.postDelayed(() -> codeFieldContainer.codeField[finalI].animateSuccessProgress(1f), i * 75L);
             }
-            codeFieldContainer.postDelayed(()->{
+            codeFieldContainer.postDelayed(() -> {
                 for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
                     codeFieldContainer.codeField[i].animateSuccessProgress(0f);
                 }
@@ -3661,7 +3777,8 @@ public class LoginActivity extends BaseFragment {
         private void shakeWrongCode() {
             try {
                 codeFieldContainer.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
 
             for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
                 codeFieldContainer.codeField[a].setText("");
@@ -3672,7 +3789,7 @@ public class LoginActivity extends BaseFragment {
             }
             codeFieldContainer.codeField[0].requestFocus();
             AndroidUtilities.shakeViewSpring(codeFieldContainer, currentType == AUTH_TYPE_MISSED_CALL ? 3.5f : 10f, () -> {
-                postDelayed(()-> {
+                postDelayed(() -> {
                     codeFieldContainer.isFocusSuppressed = false;
                     codeFieldContainer.codeField[0].requestFocus();
 
@@ -4463,10 +4580,12 @@ public class LoginActivity extends BaseFragment {
                     }
 
                     @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
                     @Override
-                    public void afterTextChanged(Editable s) {}
+                    public void afterTextChanged(Editable s) {
+                    }
                 });
                 f.setOnFocusChangeListener((v, hasFocus) -> {
                     if (hasFocus) {
@@ -4572,7 +4691,8 @@ public class LoginActivity extends BaseFragment {
             }
             try {
                 codeFieldContainer.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
             if (clear) {
                 for (CodeNumberField f : codeFieldContainer.codeField) {
                     f.setText("");
@@ -4583,7 +4703,7 @@ public class LoginActivity extends BaseFragment {
             }
             codeFieldContainer.codeField[0].requestFocus();
             AndroidUtilities.shakeViewSpring(codeFieldContainer, () -> {
-                postDelayed(()-> {
+                postDelayed(() -> {
                     codeFieldContainer.isFocusSuppressed = false;
                     codeFieldContainer.codeField[0].requestFocus();
 
@@ -4758,10 +4878,12 @@ public class LoginActivity extends BaseFragment {
                 boolean showPasswordButton = a == 0 && stage == 0;
                 field.addTextChangedListener(new TextWatcher() {
                     @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    }
 
                     @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
                     @Override
                     public void afterTextChanged(Editable s) {
@@ -4909,7 +5031,8 @@ public class LoginActivity extends BaseFragment {
             }
             try {
                 codeField[num].performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
             AndroidUtilities.shakeView(codeField[num], 2, 0);
         }
 
@@ -5252,7 +5375,7 @@ public class LoginActivity extends BaseFragment {
                         if (isCameraWaitAnimationAllowed && System.currentTimeMillis() - lastRun >= 10000) {
                             avatarEditor.setAnimation(cameraWaitDrawable);
                             cameraWaitDrawable.setCurrentFrame(0, false);
-                            cameraWaitDrawable.setOnAnimationEndListener(() -> AndroidUtilities.runOnUIThread(()->{
+                            cameraWaitDrawable.setOnAnimationEndListener(() -> AndroidUtilities.runOnUIThread(() -> {
                                 cameraDrawable.setCurrentFrame(0, false);
                                 avatarEditor.setAnimation(cameraDrawable);
                             }));
@@ -5616,7 +5739,7 @@ public class LoginActivity extends BaseFragment {
                         onAuthSuccess((TLRPC.TL_auth_authorization) response, true);
                         if (avatarBig != null) {
                             TLRPC.FileLocation avatar = avatarBig;
-                            Utilities.cacheClearQueue.postRunnable(()-> MessagesController.getInstance(currentAccount).uploadAndApplyUserAvatar(avatar));
+                            Utilities.cacheClearQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).uploadAndApplyUserAvatar(avatar));
                         }
                     }, 150);
                 } else {
@@ -5730,8 +5853,8 @@ public class LoginActivity extends BaseFragment {
             transformButton.setTranslationX(fromX);
             transformButton.setTranslationY(fromY);
 
-            int toX = getParentLayout().getWidth() - floatingButtonIcon.getLayoutParams().width - ((ViewGroup.MarginLayoutParams)floatingButtonContainer.getLayoutParams()).rightMargin - getParentLayout().getPaddingLeft() - getParentLayout().getPaddingRight(),
-                    toY = getParentLayout().getHeight() - floatingButtonIcon.getLayoutParams().height - ((ViewGroup.MarginLayoutParams)floatingButtonContainer.getLayoutParams()).bottomMargin -
+            int toX = getParentLayout().getWidth() - floatingButtonIcon.getLayoutParams().width - ((ViewGroup.MarginLayoutParams) floatingButtonContainer.getLayoutParams()).rightMargin - getParentLayout().getPaddingLeft() - getParentLayout().getPaddingRight(),
+                    toY = getParentLayout().getHeight() - floatingButtonIcon.getLayoutParams().height - ((ViewGroup.MarginLayoutParams) floatingButtonContainer.getLayoutParams()).bottomMargin -
                             (isCustomKeyboardVisible() ? AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP) : 0) - getParentLayout().getPaddingTop() - getParentLayout().getPaddingBottom();
 
             ValueAnimator animator = ValueAnimator.ofFloat(0, 1);
@@ -6124,8 +6247,11 @@ public class LoginActivity extends BaseFragment {
 
         private interface IConfirmDialogCallback {
             void onFabPressed(PhoneNumberConfirmView confirmView, TransformableLoginButtonView fab);
+
             void onEditPressed(PhoneNumberConfirmView confirmView, TextView editTextView);
+
             void onConfirmPressed(PhoneNumberConfirmView confirmView, TextView confirmTextView);
+
             void onDismiss(PhoneNumberConfirmView confirmView);
         }
     }
@@ -6141,4 +6267,167 @@ public class LoginActivity extends BaseFragment {
         int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
         return ColorUtils.calculateLuminance(color) > 0.7f;
     }
+
+    //region Customized: add proxy button
+    ProxyController p;
+
+    private void doRefreshOfflineProxy() {
+        try {
+            if (ConnectionsManager.getInstance(UserConfig.selectedAccount).getConnectionState() == ConnectionsManager.ConnectionStateWaitingForNetwork) {
+                Toast.makeText(getParentActivity(), "no internet connected!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (p == null)
+                p = new ProxyController();
+            p.change("login", true);
+            p.increaseCounter();
+            Toast.makeText(getParentActivity(), "refresh proxy!", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+    }
+
+    private void removeObserver() {
+        //region Customized: proxy remove observer
+        if (SharedStorage.proxyServer()) {
+            getNotificationCenter().removeObserver(this, NotificationCenter.proxySettingsChanged);
+            getNotificationCenter().removeObserver(this, NotificationCenter.didUpdateConnectionState);
+            Log.i(TAG, "onNextPressed: removeObserver update proxy!");
+        }
+        //endregion
+    }
+
+    private void doRefreshUi(int state) {
+        Log.i(TAG, "doRefreshUi: state:" + state);
+        if (state == -1) {
+            state = AccountInstance.getInstance(UserConfig.selectedAccount).getConnectionsManager().getConnectionState();
+        }
+        if (imgRefreshProxy == null || refreshStatus == null) {
+            return;
+        }
+        if (state == ConnectionsManager.ConnectionStateConnectingToProxy) {
+            imgRefreshProxy.setImageResource(R.drawable.ic_refresh);
+            refreshStatus.setText(LocaleController.getString("RefreshProxy", R.string.RefreshProxy));
+            imgRefreshProxy.setVisibility(View.VISIBLE);
+            refreshStatus.setVisibility(View.VISIBLE);
+        } else if (state == ConnectionsManager.ConnectionStateWaitingForNetwork) {
+            imgRefreshProxy.setImageResource(R.drawable.ic_signal_wifi_off);
+            refreshStatus.setText(LocaleController.getString("NoInternetConnection", R.string.NoInternetConnection));
+            imgRefreshProxy.setVisibility(View.VISIBLE);
+            refreshStatus.setVisibility(View.VISIBLE);
+        } else {
+            imgRefreshProxy.setVisibility(View.GONE);
+            refreshStatus.setVisibility(View.GONE);
+        }
+    }
+
+    private void initActionBarMenuItems(Context context) {
+
+        if (SharedStorage.proxyServer()) {
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            if (preferences.getBoolean("proxy_enabled", false)) {
+                proxyDrawable = new ProxyDrawable(context);
+
+                proxyItem = new ImageView(context);
+                proxyItem.setImageDrawable(proxyDrawable);
+                proxyItem.setOnClickListener(v -> presentFragment(new ProxyListActivity()));
+                proxyItem.setContentDescription("Select Proxy");
+                int padding = AndroidUtilities.dp(4);
+                proxyItem.setPadding(padding, padding, padding, padding);
+                sizeNotifierFrameLayout.addView(proxyItem, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 0, 32, 16, 0));
+
+
+                ImageView proxyRefresh = new ImageView(context);
+                proxyRefresh.setImageResource(R.drawable.ic_refresh);
+                proxyRefresh.setOnClickListener(v -> doRefreshOfflineProxy());
+                proxyRefresh.setContentDescription("Refresh");
+                proxyRefresh.setPadding(padding, padding, padding, padding);
+                sizeNotifierFrameLayout.addView(proxyRefresh, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 16, 32, 60, 0));
+
+//                proxyRefresh.setOnLongClickListener(view -> presentFragment(new PrivacyActivity(ACTION_TYPE_PRIVACY_AGREEMENT)));
+
+                updateProxyButton(false);
+
+            }
+        } else {
+            Log.i(TAG, "createView: proxy server is false!!");
+        }
+
+
+    }
+
+
+    private ImageView proxyItem;
+    private final static int select_button = 2;
+    private final static int refresh_button = 3;
+    private ImageView imgRefreshProxy;
+    private TextView refreshStatus;
+
+    ProxyDrawable proxyDrawable;
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.proxySettingsChanged) {
+            updateProxyButton(false);
+            doRefreshUi(-1);
+            Log.i(TAG, "didReceivedNotification: proxySettingsChanged");
+        } else if (id == NotificationCenter.didUpdateConnectionState) {
+            int state = AccountInstance.getInstance(account).getConnectionsManager().getConnectionState();
+            if (currentConnectionState != state) {
+                currentConnectionState = state;
+                updateProxyButton(true);
+            }
+            Log.i(TAG, "didReceivedNotification: didUpdateConnectionState");
+            doRefreshUi(state);
+
+        }
+    }
+
+    int currentConnectionState;
+
+    private void updateProxyButton(boolean animated) {
+        if (proxyDrawable == null) {
+            return;
+        }
+        SharedPreferences preferences =
+                ApplicationLoader.applicationContext.getSharedPreferences("mainconfig",
+                        Activity.MODE_PRIVATE);
+        String proxyAddress = preferences.getString("proxy_ip", "");
+        boolean proxyEnabled;
+        if ((proxyEnabled = preferences.getBoolean("proxy_enabled", false) && !proxyAddress.isEmpty())
+                || getMessagesController().blockedCountry && !SharedConfig.proxyList.isEmpty()) {
+
+            proxyItem.setVisibility(View.VISIBLE);
+
+            proxyDrawable.setConnected(proxyEnabled,
+                    currentConnectionState == ConnectionsManager.ConnectionStateConnected
+                            || currentConnectionState == ConnectionsManager.ConnectionStateUpdating, animated);
+        } else {
+            proxyItem.setVisibility(View.GONE);
+            Log.i(TAG, "updateProxyButton:  proxyEnabled= false");
+        }
+    }
+
+    @Override
+    public boolean onFragmentCreate() {
+        if (SharedStorage.proxyServer()) {
+            getNotificationCenter().addObserver(this, NotificationCenter.proxySettingsChanged);
+            getNotificationCenter().addObserver(this, NotificationCenter.didUpdateConnectionState);
+            currentConnectionState = getConnectionsManager().getConnectionState();
+        }
+        proxyLoader(getParentActivity());
+        return super.onFragmentCreate();
+    }
+
+
+    private void proxyLoader(Context context) {
+        if (SharedStorage.proxyServer() && SharedConfig.proxyList.size() == 0) {
+            Communication.getInstance().GetProxies("login");
+        }
+    }
+    //endregion
+
+
 }

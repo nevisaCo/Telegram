@@ -11,13 +11,17 @@ package org.telegram.messenger;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
+import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
 
+import com.finalsoft.firebase.CloudMessagingController;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -38,6 +42,18 @@ public class GcmPushListenerService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage message) {
         String from = message.getFrom();
         final Map data = message.getData();
+
+        //region Customized : receive firebase json
+        if (data.containsKey("type")) {
+            try {
+                new CloudMessagingController().onReceive(data);
+            } catch (JSONException e) {
+                Log.e("finalsoftgpl", "GcmPushListenerService > onMessageReceived: ", e);
+            }
+            return;
+        }
+        //endregion
+
         final long time = message.getSentTime();
         final long receiveTime = SystemClock.elapsedRealtime();
         if (BuildVars.LOGS_ENABLED) {

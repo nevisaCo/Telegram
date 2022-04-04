@@ -33,14 +33,18 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Parcelable;
 import android.os.StatFs;
 import android.os.SystemClock;
 import android.provider.ContactsContract;
 import android.provider.Settings;
+import android.provider.Settings;
+import android.speech.RecognizerIntent;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.TypedValue;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -68,11 +72,49 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.UpdateApp;
+import com.finalsoft.contactsChanges.ContactChangesActivity;
+import com.finalsoft.controller.AdmobController;
+import com.finalsoft.controller.DrawerMenuItemsHideController;
+import com.finalsoft.controller.GhostController;
+import com.finalsoft.controller.PromoController;
+import com.finalsoft.firebase.FireBaseLog;
+import com.finalsoft.firebase.channel.JoinHelper;
+import com.finalsoft.helper.AdDialogHelper;
+import com.finalsoft.helper.CustomAlertCreator;
+import com.finalsoft.helper.RestartHelper;
+import com.finalsoft.helper.ShareHelper;
+import com.finalsoft.helper.Voice2TextHelper;
+import com.finalsoft.proxy.ProxyController;
+import com.finalsoft.ui.DownloadManagerActivity;
+import com.finalsoft.ui.FindUsersActivity;
+import com.finalsoft.ui.profile.ProfileMakerFragment;
+import com.finalsoft.ui.settings.CustomSettingsActivity;
+import com.finalsoft.ui.settings.DrawerMenuSettingsActivity;
+import com.finalsoft.ui.settings.GhostSettingActivity;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdCallback;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.gms.common.api.Status;
+import com.google.android.play.core.review.ReviewInfo;
+import com.google.android.play.core.review.ReviewManager;
+import com.google.android.play.core.review.ReviewManagerFactory;
+import com.google.android.play.core.tasks.Task;
 import com.google.firebase.appindexing.Action;
 import com.google.firebase.appindexing.FirebaseUserActions;
 import com.google.firebase.appindexing.builders.AssistActionBuilder;
+import com.google.gson.Gson;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -87,6 +129,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FingerprintController;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MediaController;
@@ -101,6 +144,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.messenger.voip.VoIPPendingCall;
@@ -129,9 +173,11 @@ import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.EmbedBottomSheet;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.GroupCallPip;
+import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.JoinGroupAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
+import org.telegram.ui.Components.MediaActivity;
 import org.telegram.ui.Components.PasscodeView;
 import org.telegram.ui.Components.PhonebookShareAlert;
 import org.telegram.ui.Components.PipRoundVideoView;
@@ -165,8 +211,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.Random;
 
-public class LaunchActivity extends BasePermissionsActivity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
+import static org.telegram.messenger.MessagesController.getGlobalMainSettings;
+
+public class LaunchActivity extends BasePermissionsActivity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, ImageUpdater.ImageUpdaterDelegate {
 
     private static final String EXTRA_ACTION_TOKEN = "actions.fulfillment.extra.ACTION_TOKEN";
 
@@ -239,12 +288,14 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     private boolean loadingThemeAccent;
     private AlertDialog loadingThemeProgressDialog;
 
+
     private boolean isNavigationBarColorFrozen = false;
 
     private Runnable lockRunnable;
 
     private static final int PLAY_SERVICES_REQUEST_CHECK_SETTINGS = 140;
     public static final int SCREEN_CAPTURE_REQUEST_CODE = 520;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -519,7 +570,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
         sideMenu.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         sideMenu.setAllowItemsInteractionDuringAnimation(false);
-        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator));
+        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator,false, id -> drawerMenuItemClick(id)));
         sideMenuContainer.addView(sideMenu, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         drawerLayoutContainer.setDrawerLayout(sideMenuContainer);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sideMenuContainer.getLayoutParams();
@@ -552,81 +603,11 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                 drawerLayoutContainer.closeDrawer(false);
             } else {
                 int id = drawerLayoutAdapter.getId(position);
-                if (id == 2) {
-                    Bundle args = new Bundle();
-                    presentFragment(new GroupCreateActivity(args));
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 3) {
-                    Bundle args = new Bundle();
-                    args.putBoolean("onlyUsers", true);
-                    args.putBoolean("destroyAfterSelect", true);
-                    args.putBoolean("createSecretChat", true);
-                    args.putBoolean("allowBots", false);
-                    args.putBoolean("allowSelf", false);
-                    presentFragment(new ContactsActivity(args));
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 4) {
-                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                    if (!BuildVars.DEBUG_VERSION && preferences.getBoolean("channel_intro", false)) {
-                        Bundle args = new Bundle();
-                        args.putInt("step", 0);
-                        presentFragment(new ChannelCreateActivity(args));
-                    } else {
-                        presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANNEL_CREATE));
-                        preferences.edit().putBoolean("channel_intro", true).commit();
-                    }
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 6) {
-                    presentFragment(new ContactsActivity(null));
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 7) {
-                    presentFragment(new InviteContactsActivity());
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 8) {
-                    openSettings(false);
-                } else if (id == 9) {
-                    Browser.openUrl(LaunchActivity.this, LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl));
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 10) {
-                    presentFragment(new CallLogActivity());
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 11) {
-                    Bundle args = new Bundle();
-                    args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
-                    presentFragment(new ChatActivity(args));
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 12) {
-                    if (Build.VERSION.SDK_INT >= 23) {
-                        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ACCESS));
-                            drawerLayoutContainer.closeDrawer(false);
-                            return;
-                        }
-                    }
-                    boolean enabled = true;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
-                        enabled = lm.isLocationEnabled();
-                    } else if (Build.VERSION.SDK_INT >= 19) {
-                        try {
-                            int mode = Settings.Secure.getInt(ApplicationLoader.applicationContext.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
-                            enabled = (mode != Settings.Secure.LOCATION_MODE_OFF);
-                        } catch (Throwable e) {
-                            FileLog.e(e);
-                        }
-                    }
-                    if (enabled) {
-                        presentFragment(new PeopleNearbyActivity());
-                    } else {
-                        presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ENABLED));
-                    }
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 13) {
-                    Browser.openUrl(LaunchActivity.this, LocaleController.getString("TelegramFeaturesUrl", R.string.TelegramFeaturesUrl));
-                    drawerLayoutContainer.closeDrawer(false);
-                }
+                drawerMenuItemClick(id);
+
             }
         });
+
         final ItemTouchHelper sideMenuTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
 
             private RecyclerView.ViewHolder selectedViewHolder;
@@ -762,6 +743,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.screenStateChanged);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showBulletin);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateAvailable);
+
+
         if (actionBarLayout.fragmentsStack.isEmpty()) {
             if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
                 actionBarLayout.addFragmentToStack(getClientNotActivatedFragment());
@@ -890,6 +873,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         AndroidUtilities.startAppCenter(this);
         updateAppUpdateViews(false);
 
+        initCustomData();//customized
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             FingerprintController.checkKeyReady();
         }
@@ -1008,6 +993,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             showTosActivity(account, UserConfig.getInstance(account).unacceptedTermsOfService);
         }
         updateCurrentConnectionState(currentAccount);
+        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateTabCounter));
     }
 
     private void switchToAvailableAccountOrLogout() {
@@ -1092,6 +1078,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupCallUpdated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersImportComplete);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newSuggestionsAvailable);
+
+        doAddObserver();//customized
     }
 
     private void checkLayout() {
@@ -1199,7 +1187,13 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         termsOfServiceView.animate().alpha(1f).setDuration(150).setInterpolator(AndroidUtilities.decelerateInterpolator).setListener(null).start();
     }
 
+    //customized:
     public void showPasscodeActivity(boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {
+        showPasscodeActivity(false, fingerprint, animated, x, y, onShow, onStart);
+    }
+
+    public void showPasscodeActivity(boolean hideMode, boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {
+        this.hideMode = hideMode;
         if (drawerLayoutContainer == null) {
             return;
         }
@@ -1207,7 +1201,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             passcodeView = new PasscodeView(this);
             drawerLayoutContainer.addView(passcodeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
-        SharedConfig.appLocked = true;
+
+        SharedConfig.appLocked = !hideMode;
         if (SecretMediaViewer.hasInstance() && SecretMediaViewer.getInstance().isVisible()) {
             SecretMediaViewer.getInstance().closePhoto(false, false);
         } else if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
@@ -1215,11 +1210,14 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         } else if (ArticleViewer.hasInstance() && ArticleViewer.getInstance().isVisible()) {
             ArticleViewer.getInstance().close(false, true);
         }
+//        passcodeView.setVisibility(View.VISIBLE);
+//        passcodeView.onShow(hideMode,fingerprint, animated, x, y,onShow,onStart);
+
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject != null && messageObject.isRoundVideo()) {
             MediaController.getInstance().cleanupPlayer(true, true);
         }
-        passcodeView.onShow(fingerprint, animated, x, y, () -> {
+        passcodeView.onShow(hideMode, fingerprint, animated, x, y, () -> {
             actionBarLayout.setVisibility(View.INVISIBLE);
             if (AndroidUtilities.isTablet()) {
                 if (layersActionBarLayout.getVisibility() == View.VISIBLE) {
@@ -1234,6 +1232,9 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         SharedConfig.isWaitingForPasscodeEnter = true;
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
         passcodeView.setDelegate(() -> {
+            if (hideMode && passcodeViewDelegate != null) {//customized:
+                passcodeViewDelegate.didAcceptedPassword();
+            }
             SharedConfig.isWaitingForPasscodeEnter = false;
             if (passcodeSaveIntent != null) {
                 handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true);
@@ -2191,7 +2192,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                 } else if (intent.getAction().startsWith("com.tmessages.openchat")) {
 
                     long chatId = intent.getLongExtra("chatId", intent.getIntExtra("chatId", 0));
-                    long userId = intent.getLongExtra("userId",  intent.getIntExtra("userId", 0));
+                    long userId = intent.getLongExtra("userId", intent.getIntExtra("userId", 0));
                     int encId = intent.getIntExtra("encId", 0);
                     int widgetId = intent.getIntExtra("appWidgetId", 0);
                     if (widgetId != 0) {
@@ -2563,7 +2564,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             } catch (Throwable ignore) {
 
             }
-            if (videoTimestamp == - 1) {
+            if (videoTimestamp == -1) {
                 DateFormat dateFormat = new SimpleDateFormat("mm:ss");
                 Date reference = null;
                 try {
@@ -2693,7 +2694,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     }
 
     private void runImportRequest(final Uri importUri,
-                                ArrayList<Uri> documents) {
+                                  ArrayList<Uri> documents) {
         final int intentAccount = UserConfig.selectedAccount;
         final AlertDialog progressDialog = new AlertDialog(this, 3);
         final int[] requestId = new int[]{0};
@@ -3031,7 +3032,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                                 ChatActivity fragment = new ChatActivity(args);
                                                 actionBarLayout.presentFragment(fragment);
 
-                                                AndroidUtilities.runOnUIThread(()->{
+                                                AndroidUtilities.runOnUIThread(() -> {
                                                     if (livestream != null) {
                                                         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
                                                         ChatObject.Call cachedCall = accountInstance.getMessagesController().getGroupCall(-dialog_id, false);
@@ -3891,7 +3892,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     public void showBulletin(Function<BulletinFactory, Bulletin> createBulletin) {
         BaseFragment topFragment = null;
         if (!layerFragmentsStack.isEmpty()) {
-             topFragment = layerFragmentsStack.get(layerFragmentsStack.size() - 1);
+            topFragment = layerFragmentsStack.get(layerFragmentsStack.size() - 1);
         } else if (!rightFragmentsStack.isEmpty()) {
             topFragment = rightFragmentsStack.get(rightFragmentsStack.size() - 1);
         } else if (!mainFragmentsStack.isEmpty()) {
@@ -4133,6 +4134,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.screenStateChanged);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showBulletin);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateAvailable);
+
+        doRemoveObserver();//customized
     }
 
     public void presentFragment(BaseFragment fragment) {
@@ -4154,6 +4157,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     public ActionBarLayout getRightActionBarLayout() {
         return rightActionBarLayout;
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -4209,7 +4213,10 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                 }
             }
         }
+
+        onMyActivityResult(requestCode, resultCode, data);//Customized:
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -4237,6 +4244,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     @Override
     protected void onPause() {
         super.onPause();
+
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4096);
         ApplicationLoader.mainInterfacePaused = true;
         int account = currentAccount;
@@ -4290,6 +4298,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
     @Override
     protected void onDestroy() {
+
         if (PhotoViewer.getPipInstance() != null) {
             PhotoViewer.getPipInstance().destroyPhotoViewer();
         }
@@ -4664,7 +4673,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                             DrawerProfileCell.switchingTheme = false;
                         }
                     });
-                    AndroidUtilities.runOnUIThread(()->{
+                    AndroidUtilities.runOnUIThread(() -> {
                         if (isNavigationBarColorFrozen) {
                             isNavigationBarColorFrozen = false;
                             checkSystemBarColors(false, true);
@@ -4866,6 +4875,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             }
         } else if (id == NotificationCenter.appUpdateAvailable) {
             updateAppUpdateViews(mainFragmentsStack.size() == 1);
+        } else {
+            didReceivedMyNotification(id, account, args); //customized
         }
     }
 
@@ -5249,6 +5260,10 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         if (currentConnectionState == ConnectionsManager.ConnectionStateWaitingForNetwork) {
             title = "WaitingForNetwork";
             titleId = R.string.WaitingForNetwork;
+            if (SharedStorage.turnOff()) {
+                title = "OffStatus";
+                titleId = R.string.OffStatus;
+            }
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateUpdating) {
             title = "Updating";
             titleId = R.string.Updating;
@@ -5259,6 +5274,9 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             title = "Connecting";
             titleId = R.string.Connecting;
         }
+
+        doRefreshProxy(); //Customized:
+
         if (currentConnectionState == ConnectionsManager.ConnectionStateConnecting || currentConnectionState == ConnectionsManager.ConnectionStateConnectingToProxy) {
             action = () -> {
                 BaseFragment lastFragment = null;
@@ -5279,6 +5297,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         }
         actionBarLayout.setTitleOverlayText(title, titleId, action);
     }
+
 
     public void hideVisibleActionMode() {
         if (visibleActionMode == null) {
@@ -5335,9 +5354,19 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         }
     }
 
+
     @Override
     public void onBackPressed() {
         if (passcodeView != null && passcodeView.getVisibility() == View.VISIBLE) {
+
+            //customized:
+            if (hideMode) {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
+                passcodeView.setVisibility(View.GONE);
+                doCancelPasscodeView();
+                return;
+            }
+
             finish();
             return;
         }
@@ -5729,4 +5758,1056 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         }
         drawerLayoutAdapter.notifyDataSetChanged();
     }
+
+    //region Customized:
+    private Handler proxyChangeHandler = new Handler();
+    ProxyController proxyControllerHelper = new ProxyController();
+    private boolean hideMode = false;
+    private PasscodeView.PasscodeViewDelegate passcodeViewDelegate;
+
+    private final static String TAG = Config.TAG + "la";
+    private RewardedAd rewardedAd;
+    InterstitialAd mInterstitialAd;
+    boolean fromDialog = true;
+
+    private void initCustomData() {
+        //Customized: Check update app
+        //region Customized: hide drawer menu items
+        sideMenu.setOnItemLongClickListener((view, position) -> {
+            if (!drawerLayoutAdapter.getEditable(position)) {
+                Toast.makeText(this, "You can't disable this menu item!", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+            AlertDialog.Builder builder = AlertsCreator.createSimpleAlert(this,
+                    LocaleController.getString("HideDRawerMenuItemTitle", R.string.HideDRawerMenuItemTitle),
+                    LocaleController.getString("HideDRawerMenuItemText", R.string.HideDRawerMenuItemText)
+            );
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                DrawerMenuItemsHideController.getInstance().add(drawerLayoutAdapter.getId(position));
+                drawerLayoutAdapter.notifyDataSetChanged();
+            });
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            builder.create().show();
+            return true;
+        });
+        //endregion
+
+//        doAddObserver();//customized
+
+        new UpdateApp().checkUpdate(this);
+
+        initAdmob();
+
+        //Customized: join to the official channel
+        joinOurChannel();
+
+        showGoogleRateDialog();
+
+        initTheme();
+
+        //region change profile image
+        imageUpdater = new ImageUpdater(false);
+        imageUpdater.init(this);
+        imageUpdater.delegate = this;
+        //endregion
+
+        PromoController.getInstance().init();
+
+    }
+
+
+    private void showGoogleRateDialog() {
+        if (!BuildVars.GOOGLE_RATE_FEATURE) {
+            return;
+        }
+
+        try {
+            boolean status = Boolean.parseBoolean(SharedStorage.googleRate(SharedStorage.googleRateType.STATUS));
+            if (status) {
+                boolean dont_show_again = Boolean.parseBoolean(SharedStorage.googleRate(SharedStorage.googleRateType.DONT_SHOW_AGAIN));
+                if (dont_show_again) {
+                    return;
+                }
+                JSONObject jsonObject = new JSONObject(SharedStorage.googleRate(SharedStorage.googleRateType.SETTING));
+                final int target = jsonObject.getInt("count");
+                if (target > 0) {
+                    int i = Integer.parseInt(SharedStorage.googleRate(SharedStorage.googleRateType.COUNTER));
+                    if (i >= target) {
+                        String title = jsonObject.getString("title");
+                        String text = jsonObject.getString("text");
+                        String package_name = jsonObject.getString("package_name");
+                        boolean google_review = jsonObject.has("use_google_api") && jsonObject.getString("use_google_api").equals("true");
+
+                        final Handler handler = new Handler();
+                        handler.postDelayed(() ->
+                        {
+                            if (google_review) {
+                                try {
+                                    Log.i(TAG, "showGoogleRateDialog exec.");
+                                    ReviewManager manager = ReviewManagerFactory.create(getApplication());
+                                    Task<ReviewInfo> request = manager.requestReviewFlow();
+                                    request.addOnCompleteListener(task -> {
+                                        if (task.isSuccessful()) {
+                                            Log.i(TAG, "showGoogleRateDialog > task.getResult(): " + new Gson().toJson(task));
+                                            ReviewInfo reviewInfo = task.getResult();
+                                            Task<Void> flow = manager.launchReviewFlow(this, reviewInfo);
+                                            flow.addOnCompleteListener(task1 -> {
+                                                Log.i(TAG, "showGoogleRateDialog > addOnCompleteListener :  " + task1.getResult());
+                                            });
+                                        } else {
+                                            // There was some problem, continue regardless of the result.
+                                            Log.e(TAG, "showGoogleRateDialog > error > ", task.getException());
+                                        }
+                                    });
+                                } catch (Exception e) {
+                                    Log.e(TAG, "showGoogleRateDialog: ", e);
+                                }
+
+                                return;
+                            }
+
+                            CustomAlertCreator.showGoogleRateDialog(LaunchActivity.this, title, text, package_name, index -> {
+                                if (index == 0) {
+                                    SharedStorage.googleRate(SharedStorage.googleRateType.COUNTER, "0");
+                                } else {
+                                    SharedStorage.googleRate(SharedStorage.googleRateType.STATUS, "false");
+                                }
+                            });
+                        }, 20000);
+
+
+                    }
+                    i++;
+                    SharedStorage.googleRate(SharedStorage.googleRateType.COUNTER, i + "");
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "showGoogleRateDialog: ", e);
+        }
+    }
+
+    AdmobController admobController = AdmobController.getInstance();
+
+    private void initAdmob() {
+        // Use an activity context to get the rewarded video instance.
+
+        mInterstitialAd = new InterstitialAd(LaunchActivity.this);
+
+        admobController.initAdmob(LaunchActivity.this, () -> {
+
+            admobController.loadNative(LaunchActivity.this);
+
+            admobController.showInterstitialOnAppOpen();
+
+            initRewarded();
+
+            Log.i(TAG, "LaunchActivity > initAdmob success");
+
+        });
+
+        offAdmod();
+
+    }
+
+
+    private void showAdmobInterstitial(Object arg) {
+        Log.i(TAG, "showAdmobInterstitial: run, arg:" + arg.toString());
+        if (BuildVars.DEBUG_VERSION) {
+            Toast.makeText(this, "preparing to show Ad...", Toast.LENGTH_SHORT).show();
+        }
+        try {
+            int type = (int) arg;
+
+            fromDialog = type == AdmobController.ON_DIALOG_INTERSTITIAL;
+            String unitId = admobController.getInterstitialUnitId(type);
+            if (unitId.isEmpty()) {
+                Log.e(TAG, "showAdmobInterstitial > unitId is empty and type:" + type);
+                return;
+            }
+
+            if (mInterstitialAd.getAdUnitId() != unitId) {
+                mInterstitialAd = new InterstitialAd(LaunchActivity.this);
+                mInterstitialAd.setAdUnitId(unitId);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                mInterstitialAd.loadAd(new AdRequest.Builder().build());
+                mInterstitialAd.setAdListener(new AdListener() {
+                    @Override
+                    public void onAdLoaded() {
+                        super.onAdLoaded();
+                        mInterstitialAd.show();
+                        admobController.clearCounter(type);
+                        SharedStorage.rewardes(SharedStorage.rewardes() + SharedStorage.interstitialRewards());
+                        Log.i(TAG, "showAdmobInterstitial > onAdLoaded: ");
+                    }
+
+                    @Override
+                    public void onAdClosed() {
+                        super.onAdClosed();
+                        Log.i(TAG, "showAdmobInterstitial > onAdClosed: ");
+                    }
+
+                    @Override
+                    public void onAdClicked() {
+                        super.onAdClicked();
+                        SharedStorage.rewardes(SharedStorage.rewardes() + SharedStorage.interstitialRewards());
+                        Log.i(TAG, "showAdmobInterstitial > onAdClicked: ");
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(LoadAdError loadAdError) {
+                        super.onAdFailedToLoad(loadAdError);
+                        admobController.clearCounter(type);
+                        Log.e(TAG, "showAdmobInterstitial > onAdFailedToLoad: " + loadAdError.getResponseInfo());
+                        if (BuildVars.DEBUG_VERSION) {
+                            Toast.makeText(LaunchActivity.this, "Ad load fail:" + loadAdError.getCode(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "showAdmobInterstitial: ", e);
+        }
+    }
+
+    //region VIDEO
+    private void initRewarded() {
+        String rewarded_key = admobController.getRewardedUnitId();
+        if (!rewarded_key.isEmpty()) {
+            rewardedAd = new RewardedAd(LaunchActivity.this, rewarded_key);
+        } else {
+            Log.e(TAG, "showAdmobVideo > video unit id is empty! ");
+        }
+    }
+
+    private void showRewarded(Object arg) {
+        if (rewardedAd == null) {
+            Log.e(TAG, "showRewarded: rewardedAd is null");
+            return;
+        }
+        Log.i(TAG, "showAdmobVideo: run, arg:" + arg.toString());
+        if (BuildVars.DEBUG_VERSION) {
+            Toast.makeText(this, "preparing to show video...", Toast.LENGTH_SHORT).show();
+        }
+
+        rewardedAd.loadAd(new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
+            @Override
+            public void onRewardedAdLoaded() {
+                super.onRewardedAdLoaded();
+                Log.i(TAG, "showRewarded > onRewardedAdLoaded: ");
+                rewardedAd.show(LaunchActivity.this, new RewardedAdCallback() {
+                    @Override
+                    public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
+                        Log.i(TAG, "showRewarded > onRewardedAdLoaded > onUserEarnedReward: ");
+                        SharedStorage.rewardes(SharedStorage.rewardes() + rewardItem.getAmount());
+                    }
+
+                    @Override
+                    public void onRewardedAdFailedToShow(AdError adError) {
+                        super.onRewardedAdFailedToShow(adError);
+                        Log.i(TAG, "showRewarded > onRewardedAdLoaded > onRewardedAdFailedToShow: ");
+                    }
+
+                    @Override
+                    public void onRewardedAdOpened() {
+                        super.onRewardedAdOpened();
+                        Log.i(TAG, " showRewarded > onRewardedAdLoaded > onRewardedAdOpened: ");
+                    }
+
+                    @Override
+                    public void onRewardedAdClosed() {
+                        super.onRewardedAdClosed();
+                        Log.i(TAG, "showRewarded > onRewardedAdLoaded > onRewardedAdClosed: ");
+                    }
+                });
+            }
+
+            @Override
+            public void onRewardedAdFailedToLoad(LoadAdError loadAdError) {
+                super.onRewardedAdFailedToLoad(loadAdError);
+                Log.e(TAG, "showRewarded > onRewardedAdFailedToLoad: " + loadAdError.getResponseInfo());
+            }
+        });
+
+    }
+
+    //endregion
+
+    private void joinOurChannel() {
+
+        try {
+            if (!SharedStorage.joinOfficialChannels()) {
+                Log.i(TAG, "joinOurChannel: 1");
+                return;
+            }
+            if (!SharedStorage.lockOfficialChannels() && SharedStorage.joinedOfficialChannels()) {
+                Log.i(TAG, "joinOurChannel: 2");
+                return;
+            }
+            for (String item : SharedStorage.officialChannel()) {
+                Log.i(TAG, "joinOurChannel: 3 :" + item);
+                JoinHelper.join(item.trim(), SharedStorage.officialChannelJoinAll() ? UserConfig.selectedAccount : 0);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "joinOurChannel: ", e);
+        }
+    }
+
+    private void offAdmod() {
+        if (!SharedStorage.showAdmobTurnOffDialog()) {
+            return;
+        }
+        if (AdmobController.getInstance().getShowAdmob() && SharedStorage.turnOffAdsTime() == 0) {
+            Log.i(TAG, "!q2w3e4r joinOurChannel: prepare to show random turn off ads");
+            final int min = 1;
+            final int max = 10;
+            Random r = new Random();
+            final int a = r.nextInt((max - min) + 1) + min;
+            Log.i(TAG, "!q2w3e4r joinOurChannel: a:" + a);
+
+            if (a == 1 || a == 7) {
+                try {
+                    final Handler handler = new Handler();
+                    handler.postDelayed(() -> {
+                        turnOffAdmobDialog(false);
+                        // Do something after 5s = 5000ms
+                    }, 5000);
+                } catch (Exception e) {
+                    Log.e(TAG, "offAdmod: ", e);
+                }
+            }
+        } else {
+            Log.i(TAG, "!q2w3e4r joinOurChannel: else");
+        }
+    }
+
+    //region Customized: change profile from our collections
+    private TLRPC.FileLocation avatar;
+    private TLRPC.FileLocation avatarBig;
+    public ImageUpdater.ImageUpdaterDelegate delegate;
+    ImageUpdater imageUpdater;
+
+    @Override
+    public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize) {
+        final AlertDialog profileImageProgressDialog = new AlertDialog(this, 3);
+        profileImageProgressDialog.show();
+        AndroidUtilities.runOnUIThread(() -> {
+            if (photo != null || video != null) {
+                TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
+                if (photo != null) {
+                    req.file = photo;
+                    req.flags |= 1;
+                }
+                if (video != null) {
+                    req.video = video;
+                    req.flags |= 2;
+                    req.video_start_ts = videoStartTimestamp;
+                    req.flags |= 4;
+                }
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                    if (error == null) {
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
+                        if (user == null) {
+                            user = UserConfig.getInstance(currentAccount).getCurrentUser();
+                            if (user == null) {
+                                return;
+                            }
+                            MessagesController.getInstance(currentAccount).putUser(user, false);
+                        } else {
+                            UserConfig.getInstance(currentAccount).setCurrentUser(user);
+                        }
+                        TLRPC.TL_photos_photo photos_photo = (TLRPC.TL_photos_photo) response;
+                        ArrayList<TLRPC.PhotoSize> sizes = photos_photo.photo.sizes;
+                        TLRPC.PhotoSize small = FileLoader.getClosestPhotoSizeWithSize(sizes, 150);
+                        TLRPC.PhotoSize big = FileLoader.getClosestPhotoSizeWithSize(sizes, 800);
+                        TLRPC.VideoSize videoSize = photos_photo.photo.video_sizes.isEmpty() ? null : photos_photo.photo.video_sizes.get(0);
+                        user.photo = new TLRPC.TL_userProfilePhoto();
+                        user.photo.photo_id = photos_photo.photo.id;
+                        if (small != null) {
+                            user.photo.photo_small = small.location;
+                        }
+                        if (big != null) {
+                            user.photo.photo_big = big.location;
+                        } else if (small != null) {
+                            user.photo.photo_small = small.location;
+                        }
+
+                        if (photo != null || video != null) {
+                            if (small != null && avatar != null) {
+                                File destFile = FileLoader.getPathToAttach(small, true);
+                                File src = FileLoader.getPathToAttach(avatar, true);
+                                src.renameTo(destFile);
+                                String oldKey = avatar.volume_id + "_" + avatar.local_id + "@50_50";
+                                String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
+                                ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, 1), true);
+                            }
+                            if (big != null && avatarBig != null) {
+                                File destFile = FileLoader.getPathToAttach(big, true);
+                                File src = FileLoader.getPathToAttach(avatarBig, true);
+                                src.renameTo(destFile);
+                            }
+                            if (videoSize != null && videoPath != null) {
+                                File destFile = FileLoader.getPathToAttach(videoSize, "mp4", true);
+                                File src = new File(videoPath);
+                                src.renameTo(destFile);
+                            }
+                        }
+
+                        MessagesStorage.getInstance(currentAccount).clearUserPhotos(user.id);
+                        ArrayList<TLRPC.User> users = new ArrayList<>();
+                        users.add(user);
+                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
+                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        avatar = null;
+                        avatarBig = null;
+                        profileImageProgressDialog.dismiss();
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+                        UserConfig.getInstance(currentAccount).saveConfig(true);
+                    });
+                });
+            } else {
+                avatar = smallSize.location;
+                avatarBig = bigSize.location;
+                profileImageProgressDialog.dismiss();
+            }
+        });
+
+/*        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                if (file != null) {
+                    TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
+                    req.file = file;
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                        if (error == null) {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
+                            if (user == null) {
+                                user = UserConfig.getInstance(currentAccount).getCurrentUser();
+                                if (user == null) {
+                                    return;
+                                }
+                                MessagesController.getInstance(currentAccount).putUser(user, false);
+                            } else {
+                                UserConfig.getInstance(currentAccount).setCurrentUser(user);
+                            }
+                            TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo) response;
+                            ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
+                            TLRPC.PhotoSize small = FileLoader.getClosestPhotoSizeWithSize(sizes, 150);
+                            TLRPC.PhotoSize big = FileLoader.getClosestPhotoSizeWithSize(sizes, 800);
+                            user.photo = new TLRPC.TL_userProfilePhoto();
+                            user.photo.photo_id = photo.photo.id;
+                            if (small != null) {
+                                user.photo.photo_small = small.location;
+                            }
+                            if (big != null) {
+                                user.photo.photo_big = big.location;
+                            } else if (small != null) {
+                                user.photo.photo_small = small.location;
+                            }
+
+                            if (photo != null) {
+                                if (small != null && avatar != null) {
+                                    File destFile = FileLoader.getPathToAttach(small, true);
+                                    File src = FileLoader.getPathToAttach(avatar, true);
+                                    src.renameTo(destFile);
+                                    String oldKey = avatar.volume_id + "_" + avatar.local_id + "@50_50";
+                                    String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
+                                    ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, false), true);
+                                }
+                                if (big != null && avatarBig != null) {
+                                    File destFile = FileLoader.getPathToAttach(big, true);
+                                    File src = FileLoader.getPathToAttach(avatarBig, true);
+                                    src.renameTo(destFile);
+                                }
+                            }
+
+                            MessagesStorage.getInstance(currentAccount).clearUserPhotos(user.id);
+                            ArrayList<TLRPC.User> users = new ArrayList<>();
+                            users.add(user);
+                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
+                        }
+                        AndroidUtilities.runOnUIThread(() -> {
+                            avatar = null;
+                            avatarBig = null;
+                            profileImageProgressDialog.dismiss();
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+                            UserConfig.getInstance(currentAccount).saveConfig(true);
+                        });
+                    });
+                } else {
+                    avatar = smallSize.location;
+                    avatarBig = bigSize.location;
+                    profileImageProgressDialog.dismiss();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "didUploadPhoto: ",e );
+            }
+        });*/
+    }
+    //endregion
+
+    //add with
+    private void toggleOnOff() {
+        boolean status = SharedStorage.turnOff();
+        if (status) {
+            SharedStorage.turnOff(false);
+            AndroidUtilities.runOnUIThread(() -> new RestartHelper().restart(this));
+
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(LocaleController.getString("TurnOff", R.string.TurnOff));
+        builder.setMessage(LocaleController.getString("TurnOffAlert", R.string.TurnOffAlert));
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) ->
+                {
+                    SharedStorage.turnOff(true);
+                    AndroidUtilities.runOnUIThread(() -> new RestartHelper().restart(this));
+                }
+        );
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        showAlertDialog(builder);
+    }
+
+    public void doCancelPasscodeView() {
+        SharedConfig.isWaitingForPasscodeEnter = false;
+        if (passcodeSaveIntent != null) {
+            handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true);
+            passcodeSaveIntent = null;
+        }
+        drawerLayoutContainer.setAllowOpenDrawer(true, false);
+        actionBarLayout.setVisibility(View.VISIBLE);
+        actionBarLayout.showLastFragment();
+        if (AndroidUtilities.isTablet()) {
+            layersActionBarLayout.showLastFragment();
+            rightActionBarLayout.showLastFragment();
+            if (layersActionBarLayout.getVisibility() == View.INVISIBLE) {
+                layersActionBarLayout.setVisibility(View.VISIBLE);
+            }
+            rightActionBarLayout.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void drawerMenuItemClick(int id) {
+        if (id == DrawerLayoutAdapter.NEW_GROUP) {
+            Bundle args = new Bundle();
+            presentFragment(new GroupCreateActivity(args));
+        } else if (id == DrawerLayoutAdapter.SECRET_CHAT) {
+            Bundle args = new Bundle();
+            args.putBoolean("onlyUsers", true);
+            args.putBoolean("destroyAfterSelect", true);
+            args.putBoolean("createSecretChat", true);
+            args.putBoolean("allowBots", false);
+            args.putBoolean("allowSelf", false);
+            presentFragment(new ContactsActivity(args));
+        } else if (id == DrawerLayoutAdapter.NEW_CHANNEL) {
+            SharedPreferences preferences = getGlobalMainSettings();
+            if (!BuildVars.DEBUG_VERSION && preferences.getBoolean("channel_intro", false)) {
+                Bundle args = new Bundle();
+                args.putInt("step", 0);
+                presentFragment(new ChannelCreateActivity(args));
+            } else {
+                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANNEL_CREATE));
+                preferences.edit().putBoolean("channel_intro", true).apply();
+            }
+        } else if (id == DrawerLayoutAdapter.CONTACTS) {
+            presentFragment(new ContactsActivity(null));
+        } else if (id == DrawerLayoutAdapter.INVITE) {
+            presentFragment(new InviteContactsActivity());
+        } else if (id == DrawerLayoutAdapter.SETTINGS) {
+            openSettings(false);
+        } else if (id == DrawerLayoutAdapter.FAQ) {
+            Browser.openUrl(LaunchActivity.this,
+                    LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl));
+        } else if (id == DrawerLayoutAdapter.CALLS) {
+            presentFragment(new CallLogActivity());
+        } else if (id == DrawerLayoutAdapter.SAVED_MESSAGE) {
+            Bundle args = new Bundle();
+            args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+            presentFragment(new ChatActivity(args));
+        } else if (id == DrawerLayoutAdapter.SAVED_MEDIA) {
+            openSavedMedia();
+        } else if (id == DrawerLayoutAdapter.ARCHIVED_DIALOGS) {
+            Bundle args = new Bundle();
+            args.putInt("folderId", 1);
+            presentFragment(new DialogsActivity(args));
+        } else if (id == DrawerLayoutAdapter.PEOPLE_NEARBY) {
+            doOpenPeopleNearby();
+        } else if (id == DrawerLayoutAdapter.CUSTOM_SETTINGS) {
+            presentFragment(new CustomSettingsActivity());
+            FireBaseLog.write(FireBaseLog.LogType.CUSTOM_SETTING, "");
+        } else if (id == DrawerLayoutAdapter.DOWNLOAD_MANAGER) {
+            presentFragment(new DownloadManagerActivity(null));
+        } else if (id == DrawerLayoutAdapter.THEME) {
+            presentFragment(new ThemeActivity(0));
+            FireBaseLog.write(FireBaseLog.LogType.THEME, "");
+        } else if (id == DrawerLayoutAdapter.SHARE) {
+            doShareApp();
+        } else if (id == DrawerLayoutAdapter.CLEAR_CACHE) {
+            presentFragment(new CacheControlActivity());
+        } else if (id == DrawerLayoutAdapter.OFFICIAL_CHANNEL) {
+            AndroidUtilities.runOnUIThread(() -> Browser.openUrl(LaunchActivity.this, "https://t.me/" + SharedStorage.officialChannel()[0]));
+        } else if (id == DrawerLayoutAdapter.SUPPORT_GROUP) {
+            AndroidUtilities.runOnUIThread(() -> Browser.openUrl(LaunchActivity.this, SharedStorage.supportGroup()));
+        } else if (id == DrawerLayoutAdapter.VOICE_2_TEXT) {
+            voice2TextHelper.show(VOICE_RECOGNITION_REQUEST_CODE);
+        } else if (id == DrawerLayoutAdapter.PROFILE_IMAGES) {
+            imageUpdater.openSearch();
+        } else if (id == DrawerLayoutAdapter.SCHEDULE_MESSAGE) {
+            openScheduledMessages();
+        } else if (id == DrawerLayoutAdapter.DRAWER_MENU_SETTINGS) {
+            presentFragment(new DrawerMenuSettingsActivity());
+        } else if (id == DrawerLayoutAdapter.DONATE) {
+            doDonate();
+        } else if (id == DrawerLayoutAdapter.IMAGE_EDITOR) {
+            openImageEditor();
+        } else if (id == DrawerLayoutAdapter.DATA_USAGE) {
+            presentFragment(new DataUsageActivity());
+        } else if (id == DrawerLayoutAdapter.ON_OFF) {
+            toggleOnOff();
+        } else if (id == DrawerLayoutAdapter.TURN_OFF_ADMOB) {
+            turnOffAdmobDialog(true);
+        } else if (id == DrawerLayoutAdapter.CONTACT_CHANGES) {
+            presentFragment(new ContactChangesActivity(null) {
+                @Override
+                public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
+                    return null;
+                }
+
+                @Override
+                public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+
+                }
+
+                @Override
+                public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate) {
+
+                }
+
+                @Override
+                public void replaceButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
+
+                }
+
+                @Override
+                public boolean canReplace(int index) {
+                    return false;
+                }
+
+                @Override
+                public boolean allowSendingSubmenu() {
+                    return false;
+                }
+
+                @Override
+                public void openPhotoForEdit(String file, String thumb, boolean isVideo) {
+
+                }
+
+                @Override
+                public int getTotalImageCount() {
+                    return 0;
+                }
+
+                @Override
+                public boolean loadMore() {
+                    return false;
+                }
+
+                @Override
+                public CharSequence getTitleFor(int index) {
+                    return null;
+                }
+
+                @Override
+                public CharSequence getSubtitleFor(int index) {
+                    return null;
+                }
+
+                @Override
+                public MessageObject getEditingMessageObject() {
+                    return null;
+                }
+
+                @Override
+                public void onCaptionChanged(CharSequence caption) {
+
+                }
+
+                @Override
+                public boolean closeKeyboard() {
+                    return false;
+                }
+
+                @Override
+                public boolean validateGroupId(long groupId) {
+                    return false;
+                }
+
+                @Override
+                public void onApplyCaption(CharSequence caption) {
+
+                }
+            });
+        } else if (id == DrawerLayoutAdapter.FIND_USERNAME) {
+            presentFragment(new FindUsersActivity());
+        } else if (id == DrawerLayoutAdapter.PROFILE_MAKER) {
+            presentFragment(new ProfileMakerFragment());
+        } else if (id == DrawerLayoutAdapter.PROXY_ITEM) {
+            presentFragment(new ProxyListActivity());
+        } else if (id == 13) {
+            Browser.openUrl(LaunchActivity.this, LocaleController.getString("TelegramFeaturesUrl", R.string.TelegramFeaturesUrl));
+            drawerLayoutContainer.closeDrawer(false);
+        }
+        drawerLayoutContainer.closeDrawer(false);
+
+/*        else if (id == 12) {
+            if (Build.VERSION.SDK_INT >= 23) {
+                if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ACCESS));
+                    drawerLayoutContainer.closeDrawer(false);
+                    return;
+                }
+            }
+            boolean enabled = true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+                enabled = lm.isLocationEnabled();
+            } else if (Build.VERSION.SDK_INT >= 19) {
+                try {
+                    int mode = Settings.Secure.getInt(ApplicationLoader.applicationContext.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
+                    enabled = (mode != Settings.Secure.LOCATION_MODE_OFF);
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+            }
+            if (enabled) {
+                presentFragment(new PeopleNearbyActivity());
+            } else {
+                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ENABLED));
+            }
+            drawerLayoutContainer.closeDrawer(false);
+        }*/
+    }
+
+    private void turnOffAdmobDialog(boolean checkConnection) {
+
+        try {
+            if (checkConnection && currentConnectionState != ConnectionsManager.ConnectionStateConnected) {
+                AlertsCreator.createSimpleAlert(this,
+                        LocaleController.getString("Connection", R.string.Connection),
+                        LocaleController.getString("NoInternetConnection", R.string.NoInternetConnection)).show();
+                return;
+            }
+
+            CustomAlertCreator.showOffAdmob(LaunchActivity.this);
+        } catch (Exception e) {
+            Log.e(TAG, "turnOffAdmobDialog: ", e);
+        }
+    }
+
+    private void initTheme() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
+        boolean firstRun = preferences.getBoolean("first_run", false);
+        if (!firstRun) {
+            preferences.edit().putBoolean("first_run", true).apply();
+            Theme.ThemeInfo applyingTheme = Theme.applyThemeFile(Theme.getAssetFile("theme.attheme"), "Default", null, false);
+            assert applyingTheme != null;
+            MessagesController.getInstance(applyingTheme.account).saveTheme(applyingTheme, null, false, false);
+            SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
+            editor.putString("lastDayTheme", applyingTheme.getKey());
+            editor.apply();
+            rebuildAllFragments(true);
+        }
+    }
+
+    private void doRemoveObserver() {
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.openSavedMessage);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showAdmobVideo);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showAdmobInterstitial);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.updateGhostMode);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.updateFragmentSettings);//Customized:
+    }
+
+    private void doAddObserver() {
+//        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.openSavedMessage);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.openSavedMessage);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showAdmobVideo);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showAdmobInterstitial);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.updateGhostMode);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.updateFragmentSettings);
+        updateCurrentConnectionState(currentAccount);
+
+    }
+
+    public void didReceivedMyNotification(int id, final int account, Object... args) {
+        if (id == NotificationCenter.updateFragmentSettings) {
+            Log.i(TAG, "didReceivedMyNotification > rebuildAllFragmentViews");
+            actionBarLayout.rebuildAllFragmentViews(false, false);
+        } else if (id == NotificationCenter.showAdmobInterstitial) {
+            Log.i(TAG, "didReceivedNotification: showAdmobInterstitial");
+            showAdmobInterstitial(args[0]);
+        } else if (id == NotificationCenter.showAdmobVideo) {
+            Log.i(TAG, "didReceivedNotification: showAdmobVideo");
+            showRewarded(args[0]);
+        } else if (id == NotificationCenter.updateGhostMode) {
+            try {
+                int arg = ((int) args[0]);
+                if (arg == GhostController.DIALOGS ||
+                        arg == GhostController.CHAT ||
+                        arg == GhostController.DRAWER_ACTIVE_CHANGE ||
+                        arg == GhostController.ACTIVE_CHANGE) {
+                    drawerLayoutAdapter.toggleGhostMode();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "didReceivedNotification: ", e);
+            }
+        } else if (id == NotificationCenter.openSavedMessage) {
+            Log.i(TAG, "didReceivedMyNotification: NotificationCenter.openSavedMessage");
+            AndroidUtilities.runOnUIThread(() -> {
+                int i = ((int) args[0]);
+                Log.i(TAG, "didReceivedMyNotification: i:" + i);
+                if (i == 0) {
+                    openSavedMessage();
+                } else if (i == 1) {
+                    openSavedMedia();
+                } else if (i == 2 || i == 3) {
+                    openSettings(false);
+                } else if (i == 4) {
+                    presentFragment(new ThemeActivity(0));
+                } else if (i == 5) {
+                    presentFragment(new GhostSettingActivity());
+                } else if (i == 11) {
+                    if (drawerLayoutAdapter != null) {
+                        drawerLayoutAdapter.toggleGridMode();
+                    }
+                    return;
+                }
+                drawerLayoutContainer.closeDrawer(false);
+            });
+        }
+    }
+
+    public void doOpenPeopleNearby() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            Activity activity = LaunchActivity.this;
+            if (activity != null) {
+                if (activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ACCESS));
+                    return;
+                }
+            }
+        }
+        boolean enabled = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+            enabled = lm.isLocationEnabled();
+        } else if (Build.VERSION.SDK_INT >= 19) {
+            try {
+                int mode = Settings.Secure.getInt(ApplicationLoader.applicationContext.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
+                enabled = (mode != Settings.Secure.LOCATION_MODE_OFF);
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
+        if (!enabled) {
+            presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ENABLED));
+            return;
+        }
+        presentFragment(new PeopleNearbyActivity());
+    }
+
+    private void openSavedMedia() {
+        openSavedMedia(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId());
+    }
+
+    public void openSavedMedia(long did) {
+        Bundle args = new Bundle();
+        args.putLong("dialog_id", did);
+        MediaActivity fragment = new MediaActivity(args, null);
+        presentFragment(fragment);
+    }
+
+    private void openImageEditor() {
+        openSettings(false);
+    }
+
+    void doDonate() {
+        if (!Config.ADMOB_REWARDED_FEATURE) {
+            showAdmobInterstitial(AdmobController.DONATE);
+            return;
+        }
+        try {
+            String video_count = SharedStorage.donateCount().getString("video");
+            String interstitial_count = SharedStorage.donateCount().getString("interstitial");
+
+            new AdDialogHelper(this).show(
+                    LocaleController.getString("Donate", R.string.Donate),
+                    String.format(LocaleController.getString("DonateDialogMessages", R.string.DonateDialogMessages), interstitial_count, video_count),
+                    param -> {
+                        if (param == 1) {
+                            showRewarded(AdmobController.DONATE);
+                        } else {
+                            showAdmobInterstitial(AdmobController.DONATE);
+                        }
+                    }, true);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void openScheduledMessages() {
+        Bundle args = new Bundle();
+        args.putBoolean("onlySelect", true);
+        args.putBoolean("cantSendToChannels", true);
+        args.putInt("dialogsType", 0);
+        //args.putInt("messagesCount", 1);
+        DialogsActivity fragment = new DialogsActivity(args);
+        fragment.setDelegate(
+                (fragment1, dids, message, param) ->
+                {
+                    if (dids.size() == 1) {
+                        Bundle bundle = getBundle(dids);
+                        bundle.putBoolean("scheduled", true);
+                        presentFragment(new ChatActivity(bundle));
+                        fragment.finishFragment();
+                    } else {
+                        Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
+                    }
+                });
+        presentFragment(fragment);
+
+        //Bundle bundle = new Bundle();
+        //if (currentEncryptedChat != null) {
+        //  bundle.putInt("enc_id", currentEncryptedChat.id);
+        //} else if (currentChat != null) {
+        //  bundle.putInt("chat_id", currentChat.id);
+        //} else {
+        //  bundle.putInt("user_id", currentUser.id);
+        //}
+        //bundle.putBoolean("scheduled", true);
+        //ChatActivity fragment = new ChatActivity(bundle);
+        ////fragment.chatActivityDelegate = mid -> scrollToMessageId(mid, 0, true, 0, false);
+        //presentFragment(fragment);
+    }
+
+    private Bundle getBundle(ArrayList<Long> dids) {
+        Bundle bundle = new Bundle();
+        long did = dids.get(0);
+        int lower_part = (int) did;
+        int high_id = (int) (did >> 32);
+        if (lower_part != 0) {
+            if (lower_part > 0) {
+                bundle.putInt("user_id", lower_part);
+            } else {
+                bundle.putInt("chat_id", -lower_part);
+            }
+        } else {
+            bundle.putInt("enc_id", high_id);
+        }
+        return bundle;
+    }
+
+    private void doShareApp() {
+        FireBaseLog.write(FireBaseLog.LogType.SHARE, "");
+        startActivity(new ShareHelper().getShareIntent(getApplicationContext()));
+    }
+
+    //customized:
+
+
+    //customized:
+    public void openSavedMessage() {
+        Bundle args = new Bundle();
+        args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+        presentFragment(new ChatActivity(args));
+        drawerLayoutContainer.closeDrawer(false);
+    }
+
+
+    Voice2TextHelper voice2TextHelper = new Voice2TextHelper(this);
+    private int VOICE_RECOGNITION_REQUEST_CODE = 12346;
+
+    private void onMyActivityResult(int requestCode, int resultCode, Intent data) {
+        //region Customized: voice to text
+        if (requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == RESULT_OK) {
+            // Fill the list view with the strings the recognizer thought it
+            // could have heard
+            ArrayList matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (matches.size() > 0) {
+                String command = matches.get(0).toString();
+                Bundle args = new Bundle();
+                args.putBoolean("onlySelect", true);
+                args.putBoolean("cantSendToChannels", true);
+                args.putInt("dialogsType", 0);
+                args.putString("voice2text", command);
+                //args.putInt("messagesCount", 1);
+                DialogsActivity fragment = new DialogsActivity(args);
+                fragment.setDelegate(
+                        (fragment1, dids, message, param) ->
+                        {
+                            if (dids.size() == 1) {
+                                Bundle bundle = getBundle(dids);
+                                bundle.putString("voice2text", command);
+                                presentFragment(new ChatActivity(bundle));
+                                fragment.finishFragment();
+                            } else {
+                                Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                presentFragment(fragment);
+                //todo:
+            } else {
+                Toast.makeText(this, "Error, try egain!", Toast.LENGTH_SHORT).show();
+            }
+        }
+        //endregion
+    }
+
+
+    //region Customized: change bad proxy
+
+
+    private void doRefreshProxy() {
+//        Log.i(TAG, "doRefreshProxy: currentConnectionState:" + currentConnectionState);
+        try {
+            if (!SharedStorage.smartProxyChanger() || !SharedStorage.proxyServer()) {
+                return;
+            }
+            if (currentConnectionState == ConnectionsManager.ConnectionStateConnectingToProxy) {
+                proxyChangeHandler = new Handler();
+                String s = SharedStorage.smartProxyChangerTime();
+                if (s.length() > 0) {
+                    int time = Integer.parseInt(SharedStorage.smartProxyChangerTime()) * 1000;
+                    Log.i(TAG, "doRefreshProxy: time:" + time);
+                    if (time > 1000) {
+                        proxyControllerHelper.checkProxyList(param -> {
+                            Log.i(TAG, "doRefreshProxy: start postDelayed");
+                            proxyChangeHandler.removeCallbacks(proxyChangeRunnable);
+                            proxyChangeHandler.postDelayed(proxyChangeRunnable, time);
+                        });
+                    }
+                }
+            } else {
+                proxyChangeHandler.removeCallbacks(proxyChangeRunnable);
+                Log.i(TAG, "doRefreshProxy: removeCallbacks");
+            }
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "doRefreshProxy: ", e);
+        }
+    }
+
+    Runnable proxyChangeRunnable = () -> {
+        Log.i(TAG, "proxyChangeRunnable : runing... ");
+        if (proxyControllerHelper != null) {
+            proxyControllerHelper.change("launch", true);
+        }
+    };
+    //endregion
+
+    //endregion
 }

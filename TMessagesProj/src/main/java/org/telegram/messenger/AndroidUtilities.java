@@ -53,6 +53,14 @@ import android.provider.CallLog;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
+
+import androidx.core.content.FileProvider;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
+
 import android.telephony.TelephonyManager;
 import android.text.Layout;
 import android.text.Selection;
@@ -103,6 +111,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
+import com.finalsoft.SharedStorage;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
@@ -210,6 +220,7 @@ public class AndroidUtilities {
     public static Pattern BAD_CHARS_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_PATTERN = null;
     public static Pattern BAD_CHARS_MESSAGE_LONG_PATTERN = null;
+    private static boolean transparentStatusBar = SharedStorage.chatSettings(SharedStorage.keys.TRANSPARENT_STATUS_BAR);
 
     static {
         try {
@@ -569,7 +580,7 @@ public class AndroidUtilities {
                 color = 1;
             } else if (name.contains(".pdf") || name.contains(".ppt") || name.contains(".key")) {
                 color = 2;
-            } else if (name.contains(".zip") || name.contains(".rar") || name.contains(".ai") || name.contains(".mp3")  || name.contains(".mov") || name.contains(".avi")) {
+            } else if (name.contains(".zip") || name.contains(".rar") || name.contains(".ai") || name.contains(".mp3") || name.contains(".mov") || name.contains(".avi")) {
                 color = 3;
             }
             if (color == -1) {
@@ -1428,7 +1439,22 @@ public class AndroidUtilities {
         return result;
     }
 
+    //    static String local = LocaleController.getCurrentLanguageShortName().toLowerCase();
+    static String current_font = SharedStorage.selectedFont();
+
+    public static void updateFont() {
+        current_font = SharedStorage.selectedFont();
+        Theme.typeface = getTypeface("");
+    }
+
     public static Typeface getTypeface(String assetPath) {
+        if (!current_font.contains("rmedium")) {
+            return getTypeface("fonts/" + current_font + ".ttf", 1);
+        }
+        return getTypeface(assetPath, 1);
+    }
+
+    public static Typeface getTypeface(String assetPath, int fake) {
         synchronized (typefaceCache) {
             if (!typefaceCache.containsKey(assetPath)) {
                 try {
@@ -2418,6 +2444,7 @@ public class AndroidUtilities {
     }
 
     private static long lastUpdateCheckTime;
+
     public static void checkForUpdates() {
 
     }
@@ -2813,8 +2840,7 @@ public class AndroidUtilities {
                 return String.format(Locale.US, "%d:%02d:%02d / %02d:%02d", ph, pm, ps, m, s);
             } else if (ph == 0) {
                 return String.format(Locale.US, "%02d:%02d / %d:%02d:%02d", pm, ps, h, m, s);
-            }
-            else {
+            } else {
                 return String.format(Locale.US, "%d:%02d:%02d / %d:%02d:%02d", ph, pm, ps, h, m, s);
             }
         }
@@ -2864,7 +2890,7 @@ public class AndroidUtilities {
         if (num_ < 0.1) {
             return "0";
         } else {
-            if ((num_ * 10)== (int) (num_ * 10)) {
+            if ((num_ * 10) == (int) (num_ * 10)) {
                 return String.format(Locale.ENGLISH, "%s%s", AndroidUtilities.formatCount((int) num_), numbersSignatureArray[count]);
             } else {
                 return String.format(Locale.ENGLISH, "%.1f%s", (int) (num_ * 10) / 10f, numbersSignatureArray[count]);
@@ -3427,6 +3453,11 @@ public class AndroidUtilities {
             SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
             editor.putBoolean("proxy_enabled", true);
             editor.putString("proxy_ip", address);
+            editor.putBoolean("proxy_limit", false);
+            editor.putBoolean("proxy_show_sponsor", false);
+            editor.putInt("proxy_points", 0);
+            editor.putString("proxy_name", "");
+
             int p = Utilities.parseInt(port);
             editor.putInt("proxy_port", p);
 
@@ -3629,7 +3660,7 @@ public class AndroidUtilities {
         hsb[1] = Math.min(1.0f, hsb[1] + 0.05f);
         if (hsb[2] > 0.5f) {
             hsb[2] = Math.max(0.0f, hsb[2] * 0.90f);
-        } else{
+        } else {
             hsb[2] = Math.max(0.0f, hsb[2] * 0.90f);
         }
         return HSBtoRGB(hsb[0], hsb[1], hsb[2]) | 0xff000000;
@@ -3921,7 +3952,13 @@ public class AndroidUtilities {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             final View decorView = window.getDecorView();
             int flags = decorView.getSystemUiVisibility();
+            if (transparentStatusBar) {//Customized:
+                window.setStatusBarColor(Color.TRANSPARENT);
+            }
             if (enable) {
+                if (!transparentStatusBar) {//Customized:
+                    window.setStatusBarColor(0x0f000000);
+                }
                 if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) == 0) {
                     flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);
@@ -3932,6 +3969,9 @@ public class AndroidUtilities {
                     window.setStatusBarColor(Color.TRANSPARENT);
                 }
             } else {
+                if (!transparentStatusBar) { //Customized:
+                    window.setStatusBarColor(0x33000000);
+                }
                 if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0) {
                     flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);

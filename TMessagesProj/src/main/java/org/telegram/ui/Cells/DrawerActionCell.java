@@ -26,6 +26,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Switch;
 
 import java.util.Set;
 
@@ -34,6 +35,7 @@ public class DrawerActionCell extends FrameLayout {
     private TextView textView;
     private int currentId;
     private RectF rect = new RectF();
+    private Switch checkBox;
 
     public DrawerActionCell(Context context) {
         super(context);
@@ -48,6 +50,13 @@ public class DrawerActionCell extends FrameLayout {
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         textView.setCompoundDrawablePadding(AndroidUtilities.dp(29));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19, 0, 16, 0));
+
+        checkBox = new Switch(context);
+        checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked,
+                Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
+        addView(checkBox, LayoutHelper.createFrame(37, 20,
+                Gravity.RIGHT | Gravity.CENTER_VERTICAL, 22, 0,
+                22, 0));
 
         setWillNotDraw(false);
     }
@@ -85,6 +94,18 @@ public class DrawerActionCell extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
+    }
+
+    public void setChecked(boolean checked) {
+        checkBox.setChecked(checked, true);
+    }
+
+    public boolean isChecked() {
+        return checkBox.isChecked();
+    }
+
+    public void showCheckBox(boolean show) {
+        checkBox.setVisibility(show ? VISIBLE : GONE);
     }
 
     public void setTextAndIcon(int id, String text, int resId) {

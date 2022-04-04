@@ -11,6 +11,8 @@ package org.telegram.ui.Adapters;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,8 +44,12 @@ import java.util.TimerTask;
 import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finalsoft.Config;
+import com.finalsoft.controller.HiddenController;
+
 public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
+    private static final String TAG = Config.TAG + "search";
     private Context mContext;
     private LongSparseArray<TLRPC.User> ignoreUsers;
     private ArrayList<Object> searchResult = new ArrayList<>();
@@ -162,7 +168,9 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                 for (int a = 0; a < contactsCopy.size(); a++) {
                     TLRPC.TL_contact contact = contactsCopy.get(a);
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contact.user_id);
-                    if (!allowSelf && user.self || onlyMutual && !user.mutual_contact || ignoreUsers != null && ignoreUsers.indexOfKey(contact.user_id) >= 0) {
+                    boolean is = HiddenController.getInstance().is(user.id);
+                    Log.i(TAG, "processSearch: is:" + is + ", user:" + user.last_name);
+                    if (is && !allowSelf && user.self || onlyMutual && !user.mutual_contact || ignoreUsers != null && ignoreUsers.indexOfKey(contact.user_id) >= 0) {
                         continue;
                     }
 

@@ -10,6 +10,11 @@ package org.telegram.ui.Adapters;
 
 import android.util.Pair;
 
+import android.util.SparseArray;
+
+import com.finalsoft.SharedStorage;
+import com.finalsoft.controller.HiddenController;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
@@ -89,6 +94,8 @@ public class SearchAdapterHelper {
     private HashMap<String, HashtagObject> hashtagsByText;
     private boolean hashtagsLoadedFromDb = false;
 
+    private boolean activeHideMode;
+
     protected static final class DialogSearchResult {
         public TLObject object;
         public int date;
@@ -97,6 +104,7 @@ public class SearchAdapterHelper {
 
     public SearchAdapterHelper(boolean allAsGlobal) {
         allResultsAreGlobal = allAsGlobal;
+        activeHideMode = HiddenController.getInstance().isActive();
     }
 
     public void setAllowGlobalResults(boolean value) {
@@ -223,14 +231,19 @@ public class SearchAdapterHelper {
                                         if (!allowChats || canAddGroupsOnly && !ChatObject.canAddBotsToChat(chat) || !allowGlobalResults && ChatObject.isNotInChat(chat)) {
                                             continue;
                                         }
-                                        globalSearch.add(chat);
-                                        globalSearchMap.put(-chat.id, chat);
+                                        if (!activeHideMode || !HiddenController.getInstance().is(chat.id)) {
+                                            globalSearch.add(chat);
+                                            globalSearchMap.put(-chat.id, chat);
+                                        }
                                     } else if (user != null) {
                                         if (canAddGroupsOnly || !allowBots && user.bot || !allowSelf && user.self || !allowGlobalResults && b == 1 && !user.contact) {
                                             continue;
                                         }
-                                        globalSearch.add(user);
-                                        globalSearchMap.put(user.id, user);
+
+                                        if (!activeHideMode || !HiddenController.getInstance().is(user.id)) {
+                                            globalSearch.add(user);
+                                            globalSearchMap.put(user.id, user);
+                                        }
                                     }
                                 }
                             }
@@ -250,14 +263,18 @@ public class SearchAdapterHelper {
                                         if (!allowChats || canAddGroupsOnly && !ChatObject.canAddBotsToChat(chat)) {
                                             continue;
                                         }
-                                        localServerSearch.add(chat);
-                                        globalSearchMap.put(-chat.id, chat);
+                                        if (!activeHideMode || !HiddenController.getInstance().is(chat.id)) {
+                                            localServerSearch.add(chat);
+                                            globalSearchMap.put(-chat.id, chat);
+                                        }
                                     } else if (user != null) {
                                         if (canAddGroupsOnly || !allowBots && user.bot || !allowSelf && user.self) {
                                             continue;
                                         }
-                                        localServerSearch.add(user);
-                                        globalSearchMap.put(user.id, user);
+                                        if (!activeHideMode || !HiddenController.getInstance().is(user.id)) {
+                                            localServerSearch.add(user);
+                                            globalSearchMap.put(user.id, user);
+                                        }
                                     }
                                 }
                             }
@@ -288,8 +305,10 @@ public class SearchAdapterHelper {
                     if (!hasFullMatch) {
                         hasFullMatch = user.phone.length() == phone.length();
                     }
-                    phonesSearch.add(user);
-                    phoneSearchMap.put(user.id, user);
+                    if (!activeHideMode || !HiddenController.getInstance().is(user.id)) {
+                        phonesSearch.add(user);
+                        phoneSearchMap.put(user.id, user);
+                    }
                 }
             }
             if (!hasFullMatch) {
@@ -419,6 +438,7 @@ public class SearchAdapterHelper {
         if (globalSearchMap.size() == 0 || localResults == null) {
             return;
         }
+
         int count = localResults.size();
         for (int a = 0; a < count; a++) {
             Object obj = localResults.get(a);
@@ -612,4 +632,5 @@ public class SearchAdapterHelper {
         hashtagsLoadedFromDb = true;
         delegate.onSetHashtags(arrayList, hashMap);
     }
+
 }

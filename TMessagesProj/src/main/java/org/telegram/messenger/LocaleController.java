@@ -22,6 +22,12 @@ import android.util.Xml;
 
 import androidx.annotation.StringRes;
 
+import com.finalsoft.Config;
+import com.finalsoft.controller.LocalController;
+import com.finalsoft.helper.NumberHelper;
+
+import java.util.Objects;
+
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -42,7 +48,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.TimeZone;
 
-public class LocaleController {
+public class LocaleController extends LocalController {
 
     static final int QUANTITY_OTHER = 0x0000;
     static final int QUANTITY_ZERO = 0x0001;
@@ -74,7 +80,7 @@ public class LocaleController {
 
     private HashMap<String, PluralRules> allRules = new HashMap<>();
 
-    private Locale currentLocale;
+    public Locale currentLocale;
     private Locale systemDefaultLocale;
     private PluralRules currentPluralRules;
     private LocaleInfo currentLocaleInfo;
@@ -220,6 +226,7 @@ public class LocaleController {
     private ArrayList<LocaleInfo> otherLanguages = new ArrayList<>();
 
     private static volatile LocaleController Instance = null;
+
     public static LocaleController getInstance() {
         LocaleController localInstance = Instance;
         if (localInstance == null) {
@@ -970,6 +977,7 @@ public class LocaleController {
         return localeInfo == null || TextUtils.isEmpty(localeInfo.name) ? getString("LanguageName", R.string.LanguageName) : localeInfo.name;
     }
 
+
     private String getStringInternal(String key, int res) {
         return getStringInternal(key, null, res);
     }
@@ -991,7 +999,7 @@ public class LocaleController {
         if (value == null) {
             value = "LOC_ERR:" + key;
         }
-        return value;
+        return getAppName(value);
     }
 
     public static String getServerString(String key) {
@@ -1002,7 +1010,7 @@ public class LocaleController {
                 value = ApplicationLoader.applicationContext.getString(resourceId);
             }
         }
-        return value;
+        return getAppName(Objects.requireNonNull(value));
     }
 
     public static String getString(@StringRes int res) {
@@ -1102,9 +1110,9 @@ public class LocaleController {
             }
 
             if (getInstance().currentLocale != null) {
-                return String.format(getInstance().currentLocale, value, args);
+                return String.format(getInstance().currentLocale, getAppName(value), args);
             } else {
-                return String.format(value, args);
+                return String.format(getAppName(value), args);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -1865,6 +1873,20 @@ public class LocaleController {
     }
 
     public static String formatShortNumber(int number, int[] rounded) {
+        //region Customized: finalsoft > add CVS split format to int
+        if (show_full_number) {
+            String count = String.format("%s", number);
+            try {
+                count = NumberHelper.format(number);
+            } catch (Exception ignored) {
+            }
+            if (count.isEmpty() || count.equals("0")) {
+                count = String.format("%s", number);
+            }
+            return count;
+        }
+        //endregion
+
         StringBuilder K = new StringBuilder();
         int lastDec = 0;
         int KCount = 0;
@@ -1961,7 +1983,7 @@ public class LocaleController {
                     return getString("WithinAWeek", R.string.WithinAWeek);
                 } else if (user.status.expires == -102) {
                     return getString("WithinAMonth", R.string.WithinAMonth);
-                }  else {
+                } else {
                     return formatDateOnline(user.status.expires);
                 }
             }
@@ -3177,4 +3199,11 @@ public class LocaleController {
             }
         }
     }
+
+    public static String getCurrentLanguageShortName() {
+        LocaleController.LocaleInfo localeInfo = getInstance().currentLocaleInfo;
+        return localeInfo == null || TextUtils.isEmpty(localeInfo.name) ? "en" : localeInfo.shortName;
+    }
+
+
 }

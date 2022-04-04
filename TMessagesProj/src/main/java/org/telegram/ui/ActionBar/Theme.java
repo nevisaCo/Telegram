@@ -35,6 +35,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -133,6 +134,7 @@ public class Theme {
     public static final String DEFAULT_BACKGROUND_SLUG = "d";
     public static final String THEME_BACKGROUND_SLUG = "t";
     public static final String COLOR_BACKGROUND_SLUG = "c";
+    public static Typeface typeface = AndroidUtilities.getTypeface("");
 
     public static final int MSG_OUT_COLOR_BLACK = 0xff212121;
     public static final int MSG_OUT_COLOR_WHITE = 0xffffffff;
@@ -1750,7 +1752,7 @@ public class Theme {
                 fileName = "";
             }
             if (!TextUtils.isEmpty(info.originalFileName)) {
-                if (!info.originalFileName.equals(info.fileName)){
+                if (!info.originalFileName.equals(info.fileName)) {
                     try {
                         File fromFile = new File(ApplicationLoader.getFilesDirFixed(), info.originalFileName);
                         File toFile = new File(ApplicationLoader.getFilesDirFixed(), originalFileName = parentTheme.generateWallpaperName(parentAccent, true));
@@ -1971,7 +1973,7 @@ public class Theme {
 
         private void loadOverrideWallpaper(SharedPreferences sharedPreferences, ThemeAccent accent, String key) {
             try {
-                String json = sharedPreferences.getString(key,  null);
+                String json = sharedPreferences.getString(key, null);
                 if (TextUtils.isEmpty(json)) {
                     return;
                 }
@@ -2743,6 +2745,7 @@ public class Theme {
 
     public static Drawable listSelector;
     public static Drawable[] avatarDrawables = new Drawable[12];
+    public static Drawable avatar_ghostDrawable;
 
     public static Drawable moveUpDrawable;
 
@@ -2779,6 +2782,8 @@ public class Theme {
     public static Drawable dialogs_broadcastDrawable;
     public static Drawable dialogs_botDrawable;
     public static Drawable dialogs_muteDrawable;
+    public static Drawable dialogs_ghostDrawable;
+    public static Drawable dialogs_mutualContactDrawable;
     public static Drawable dialogs_verifiedDrawable;
     public static ScamDrawable dialogs_scamDrawable;
     public static ScamDrawable dialogs_fakeDrawable;
@@ -2933,6 +2938,11 @@ public class Theme {
     public static Drawable chat_msgBroadcastDrawable;
     public static Drawable chat_msgBroadcastMediaDrawable;
     public static Drawable chat_contextResult_shadowUnderSwitchDrawable;
+    public static Drawable chat_shareDrawable;
+    //region Customized:
+    public static Drawable chat_markDrawable;
+    public static Drawable chat_markIconDrawable, chat_markFilledIconDrawable;
+    //endregion
     public static Drawable chat_shareIconDrawable;
     public static Drawable chat_replyIconDrawable;
     public static Drawable chat_goIconDrawable;
@@ -4559,7 +4569,7 @@ public class Theme {
         defaultColors.put(key_statisticChartNightIconColor, 0xff8E8E93);
         defaultColors.put(key_statisticChartChevronColor, 0xffD2D5D7);
         defaultColors.put(key_statisticChartHighlightColor, 0x20ececec);
-        defaultColors.put(key_statisticChartPopupBackground,0xffffffff);
+        defaultColors.put(key_statisticChartPopupBackground, 0xffffffff);
 
         defaultColors.put(key_statisticChartLine_blue, 0xff327FE5);
         defaultColors.put(key_statisticChartLine_green, 0xff61C752);
@@ -4954,6 +4964,16 @@ public class Theme {
         SharedPreferences themeConfig = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
 
         ThemeInfo themeInfo = new ThemeInfo();
+        themeInfo.name = "Default";
+        themeInfo.assetName = "theme.attheme";
+        themeInfo.previewBackgroundColor = 0x6086630;
+        themeInfo.previewInColor = 0xffffffff;
+        themeInfo.previewOutColor = 0xffd0e6ff;
+        themeInfo.sortIndex = 0;
+        themes.add(currentDayTheme = currentTheme = defaultTheme = themeInfo);
+        themesDict.put("Default", themeInfo);
+
+        themeInfo = new ThemeInfo();
         themeInfo.name = "Blue";
         themeInfo.assetName = "bluebubbles.attheme";
         themeInfo.previewBackgroundColor = 0xff95beec;
@@ -8062,6 +8082,7 @@ public class Theme {
             avatarDrawables[9] = resources.getDrawable(R.drawable.folders_archive);
             avatarDrawables[10] = resources.getDrawable(R.drawable.folders_private);
             avatarDrawables[11] = resources.getDrawable(R.drawable.chats_replies);
+            avatar_ghostDrawable = resources.getDrawable(R.drawable.ghost);
 
 
             if (dialogs_archiveAvatarDrawable != null) {
@@ -8181,19 +8202,22 @@ public class Theme {
             dialogs_messagePrintingPaint = new TextPaint[2];
             for (int a = 0; a < 2; a++) {
                 dialogs_namePaint[a] = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-                dialogs_namePaint[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                dialogs_namePaint[a].setTypeface(typeface);
                 dialogs_nameEncryptedPaint[a] = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-                dialogs_nameEncryptedPaint[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                dialogs_nameEncryptedPaint[a].setTypeface(typeface);
                 dialogs_messagePaint[a] = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 dialogs_messagePrintingPaint[a] = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                dialogs_messagePaint[a].setTypeface(typeface); //Customized: set dialogs description messages font
             }
             dialogs_searchNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            dialogs_searchNamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            dialogs_searchNamePaint.setTypeface(typeface);
             dialogs_searchNameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            dialogs_searchNameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            dialogs_searchNameEncryptedPaint.setTypeface(typeface);
             dialogs_messageNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            dialogs_messageNamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            dialogs_messageNamePaint.setTypeface(typeface);
             dialogs_timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            dialogs_countTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            dialogs_countTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             dialogs_archiveTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             dialogs_archiveTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             dialogs_archiveTextPaintSmall = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -8227,6 +8251,10 @@ public class Theme {
             dialogs_botDrawable = resources.getDrawable(R.drawable.list_bot);
             dialogs_pinnedDrawable = resources.getDrawable(R.drawable.list_pin);
             moveUpDrawable = resources.getDrawable(R.drawable.preview_open);
+
+            //customized:
+            dialogs_ghostDrawable = resources.getDrawable(BuildVars.GHOST_ON_ICON).mutate();
+            dialogs_mutualContactDrawable = resources.getDrawable(R.drawable.ic_outline_contact_phone).mutate();
 
             RectF rect = new RectF();
             chat_updatePath[0] = new Path();
@@ -8299,6 +8327,8 @@ public class Theme {
         setDrawableColorByKey(dialogs_pinnedDrawable, key_chats_pinnedIcon);
         setDrawableColorByKey(dialogs_reorderDrawable, key_chats_pinnedIcon);
         setDrawableColorByKey(dialogs_muteDrawable, key_chats_muteIcon);
+        setDrawableColorByKey(dialogs_ghostDrawable, key_chats_muteIcon);
+        setDrawableColorByKey(dialogs_mutualContactDrawable, key_chats_muteIcon);
         setDrawableColorByKey(dialogs_mentionDrawable, key_chats_mentionIcon);
         setDrawableColorByKey(dialogs_reactionsMentionDrawable, key_chats_mentionIcon);
         setDrawableColorByKey(dialogs_verifiedDrawable, key_chats_verifiedBackground);
@@ -8338,7 +8368,12 @@ public class Theme {
                 chat_msgTextPaintTwoEmoji = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 chat_msgTextPaintThreeEmoji = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 chat_msgBotButtonPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                chat_msgBotButtonPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                chat_msgBotButtonPaint.setTypeface(typeface);
+
+                //region Customized: set font for messages text
+                chat_msgGameTextPaint.setTypeface(typeface);
+                chat_msgTextPaint.setTypeface(typeface);
+                //endregion
             }
 
             chat_msgTextPaintOneEmoji.setTextSize(AndroidUtilities.dp(28));
@@ -8358,14 +8393,14 @@ public class Theme {
             chat_stickerCommentCountPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_stickerCommentCountPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_docNamePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_docNamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_docNamePaint.setTypeface(typeface);
             chat_docBackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_deleteProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_botProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_botProgressPaint.setStrokeCap(Paint.Cap.ROUND);
             chat_botProgressPaint.setStyle(Paint.Style.STROKE);
             chat_locationTitlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_locationTitlePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_locationTitlePaint.setTypeface(typeface);
             chat_locationAddressPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_urlPaint = new Paint();
             chat_urlPaint.setPathEffect(LinkPath.roundedEffect);
@@ -8380,29 +8415,29 @@ public class Theme {
             chat_radialProgress2Paint.setStyle(Paint.Style.STROKE);
             chat_audioTimePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_livePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_livePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_livePaint.setTypeface(typeface);
             chat_audioTitlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_audioTitlePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_audioTitlePaint.setTypeface(typeface);
             chat_audioPerformerPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_botButtonPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_botButtonPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_botButtonPaint.setTypeface(typeface);
             chat_contactNamePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_contactNamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_contactNamePaint.setTypeface(typeface);
             chat_contactPhonePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_durationPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_gamePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_gamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_gamePaint.setTypeface(typeface);
             chat_shipmentPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_adminPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            chat_namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_namePaint.setTypeface(typeface);
             chat_forwardNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_replyNamePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            chat_replyNamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_replyNamePaint.setTypeface(typeface);
             chat_replyTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             chat_instantViewPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_instantViewPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_instantViewPaint.setTypeface(typeface);
             chat_instantViewRectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_instantViewRectPaint.setStyle(Paint.Style.STROKE);
             chat_instantViewRectPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -8421,7 +8456,7 @@ public class Theme {
             chat_actionBackgroundGradientDarkenPaint.setColor(0x2a000000);
             chat_timeBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_contextResult_titleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            chat_contextResult_titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_contextResult_titleTextPaint.setTypeface(typeface);
             chat_contextResult_descriptionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_composeBackgroundPaint = new Paint();
             chat_radialProgressPausedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -8557,6 +8592,11 @@ public class Theme {
             chat_attachButtonDrawables[4] = new RLottieDrawable(R.raw.attach_location, "attach_location", AndroidUtilities.dp(26), AndroidUtilities.dp(26));
             chat_attachButtonDrawables[5] = new RLottieDrawable(R.raw.attach_poll, "attach_poll", AndroidUtilities.dp(26), AndroidUtilities.dp(26));
             chat_attachEmptyDrawable = resources.getDrawable(R.drawable.nophotos3);
+
+            //customized:
+            chat_markDrawable = createRoundRectDrawable(AndroidUtilities.dp(16), 0xffffffff);
+            chat_markIconDrawable = resources.getDrawable(R.drawable.msg_fave);
+            chat_markFilledIconDrawable = resources.getDrawable(R.drawable.ic_ab_fave);
 
             chat_shareIconDrawable = resources.getDrawable(R.drawable.share_arrow).mutate();
             chat_replyIconDrawable = resources.getDrawable(R.drawable.fast_reply);
@@ -9189,7 +9229,8 @@ public class Theme {
     private static ColorFilter currentShareColorFilter;
     private static int currentShareColorFilterColor;
     private static ColorFilter currentShareSelectedColorFilter;
-    private static  int currentShareSelectedColorFilterColor;
+    private static int currentShareSelectedColorFilterColor;
+
     public static ColorFilter getShareColorFilter(int color, boolean selected) {
         if (selected) {
             if (currentShareSelectedColorFilter == null || currentShareSelectedColorFilterColor != color) {

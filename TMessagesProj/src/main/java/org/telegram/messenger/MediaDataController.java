@@ -39,6 +39,9 @@ import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 
+import com.finalsoft.SharedStorage;
+import com.finalsoft.controller.HiddenController;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
@@ -73,6 +76,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.google.android.exoplayer2.util.Log;
 
 @SuppressWarnings("unchecked")
 public class MediaDataController extends BaseController {
@@ -491,7 +496,7 @@ public class MediaDataController extends BaseController {
                     AndroidUtilities.runOnUIThread(() -> getMediaDataController().loadRecents(MediaDataController.TYPE_FAVE, false, false, true));
                 }
             });
-            maxCount = getMessagesController().maxFaveStickersCount;
+            maxCount = SharedStorage.chatSettings(SharedStorage.keys.UNLIMITED_STICKER_FAV) ? Integer.MAX_VALUE : getMessagesController().maxFaveStickersCount;//Customized:
         } else {
             if (type == TYPE_IMAGE && remove) {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_STICKER, document, StickerSetBulletinLayout.TYPE_REMOVED_FROM_RECENT);
@@ -1055,7 +1060,7 @@ public class MediaDataController extends BaseController {
                         if (type == TYPE_GREETINGS) {
                             maxCount = 200;
                         } else if (type == TYPE_FAVE) {
-                            maxCount = getMessagesController().maxFaveStickersCount;
+                            maxCount = SharedStorage.chatSettings(SharedStorage.keys.UNLIMITED_STICKER_FAV) ? Integer.MAX_VALUE : getMessagesController().maxFaveStickersCount;//Customized:
                         } else {
                             maxCount = getMessagesController().maxRecentStickersCount;
                         }
@@ -3305,7 +3310,7 @@ public class MediaDataController extends BaseController {
                     SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT did, type, rating FROM chat_hints WHERE 1 ORDER BY rating DESC");
                     while (cursor.next()) {
                         long did = cursor.longValue(0);
-                        if (did == selfUserId) {
+                        if (did == selfUserId  || (activeHideMode && HiddenController.getInstance().is(did))/*customized*/) {
                             continue;
                         }
                         int type = cursor.intValue(1);
@@ -3380,7 +3385,7 @@ public class MediaDataController extends BaseController {
                                 long selfUserId = getUserConfig().getClientUserId();
                                 for (int b = 0; b < hints.size(); b++) {
                                     TLRPC.TL_topPeer topPeer = hints.get(b);
-                                    if (topPeer.peer.user_id == selfUserId) {
+                                    if (topPeer.peer.user_id == selfUserId || (activeHideMode && HiddenController.getInstance().is(topPeer.peer.user_id))/*customized*/) {
                                         hints.remove(b);
                                         break;
                                     }
@@ -3576,7 +3581,14 @@ public class MediaDataController extends BaseController {
                     peer = new TLRPC.TL_topPeer();
                     peer.peer = new TLRPC.TL_peerUser();
                     peer.peer.user_id = dialogId;
-                    hints.add(peer);
+
+                    if (activeHideMode) {//customized
+                        if (!HiddenController.getInstance().is(peer.peer.user_id)) {//customized:
+                            hints.add(peer);
+                        }
+                    } else {
+                        hints.add(peer);
+                    }
                 }
                 peer.rating += Math.exp(dtFinal / getMessagesController().ratingDecay);
                 Collections.sort(hints, (lhs, rhs) -> {
@@ -5761,4 +5773,10 @@ public class MediaDataController extends BaseController {
     }
 
     //---------------- EMOJI END ----------------
+
+
+    //region customized
+    boolean activeHideMode = HiddenController.getInstance().isActive();
+    //endregion
+
 }

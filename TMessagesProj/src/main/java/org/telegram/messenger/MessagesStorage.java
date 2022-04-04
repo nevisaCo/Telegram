@@ -15,6 +15,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -48,7 +49,13 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.ui.tab.FolderSettingController;
+import com.google.gson.Gson;
+
 public class MessagesStorage extends BaseController {
+    private static final String TAG = Config.TAG + "ms";
 
     private DispatchQueue storageQueue = new DispatchQueue("storageQueue");
     private SQLiteDatabase database;
@@ -311,7 +318,8 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE INDEX IF NOT EXISTS folder_id_idx_dialogs ON dialogs(folder_id);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS flags_idx_dialogs ON dialogs(flags);").stepThis().dispose();
 
-                database.executeFast("CREATE TABLE dialog_filter(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT)").stepThis().dispose();
+                //customized: edited
+                database.executeFast("CREATE TABLE dialog_filter(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT, emoticon TEXT)").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_filter_ep(id INTEGER, peer INTEGER, PRIMARY KEY (id, peer))").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_filter_pin_v2(id INTEGER, peer INTEGER, pin INTEGER, PRIMARY KEY (id, peer))").stepThis().dispose();
 
@@ -396,6 +404,10 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE downloading_documents(data BLOB, hash INTEGER, id INTEGER, state INTEGER, date INTEGER, PRIMARY KEY(hash, id));").stepThis().dispose();
                 //version
                 database.executeFast("PRAGMA user_version = " + LAST_DB_VERSION).stepThis().dispose();
+
+                //Customized: add download manager table
+                database.executeFast("CREATE TABLE my_idm(mid INTEGER PRIMARY KEY, uid INTEGER, date INTEGER, data BLOB)").stepThis().dispose();
+
             } else {
                 int version = database.executeInt("PRAGMA user_version");
                 if (BuildVars.LOGS_ENABLED) {
@@ -499,6 +511,9 @@ public class MessagesStorage extends BaseController {
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onDatabaseMigration, true);
         });
 
+        //Customized: add download manager table
+        database.executeFast("CREATE TABLE IF NOT EXISTS my_idm(mid INTEGER PRIMARY KEY, uid INTEGER, date INTEGER, data BLOB)").stepThis().dispose();
+        //
         int version = currentVersion;
         FileLog.d("MessagesStorage start db migration from " + version + " to " + LAST_DB_VERSION);
         if (version < 4) {
@@ -1524,6 +1539,7 @@ public class MessagesStorage extends BaseController {
             executeNoException("UPDATE messages_v2 SET replydata = NULL");
             executeNoException("UPDATE scheduled_messages_v2 SET replydata = NULL");
             database.executeFast("PRAGMA user_version = 86").stepThis().dispose();
+
             version = 86;
         }
 
@@ -1558,6 +1574,14 @@ public class MessagesStorage extends BaseController {
             database.executeFast("CREATE TABLE downloading_documents(data BLOB, hash INTEGER, id INTEGER, state INTEGER, date INTEGER, PRIMARY KEY(hash, id));").stepThis().dispose();
             database.executeFast("PRAGMA user_version = 92").stepThis().dispose();
             version = 92;
+        }
+
+        //customized: add this
+        if (version == 86) {
+            executeNoException("ALTER TABLE dialog_filter ADD COLUMN emoticon Text");
+            database.executeFast("PRAGMA user_version = 87").stepThis().dispose();
+
+            version = 87;
         }
 
         FileLog.d("MessagesStorage db migration finished");
@@ -2375,7 +2399,7 @@ public class MessagesStorage extends BaseController {
 
                 usersToLoad.add(getUserConfig().getClientUserId());
 
-                SQLiteCursor filtersCursor = database.queryFinalized("SELECT id, ord, unread_count, flags, title FROM dialog_filter WHERE 1");
+                SQLiteCursor filtersCursor = database.queryFinalized("SELECT id, ord, unread_count, flags, title, emoticon  FROM dialog_filter WHERE 1");
 
                 boolean updateCounters = false;
                 while (filtersCursor.next()) {
@@ -2385,6 +2409,9 @@ public class MessagesStorage extends BaseController {
                     filter.pendingUnreadCount = filter.unreadCount = -1;//filtersCursor.intValue(2);
                     filter.flags = filtersCursor.intValue(3);
                     filter.name = filtersCursor.stringValue(4);
+                    filter.emoticon = filtersCursor.stringValue(5);
+                    Log.i(TAG, "loadDialogFilters: read emotion:" + filter.emoticon + " , name:" + filter.name + "" + new Gson().toJson(filtersCursor));
+
                     dialogFilters.add(filter);
                     dialogFiltersMap.put(filter.id, filter);
                     filtersById.put(filter.id, filter);
@@ -2858,6 +2885,7 @@ public class MessagesStorage extends BaseController {
     }
 
     private void saveDialogFilterInternal(MessagesController.DialogFilter filter, boolean atBegin, boolean peers) {
+        Log.i(TAG, "saveDialogFilterInternal: " + filter.emoticon);
         try {
             if (!dialogFilters.contains(filter)) {
                 if (atBegin) {
@@ -2868,12 +2896,17 @@ public class MessagesStorage extends BaseController {
                 dialogFiltersMap.put(filter.id, filter);
             }
 
-            SQLitePreparedStatement state = database.executeFast("REPLACE INTO dialog_filter VALUES(?, ?, ?, ?, ?)");
+            //customized: edited
+            SQLitePreparedStatement state = database.executeFast("REPLACE INTO dialog_filter VALUES(?, ?, ?, ?, ?, ?)");
             state.bindInteger(1, filter.id);
             state.bindInteger(2, filter.order);
             state.bindInteger(3, filter.unreadCount);
             state.bindInteger(4, filter.flags);
             state.bindString(5, filter.name);
+
+            //customized:
+            state.bindString(6, (filter.emoticon != null ? filter.emoticon : ""));
+
             state.step();
             state.dispose();
             if (peers) {
@@ -2965,6 +2998,7 @@ public class MessagesStorage extends BaseController {
                         newFlags |= MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED;
                     }
 
+
                     MessagesController.DialogFilter filter = dialogFiltersMap.get(newFilter.id);
                     if (filter != null) {
                         filtersToDelete.remove(newFilter.id);
@@ -2974,6 +3008,17 @@ public class MessagesStorage extends BaseController {
                             changed = true;
                             filter.name = newFilter.title;
                         }
+
+                        //customized:
+                        if (FolderSettingController.getInstance().getShowRemoteEmotions(currentAccount)) {
+                            if (newFilter.emoticon != null && !newFilter.emoticon.isEmpty()) {
+                                if (!TextUtils.equals(filter.emoticon, newFilter.emoticon)) {
+                                    changed = true;
+                                    filter.emoticon = newFilter.emoticon;
+                                }
+                            }
+                        }
+
                         if (filter.flags != newFlags) {
                             filter.flags = newFlags;
                             changed = true;
@@ -3119,6 +3164,8 @@ public class MessagesStorage extends BaseController {
                         filter.id = newFilter.id;
                         filter.flags = newFlags;
                         filter.name = newFilter.title;
+                        //customized:
+                        filter.emoticon = newFilter.emoticon;
                         filter.pendingUnreadCount = -1;
                         for (int c = 0; c < 2; c++) {
                             if (c == 0) {

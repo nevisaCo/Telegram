@@ -46,6 +46,9 @@ import androidx.core.graphics.ColorUtils;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import com.finalsoft.SharedStorage;
+import com.finalsoft.ui.PrivacyActivity;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -349,7 +352,12 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
             startPressed = true;
 
-            presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
+            //Customized:show policy agreement
+            if (SharedStorage.privacyAgreementShown()){
+                presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
+            }else {
+                presentFragment(new PrivacyActivity(PrivacyActivity.ACTION_TYPE_PRIVACY_AGREEMENT), true);
+            }
             destroyed = true;
         });
 

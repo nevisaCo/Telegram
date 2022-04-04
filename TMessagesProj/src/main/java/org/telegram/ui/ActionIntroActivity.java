@@ -699,7 +699,8 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 imageView.setImageDrawable(new ShareLocationDrawable(context, 3));
                 imageView.setScaleType(ImageView.ScaleType.CENTER);
                 titleTextView.setText(LocaleController.getString("PeopleNearby", R.string.PeopleNearby));
-                descriptionText.setText(LocaleController.getString("PeopleNearbyAccessInfo", R.string.PeopleNearbyAccessInfo));
+                descriptionText.setText(String.format("%s\n%s", LocaleController.getString("PeopleNearbyAccessInfoCaution", R.string.PeopleNearbyAccessInfoCaution), LocaleController.getString("PeopleNearbyAccessInfo", R.string.PeopleNearbyAccessInfo)));
+                descriptionText.setTextSize(12);
                 buttonTextView.setText(LocaleController.getString("PeopleNearbyAllowAccess", R.string.PeopleNearbyAllowAccess));
                 break;
             }

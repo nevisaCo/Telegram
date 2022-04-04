@@ -128,7 +128,7 @@ public class EntityView extends FrameLayout {
             return false;
         }
 
-        float[] xy = delegate.getTransformedTouch(event.getRawX(), event.getRawY());
+        float[] xy = delegate.getTransformedTouch(event.getX(), event.getY());
         int action = event.getActionMasked();
         boolean handled = false;
 
@@ -276,8 +276,8 @@ public class EntityView extends FrameLayout {
             int action = event.getActionMasked();
             boolean handled = false;
 
-            float rawX = event.getRawX();
-            float rawY = event.getRawY();
+            float rawX = event.getX();
+            float rawY = event.getY();
             float[] xy = delegate.getTransformedTouch(rawX, rawY);
             float x = xy[0];
             float y = xy[1];

@@ -18,14 +18,22 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.annotation.IntDef;
 import androidx.core.content.pm.ShortcutManagerCompat;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+
+import java.io.UnsupportedEncodingException;
+import java.util.Objects;
+
 import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
+import org.telegram.ui.Components.SwipeGestureSettingsView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.SwipeGestureSettingsView;
 
@@ -49,6 +57,7 @@ public class SharedConfig {
     })
     public @interface PasscodeType {}
 
+    private static final String TAG = Config.TAG + "pass";
     public static String pushString = "";
     public static String pushStringStatus = "";
     public static long pushStringGetTimeStart;
@@ -171,13 +180,27 @@ public class SharedConfig {
         public boolean checking;
         public boolean available;
         public long availableCheckTime;
+        public boolean lock;
+        public boolean show_sponsor;
+        public int points;
+        public String name;
 
         public ProxyInfo(String a, int p, String u, String pw, String s) {
+            this(a, p, u, pw, s, false, false, 0, "");
+        }
+
+
+        public ProxyInfo(String a, int port, String u, String pw, String secret, boolean lock, boolean show_sponsor, int points, String name) {
             address = a;
-            port = p;
+            this.port = port;
             username = u;
             password = pw;
-            secret = s;
+            this.secret = secret;
+            this.lock = lock;
+            this.show_sponsor = show_sponsor;
+            this.points = points;
+            this.name = name;
+
             if (address == null) {
                 address = "";
             }
@@ -187,8 +210,11 @@ public class SharedConfig {
             if (username == null) {
                 username = "";
             }
-            if (secret == null) {
-                secret = "";
+            if (this.secret == null) {
+                this.secret = "";
+            }
+            if (name == null) {
+                name = "";
             }
         }
     }
@@ -297,6 +323,10 @@ public class SharedConfig {
             }
 
             String passcodeSaltString = preferences.getString("passcodeSalt", "");
+            if (BuildVars.DEBUG_VERSION) {
+                Log.i(TAG, "loadConfig: passcodeSaltString:" + passcodeSaltString);
+                Log.i(TAG, "loadConfig: hidemode:" + SharedStorage.hiddenModePassCode());
+            }
             if (passcodeSaltString.length() > 0) {
                 passcodeSalt = Base64.decode(passcodeSaltString, Base64.DEFAULT);
             } else {
@@ -503,6 +533,65 @@ public class SharedConfig {
     }
 
     public static boolean checkPasscode(String passcode) {
+        return checkPasscode(passcode, false);
+    }
+
+    public static boolean checkPasscode(String passcode, boolean hideMode) {
+        Log.i(TAG, "checkPasscode: hide mode:" + hideMode + " , passcodeSalt.length:" + passcodeSalt.length);
+
+        if (hideMode) {
+
+            if (SharedStorage.hiddenModePassCode().isEmpty()) {
+                Log.i(TAG, "checkPasscode: 1");
+                boolean result = Utilities.MD5(passcode).equals(passcodeHash);
+                if (result) {
+                    //region Customized: hidden mode
+                    try {
+                        byte[] salt = new byte[16];
+                        Utilities.random.nextBytes(salt);
+                        byte[] passcodeBytes = passcode.getBytes("UTF-8");
+                        byte[] bytes = new byte[32 + passcodeBytes.length];
+                        System.arraycopy(salt, 0, bytes, 0, 16);
+                        System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+                        System.arraycopy(salt, 0, bytes, passcodeBytes.length + 16, 16);
+
+                        String s = String.format("%s,%s",
+                                Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length)),
+                                Base64.encodeToString(salt, Base64.DEFAULT));
+                        Log.i(TAG, "checkPasscode: pass:" + s);
+                        SharedStorage.hiddenModePassCode(s);
+                    } catch (UnsupportedEncodingException e) {
+                        Log.e(TAG, "checkPasscode: ", e);
+                    }
+                    //endregion
+                }
+                return result;
+            } else {
+                Log.i(TAG, "checkPasscode: 2");
+                //region Customized: hideMode pass
+                try {
+                    byte[] passcodeBytes = passcode.getBytes("UTF-8");
+                    byte[] bytes = new byte[32 + passcodeBytes.length];
+                    String p = "";
+                    byte[] salt = passcodeSalt;
+                    String[] arr = SharedStorage.hiddenModePassCode().split(",");
+                    if (arr.length >= 2) {
+                        p = arr[0];
+                        salt = Base64.decode(arr[1], Base64.DEFAULT);
+                    }
+                    System.arraycopy(salt, 0, bytes, 0, 16);
+                    System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+                    System.arraycopy(salt, 0, bytes, passcodeBytes.length + 16, 16);
+                    String hash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
+                    return p.equals(hash);
+                } catch (Exception e) {
+                    Log.e(TAG, "checkPasscode: ", e);
+                }
+                //endregion
+            }
+            return false;
+        }
+
         if (passcodeSalt.length == 0) {
             boolean result = Utilities.MD5(passcode).equals(passcodeHash);
             if (result) {
@@ -999,6 +1088,10 @@ public class SharedConfig {
         String proxyPassword = preferences.getString("proxy_pass", "");
         String proxySecret = preferences.getString("proxy_secret", "");
         int proxyPort = preferences.getInt("proxy_port", 1080);
+        boolean proxyLimit = preferences.getBoolean("proxy_limit", false);
+        boolean proxyShowSponsor = preferences.getBoolean("proxy_show_sponsor", false);
+        int proxyPoints = preferences.getInt("proxy_points", 0);
+        String proxyName = preferences.getString("proxy_name", "");
 
         proxyListLoaded = true;
         proxyList.clear();
@@ -1014,10 +1107,23 @@ public class SharedConfig {
                         data.readInt32(false),
                         data.readString(false),
                         data.readString(false),
-                        data.readString(false));
+                        data.readString(false),
+                        data.readBool(false),
+                        data.readBool(false),
+                        data.readInt32(false),
+                        data.readString(false)
+                );
+
                 proxyList.add(info);
                 if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
-                    if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
+                    if (Objects.requireNonNull(proxyAddress).equals(info.address)
+                            && proxyPort == info.port
+                            && Objects.requireNonNull(proxyUsername).equals(info.username)
+                            && Objects.requireNonNull(proxyPassword).equals(info.password)
+                            && proxyLimit == info.lock
+                            && proxyPoints == info.points
+                            && Objects.requireNonNull(proxyName).equals(info.name)
+                    ) {
                         currentProxy = info;
                     }
                 }
@@ -1025,7 +1131,17 @@ public class SharedConfig {
             data.cleanup();
         }
         if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
-            ProxyInfo info = currentProxy = new ProxyInfo(proxyAddress, proxyPort, proxyUsername, proxyPassword, proxySecret);
+            ProxyInfo info = currentProxy =
+                    new ProxyInfo(proxyAddress,
+                            proxyPort,
+                            proxyUsername,
+                            proxyPassword,
+                            proxySecret,
+                            proxyLimit,
+                            proxyShowSponsor,
+                            proxyPoints,
+                            proxyName);
+
             proxyList.add(0, info);
         }
     }
@@ -1041,9 +1157,13 @@ public class SharedConfig {
             serializedData.writeString(info.username != null ? info.username : "");
             serializedData.writeString(info.password != null ? info.password : "");
             serializedData.writeString(info.secret != null ? info.secret : "");
+            serializedData.writeBool(info.lock);
+            serializedData.writeBool(info.show_sponsor);
+            serializedData.writeInt32(info.points);
+            serializedData.writeString(info.name != null ? info.name : "");
         }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        preferences.edit().putString("proxy_list", Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP)).commit();
+        preferences.edit().putString("proxy_list", Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP)).apply();
         serializedData.cleanup();
     }
 
@@ -1073,6 +1193,10 @@ public class SharedConfig {
             editor.putString("proxy_secret", "");
             editor.putInt("proxy_port", 1080);
             editor.putBoolean("proxy_enabled", false);
+            editor.putBoolean("proxy_limit", false);
+            editor.putBoolean("proxy_show_sponsor", false);
+            editor.putInt("proxy_points", 0);
+            editor.putString("proxy_name", "");
             editor.putBoolean("proxy_enabled_calls", false);
             editor.commit();
             if (enabled) {

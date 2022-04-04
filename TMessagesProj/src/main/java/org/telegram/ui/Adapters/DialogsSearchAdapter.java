@@ -57,8 +57,12 @@ import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finalsoft.Config;
+import com.finalsoft.controller.HiddenController;
+
 public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
+    private static final String TAG = Config.TAG + "asa";
     private Context mContext;
     private Runnable searchRunnable;
     private Runnable searchRunnable2;
@@ -86,6 +90,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private long selfUserId;
 
     private int currentAccount = UserConfig.selectedAccount;
+    private boolean activeHideMode;
 
     private ArrayList<RecentSearchObject> recentSearchObjects = new ArrayList<>();
     private LongSparseArray<RecentSearchObject> recentSearchObjectsById = new LongSparseArray<>();
@@ -151,8 +156,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             HintDialogCell cell = (HintDialogCell) holder.itemView;
-
             TLRPC.TL_topPeer peer = MediaDataController.getInstance(currentAccount).hints.get(position);
+/*            Log.i(TAG, "onBindViewHolder> hidemode: SharedStorage.hiddenDialogs():" + SharedStorage.hiddenDialogs());
+            Log.i(TAG, "onBindViewHolder> hidemode: peer:" + peer.peer.user_id);
+            if (HiddenController.getInstance().is(peer.peer.user_id)) {
+                Log.i(TAG, "onBindViewHolder > hidemode: hide peer:" + peer.peer.user_id);
+            }*/
             TLRPC.Dialog dialog = new TLRPC.TL_dialog();
             TLRPC.Chat chat = null;
             TLRPC.User user = null;
@@ -184,6 +193,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public DialogsSearchAdapter(Context context, int messagesSearch, int type) {
+        activeHideMode = HiddenController.getInstance().isActive();//customized
+
         searchAdapterHelper = new SearchAdapterHelper(false);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
@@ -326,6 +337,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         for (int a = 0; a < res.messages.size(); a++) {
                             TLRPC.Message message = res.messages.get(a);
                             long did = MessageObject.getDialogId(message);
+
+                            //region Customized: clear hide dialogs
+                            if (activeHideMode && HiddenController.getInstance().is(did)) {
+                                continue;
+                            }
+                            //endregion
+
                             int maxId = MessagesController.getInstance(currentAccount).deletedHistory.get(did);
                             if (maxId != 0 && message.id <= maxId) {
                                 continue;
@@ -393,7 +411,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 final LongSparseArray<RecentSearchObject> hashMap = new LongSparseArray<>();
                 while (cursor.next()) {
                     long did = cursor.longValue(0);
-
+                    if (HiddenController.getInstance().is(did)) {//Customized
+                        continue;
+                    }
                     boolean add = false;
                     if (DialogObject.isEncryptedDialog(did)) {
                         if (dialogsType == 0 || dialogsType == 3) {
@@ -487,6 +507,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void putRecentSearch(final long did, TLObject object) {
+        //region Customized: clear hide dialogs
+        if (activeHideMode && HiddenController.getInstance().is(did)) {
+            return;
+        }
+        //endregion
+
         RecentSearchObject recentSearchObject = recentSearchObjectsById.get(did);
         if (recentSearchObject == null) {
             recentSearchObject = new RecentSearchObject();

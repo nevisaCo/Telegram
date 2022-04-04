@@ -20,6 +20,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.finalsoft.SharedStorage;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
@@ -28,6 +30,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -38,6 +41,9 @@ import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.NotificationsSettingsActivity;
+
+import java.util.Objects;
+
 
 public class UserCell extends FrameLayout {
 
@@ -54,6 +60,8 @@ public class UserCell extends FrameLayout {
     private Object currentObject;
     private TLRPC.EncryptedChat encryptedChat;
 
+    private ImageView mutualImageView;
+    private boolean mutual_contact;
     private CharSequence currentName;
     private CharSequence currentStatus;
     private int currentId;
@@ -121,6 +129,23 @@ public class UserCell extends FrameLayout {
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
+
+        //region Customized: add mutual icon
+        if (SharedStorage.chatSettings(SharedStorage.keys.MUTUAL_CONTACT)) {
+            mutualImageView = new ImageView(context);
+            mutualImageView.setScaleType(ImageView.ScaleType.CENTER);
+            int p = AndroidUtilities.dp(5);
+            mutualImageView.setPadding(p, p, p, p);
+            mutualImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+            mutualImageView.setImageResource(R.drawable.ic_outline_contact_phone);
+            addView(mutualImageView, LayoutHelper.createFrame(15, 15,
+                    (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) |
+                            Gravity.BOTTOM, LocaleController.isRTL ? 16 : 0,
+                    0,
+                    LocaleController.isRTL ? 0 : 16,
+                    5));
+        }
+        //endregion
 
         if (checkbox == 2) {
             checkBoxBig = new CheckBoxSquare(context, false);
@@ -202,6 +227,7 @@ public class UserCell extends FrameLayout {
             currentStatus = null;
             currentName = null;
             currentObject = null;
+            mutual_contact = false;
             nameTextView.setText("");
             statusTextView.setText("");
             avatarImageView.setImageDrawable(null);
@@ -211,6 +237,9 @@ public class UserCell extends FrameLayout {
         currentStatus = status;
         currentName = name;
         currentObject = object;
+        if (object instanceof TLRPC.User){
+            mutual_contact = ((TLRPC.User) Objects.requireNonNull(object)).mutual_contact;
+        }
         currentDrawable = resId;
         needDivider = divider;
         setWillNotDraw(!needDivider);
@@ -433,6 +462,9 @@ public class UserCell extends FrameLayout {
                 avatarDrawable.setInfo(currentId, currentName.toString(), null);
             } else {
                 avatarDrawable.setInfo(currentId, "#", null);
+            }
+            if (mutualImageView != null) {
+                mutualImageView.setVisibility(mutual_contact ? VISIBLE : GONE);
             }
         }
 

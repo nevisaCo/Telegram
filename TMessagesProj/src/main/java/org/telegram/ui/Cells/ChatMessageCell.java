@@ -70,6 +70,8 @@ import android.widget.Toast;
 
 import androidx.core.graphics.ColorUtils;
 
+import com.finalsoft.SharedStorage;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -273,6 +275,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         currentMessageObject.markReactionsAsRead();
     }
 
+    //customized:
+    private boolean showMessageBubble = SharedStorage.showMessageBubble();
+    private float stickerSize = SharedStorage.stickerSize();
+
     public interface ChatMessageCellDelegate {
         default void didPressUserAvatar(ChatMessageCell cell, TLRPC.User user, float touchX, float touchY) {
         }
@@ -401,6 +407,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default boolean canDrawOutboundsContent() {
             return true;
         }
+
+        default void didPressMark(ChatMessageCell chatMessageCell) {
+        }
     }
 
     private final static int DOCUMENT_ATTACH_TYPE_NONE = 0;
@@ -413,6 +422,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private final static int DOCUMENT_ATTACH_TYPE_ROUND = 7;
     private final static int DOCUMENT_ATTACH_TYPE_WALLPAPER = 8;
     private final static int DOCUMENT_ATTACH_TYPE_THEME = 9;
+    private int markId;    //customized:
+
 
     private static class BotButton {
         private int x;
@@ -832,6 +843,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean sideButtonPressed;
     private float sideStartX;
     private float sideStartY;
+
+    //Customized
+    private int markStartX;
+    private int markStartY;
+    private boolean markPressed;
+    private boolean show_bookmark = SharedStorage.chatSettings(SharedStorage.keys.BOOKMARK);
 
     private StaticLayout nameLayout;
     private StaticLayout adminLayout;
@@ -2465,6 +2482,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         result = true;
                         invalidate();
+                    } else if (drawSideButton != 0 && x >= markStartX && x <= markStartX + AndroidUtilities.dp(40) && y >= markStartY && y <= markStartY + AndroidUtilities.dp(32)) {
+                        markPressed = true;
+                        result = true;
+                        invalidate();
                     } else if (replyNameLayout != null) {
                         int replyEnd;
                         if (currentMessageObject.shouldDrawWithoutBackground()) {
@@ -2603,6 +2624,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             replyPressed = false;
                         }
                     }
+                } else if (markPressed) {
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        markPressed = false;
+                        playSoundEffect(SoundEffectConstants.CLICK);
+                        if (delegate != null) {
+                            delegate.didPressMark(this);
+
+                        }
+                    } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                        markPressed = false;
+                    } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                        if (!(x >= markStartX && x <= markStartX + AndroidUtilities.dp(40) &&
+                                y >= markStartY && y <= markStartY + AndroidUtilities.dp(32))) {
+                            markPressed = false;
+                        }
+                    }
+                    invalidate();
                 } else if (sideButtonPressed) {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         sideButtonPressed = false;
@@ -3501,6 +3539,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             isPressed = false;
             gamePreviewPressed = false;
             sideButtonPressed = false;
+            markPressed = false;
             isCheckPressed = true;
             hasNewLineForTime = false;
             isThreadPost = isThreadChat && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.channel_post != 0;
@@ -3609,7 +3648,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             addedForTest = false;
             photoNotSet = false;
-            drawBackground = true;
+            drawBackground = showMessageBubble;
             drawName = false;
             useSeekBarWaweform = false;
             drawInstantView = false;
@@ -5622,9 +5661,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     float maxHeight;
                     int maxWidth;
                     if (AndroidUtilities.isTablet()) {
-                        maxHeight = maxWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.4f);
+                        maxHeight = maxWidth =(int) (AndroidUtilities.getMinTabletSide() * (0.4f + (stickerSize - 14.0f)));//Customized: change sticker size
                     } else {
-                        maxHeight = maxWidth = (int) (Math.min(getParentWidth(), AndroidUtilities.displaySize.y) * 0.5f);
+                        maxHeight = maxWidth = (int)(Math.min(getParentWidth(), AndroidUtilities.displaySize.y) * (0.5f + (stickerSize - 14.0f)));//Customized: change sticker size
                     }
                     String filter;
                     if (messageObject.isAnimatedEmoji() || messageObject.isDice()) {
@@ -5726,20 +5765,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         documentAttachType = DOCUMENT_ATTACH_TYPE_ROUND;
                     } else {
                         if (AndroidUtilities.isTablet()) {
-                            photoWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
+                             photoWidth = (int) (AndroidUtilities.getMinTabletSide() * (showMessageBubble ? 0.7f : 0.9f));
                         } else {
                             if (currentPhotoObject != null && (messageObject.type == MessageObject.TYPE_PHOTO || messageObject.type == MessageObject.TYPE_VIDEO || messageObject.type == 8) && currentPhotoObject.w >= currentPhotoObject.h) {
                                 photoWidth = Math.min(getParentWidth(), AndroidUtilities.displaySize.y) - AndroidUtilities.dp(64 + (checkNeedDrawShareButton(messageObject) ? 10 : 0));
                                 useFullWidth = true;
                             } else {
-                                photoWidth = (int) (Math.min(getParentWidth(), AndroidUtilities.displaySize.y) * 0.7f);
+                                 photoWidth = (int) (Math.min(getParentWidth(), AndroidUtilities.displaySize.y) * (showMessageBubble ? 0.7f : 0.9f));
                             }
                         }
                     }
                     photoHeight = photoWidth + AndroidUtilities.dp(100);
                     if (!useFullWidth) {
                         if (messageObject.type != 5 && checkNeedDrawShareButton(messageObject)) {
-                            photoWidth -= AndroidUtilities.dp(20);
+                            photoWidth -= AndroidUtilities.dp(showMessageBubble ? 20 : 0);
                         }
                         if (photoWidth > AndroidUtilities.getPhotoSize()) {
                             photoWidth = AndroidUtilities.getPhotoSize();
@@ -5747,6 +5786,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         if (photoHeight > AndroidUtilities.getPhotoSize()) {
                             photoHeight = AndroidUtilities.getPhotoSize();
                         }
+                    } else if (isChat && messageObject.needDrawAvatar() && !messageObject.isOutOwner()) {
+                        photoWidth -= AndroidUtilities.dp(showMessageBubble ? 52 : 0);
                     } else if (drawAvatar) {
                         photoWidth -= AndroidUtilities.dp(52);
                     }
@@ -6814,6 +6855,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         linkPreviewPressed = false;
         sideButtonPressed = false;
+        markPressed = false;
         imagePressed = false;
         timePressed = false;
         gamePreviewPressed = false;
@@ -11073,6 +11115,26 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
 
             if (drawSideButton != 0) {
+                //region Customized: add message bookmark
+                if (show_bookmark) {
+                    if (currentMessageObject.isOutOwner()) {
+                        markStartX = currentBackgroundDrawable.getBounds().left - AndroidUtilities.dp(8) - Theme.chat_shareDrawable.getIntrinsicWidth();
+                    } else {
+                        markStartX = currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(8);
+                    }
+
+                    setDrawableBounds(Theme.chat_markDrawable, markStartX, markStartY = layoutHeight - AndroidUtilities.dp(80));
+                    Theme.chat_markDrawable.draw(canvas);
+
+                    if (currentMessageObject.getId() != SharedStorage.markMessages(currentMessageObject.getDialogId())) {
+                        setDrawableBounds(Theme.chat_markIconDrawable, markStartX + AndroidUtilities.dp(4), markStartY + AndroidUtilities.dp(4));
+                        Theme.chat_markIconDrawable.draw(canvas);
+                    } else {
+                        setDrawableBounds(Theme.chat_markFilledIconDrawable, markStartX + AndroidUtilities.dp(4), markStartY + AndroidUtilities.dp(4));
+                        Theme.chat_markFilledIconDrawable.draw(canvas);
+                    }
+                }
+                //endregion
                 if (currentMessageObject.isOutOwner()) {
                     left -= AndroidUtilities.dp(8 + 32);
                 } else {
