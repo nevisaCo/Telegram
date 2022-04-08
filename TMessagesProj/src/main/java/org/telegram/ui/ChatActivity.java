@@ -29708,7 +29708,7 @@ boolean nativeShown = false;
             } else if (status == 2) { //can show native admob
 
                 if (!nativeShown) {
-                    NativeAddCell nativeAddCell =  AdmobController.getInstance().getNativeItem("top_chat", null);
+                    NativeAddCell nativeAddCell =  AdmobController.getInstance().getUINativeItem("top_chat", null);
 
                     result = nativeAddCell != null;
                     if (result) {
