@@ -45,6 +45,12 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
+import com.finalsoft.Config;
+import com.finalsoft.admob.AdmobBaseClass;
+import com.finalsoft.admob.AdmobController;
+import com.finalsoft.admob.ui.NativeAddCell;
+import com.google.android.gms.ads.nativead.NativeAd;
 import android.util.Property;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -80,6 +86,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
+
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -731,15 +738,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             selectedBarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             selectedBarPaint.setColor(0xffffffff);
 
-            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0x42000000, 0});
+            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0x42000000, 0});
             topOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
-            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[] {0x42000000, 0});
+            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{0x42000000, 0});
             bottomOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
             for (int i = 0; i < 2; i++) {
                 final GradientDrawable.Orientation orientation = i == 0 ? GradientDrawable.Orientation.LEFT_RIGHT : GradientDrawable.Orientation.RIGHT_LEFT;
-                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[] {0x32000000, 0});
+                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[]{0x32000000, 0});
                 pressedOverlayGradient[i].setShape(GradientDrawable.RECTANGLE);
             }
 
@@ -1542,6 +1549,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public View createView(Context context) {
+        createCustomView();//customized:
+
         Theme.createProfileResources(context);
         Theme.createChatResources(context, false);
 
@@ -2491,7 +2500,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (getItemAnimator().isRunning() && child.getBackground() == null  && child.getTranslationY() != 0) {
+                if (getItemAnimator().isRunning() && child.getBackground() == null && child.getTranslationY() != 0) {
                     boolean useAlpha = listView.getChildAdapterPosition(child) == sharedMediaRow && child.getAlpha() != 1f;
                     if (useAlpha) {
                         whitePaint.setAlpha((int) (255 * listView.getAlpha() * child.getAlpha()));
@@ -3063,7 +3072,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (transitionOnlineText != null) {
                     canvas.save();
                     canvas.translate(onlineTextView[0].getX(), onlineTextView[0].getY());
-                    canvas.saveLayerAlpha(0 ,0, transitionOnlineText.getMeasuredWidth(), transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - animationProgress)), Canvas.ALL_SAVE_FLAG);
+                    canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(), transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - animationProgress)), Canvas.ALL_SAVE_FLAG);
                     transitionOnlineText.draw(canvas);
                     canvas.restore();
                     canvas.restore();
@@ -3133,6 +3142,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         avatarProgressView = new RadialProgressView(context) {
             private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
             {
                 paint.setColor(0x55000000);
             }
@@ -3429,6 +3439,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         pinchToZoomHelper = new PinchToZoomHelper(decorView, frameLayout) {
 
             Paint statusBarPaint;
+
             @Override
             protected void invalidateViews() {
                 super.invalidateViews();
@@ -3498,6 +3509,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         scrimPaint.setAlpha(0);
         actionBarBackgroundPaint.setColor(Theme.getColor(Theme.key_listSelector));
         contentView.blurBehindViews.add(sharedMediaLayout);
+
+
         return fragmentView;
     }
 
@@ -3514,6 +3527,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     public TLRPC.Chat getCurrentChat() {
         return currentChat;
     }
+
     public TLRPC.UserFull getUserInfo() {
         return userInfo;
     }
@@ -5046,7 +5060,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         invalidateIsInLandscapeMode();
         if (listAdapter != null) {
-           // saveScrollPosition();
+            // saveScrollPosition();
             firstLayout = true;
             listAdapter.notifyDataSetChanged();
         }
@@ -5678,6 +5692,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (LocaleController.isRTL) {
                 emptyRow = rowCount++;
             }
+
             TLRPC.User user = getMessagesController().getUser(userId);
 
             if (UserObject.isUserSelf(user)) {
@@ -5691,6 +5706,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 bioRow = rowCount++;
 
                 settingsSectionRow = rowCount++;
+
+                //customized:
+                if (ad == -1 || ad > 0) {
+                    ad = rowCount++;
+                    adSectionRow = rowCount++;
+                }
 
                 Set<String> suggestions = getMessagesController().pendingSuggestions;
                 if (suggestions.contains("VALIDATE_PHONE_NUMBER")) {
@@ -5747,15 +5768,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (phoneRow != -1 || userInfoRow != -1 || usernameRow != -1) {
                     notificationsDividerRow = rowCount++;
                 }
+
+
                 if (userId != getUserConfig().getClientUserId()) {
                     notificationsRow = rowCount++;
                 }
                 infoSectionRow = rowCount++;
 
+
                 if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                     settingsTimerRow = rowCount++;
                     settingsKeyRow = rowCount++;
                     secretSettingsSectionRow = rowCount++;
+                }
+
+                //customized:
+                if (ad == -1 || ad > 0) {
+                    ad = rowCount++;
+                    adSectionRow = rowCount++;
                 }
 
                 if (user != null && !isBot && currentEncryptedChat == null && user.id != getUserConfig().getClientUserId()) {
@@ -5772,6 +5802,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     reportRow = rowCount++;
                     lastSectionRow = rowCount++;
                 }
+
+
             }
         } else if (chatId != 0) {
             if (chatInfo != null && (!TextUtils.isEmpty(chatInfo.about) || chatInfo.location instanceof TLRPC.TL_channelLocation) || !TextUtils.isEmpty(currentChat.username)) {
@@ -5883,10 +5915,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
+            //customized:
+            if (ad == -1 || ad > 0) {
+                ad = rowCount++;
+                adSectionRow = rowCount++;
+            }
+
             if (hasMedia) {
                 sharedMediaRow = rowCount++;
             }
         }
+
+
+
         if (sharedMediaRow == -1) {
             bottomPaddingRow = rowCount++;
         }
@@ -6954,6 +6995,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view;
             switch (viewType) {
+
+                case NATIVE: {
+                    //customized:
+                    view = new NativeAddCell(mContext);
+                    Log.i(TAG, "onCreateViewHolder: ");
+                    break;
+                }
+
                 case VIEW_TYPE_HEADER: {
                     view = new HeaderCell(mContext, 23);
                     break;
@@ -7490,6 +7539,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     SettingsSuggestionCell suggestionCell = (SettingsSuggestionCell) holder.itemView;
                     suggestionCell.setType(position == passwordSuggestionRow ? SettingsSuggestionCell.TYPE_PASSWORD : SettingsSuggestionCell.TYPE_PHONE);
                     break;
+                case NATIVE:{
+                    NativeAddCell nativeAdView = (NativeAddCell) holder.itemView;
+                    nativeAdView.setAdd(nativeAd);
+                    Log.i(TAG, "onBindViewHolder: native");
+                    break;}
             }
         }
 
@@ -7572,6 +7626,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return VIEW_TYPE_VERSION;
             } else if (position == passwordSuggestionRow || position == phoneSuggestionRow) {
                 return VIEW_TYPE_SUGGESTION;
+            }
+
+            //customized:
+            else if (position == ad) {
+                return NATIVE;
+            } else if (position == adSectionRow) {
+                return VIEW_TYPE_SHADOW;
             }
             return 0;
         }
@@ -8156,14 +8217,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         scrimView = view;
         dimBehindView(enable);
     }
+
     private void dimBehindView(View view, float value) {
         scrimView = view;
         dimBehindView(value);
     }
+
     private void dimBehindView(boolean enable) {
         dimBehindView(enable ? 0.2f : 0);
     }
+
     private AnimatorSet scrimAnimatorSet = null;
+
     private void dimBehindView(float value) {
         boolean enable = value > 0;
         fragmentView.invalidate();
@@ -8437,7 +8502,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     0, 0);
             combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
             writeButton.setBackground(combinedDrawable);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
     private boolean isQrNeedVisible() {
@@ -8556,6 +8622,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, unblockRow, sparseIntArray);
             put(++pointer, joinRow, sparseIntArray);
             put(++pointer, lastSectionRow, sparseIntArray);
+
+            //Customized:
+            put(++pointer, ad, sparseIntArray);
+            put(++pointer, adSectionRow, sparseIntArray);
         }
 
         private void put(int id, int position, SparseIntArray sparseIntArray) {
@@ -8580,4 +8650,25 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         return ColorUtils.calculateLuminance(color) > 0.7f;
     }
+
+
+    //customized
+    private static final int NATIVE = 200;
+    private static final String TAG = Config.TAG + "pa";
+
+    private int ad;
+    private int adSectionRow;
+    NativeAd nativeAd;
+
+    private void createCustomView() {
+        Log.i(TAG, "createCustomView: ");
+        nativeAd = AdmobController.getInstance().getNativeAd(AdmobBaseClass.NATIVE_PROFILE);
+        if (nativeAd != null) {
+            Log.i(TAG, "createCustomView: native not null");
+            ad = -1;
+            adSectionRow = -1;
+//            updateRowsIds();
+        }
+    }
+
 }
