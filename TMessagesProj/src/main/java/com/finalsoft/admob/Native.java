@@ -1,5 +1,6 @@
 package com.finalsoft.admob;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Handler;
@@ -29,10 +30,14 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Native extends AdmobBaseClass {
 
+    @SuppressLint("StaticFieldLeak")
     private static Native aNative;
+    final String TAG = super.TAG + "na";
 
     public static Native getInstance() {
         if (aNative == null) {
@@ -91,6 +96,7 @@ public class Native extends AdmobBaseClass {
             return;
         }
 
+
         //region options
         Log.i(TAG, "loadNative > serve > exec!");
         if (!isActive()) {
@@ -114,13 +120,11 @@ public class Native extends AdmobBaseClass {
             }
             Log.i(TAG, String.format("loadNative: time %s", now - savedTime));
         }
+
         //endregion
 
-        nativeServedItems.clear();
-
-        //expire native ad if don't shown after 60 minutes
+        //expire native ad if don't shown after x minutes
         calendar.add(Calendar.MINUTE, SharedStorage.admobNativeRefreshTime());
-        int index = 0;
 
         adLoader = new AdLoader.Builder(context, unitId)
                 .forNativeAd(ad -> {
@@ -130,14 +134,16 @@ public class Native extends AdmobBaseClass {
                     }
 
                     NativeServedItem nativeServedItem = new NativeServedItem();
-                    nativeServedItem.nativeAd = ad;
-                    nativeServedItem.time = calendar.getTimeInMillis();
+                    nativeServedItem.setNativeAd(ad);
+                    nativeServedItem.setTime(calendar.getTimeInMillis());
 
 
                     nativeServedItems.add(nativeServedItem);
                     Log.i(TAG, "Native > Serve >  add new: " + nativeServedItems.size());
 
                     if (!adLoader.isLoading()) {
+                        clearExpiredItems();
+
                         //load completed
                         if (iCallback != null) {
                             iCallback.onServe();
@@ -155,7 +161,6 @@ public class Native extends AdmobBaseClass {
                     public void onAdLoaded() {
                         super.onAdLoaded();
                         retry = 0;
-                        Log.i(TAG, "onAdLoaded: **********");
                     }
 
                     @Override
@@ -166,8 +171,9 @@ public class Native extends AdmobBaseClass {
                             if (nativeServedItems.isEmpty()) {
                                 new Handler().postDelayed(() -> {
                                     if (!adLoader.isLoading()) {
+                                        emptyTry = 0;
                                         adLoader.loadAds(new AdRequest.Builder().build(), Math.min(nativeRequestItems.size(), 5));
-                                        Log.i(TAG, "onAdFailedToLoad: retrying to load ad... " + retry + 1);
+                                        Log.i(TAG, "onAdFailedToLoad: retrying to load ad... " + (retry + 1));
                                         retry++;
                                     } else {
                                         Log.e(TAG, "onAdFailedToLoad: can't attempt to the load, the adLoader is loading...");
@@ -199,21 +205,30 @@ public class Native extends AdmobBaseClass {
 
             Log.i(TAG, "AdmobController > loadNative > serve > native request Items size:" + nativeRequestItems.size());
             adLoader.loadAds(new AdRequest.Builder().build(), Math.min(nativeRequestItems.size(), 5));
-//            adLoader.loadAd(new AdRequest.Builder().build());
-
-
         } catch (Exception e) {
             Log.e(TAG, "AdmobController > loadNative > serve >  ", e);
         }
     }
 
-    NativeAddCell getItem(String name, IServeCallback iCallback) {
-        return getItem(name, false, iCallback);
+    private void clearExpiredItems() {
+        long now = Calendar.getInstance().getTimeInMillis();
+        List<NativeServedItem> expiredItems = nativeServedItems.stream()
+                .filter(p -> p.getTime() < now)
+                .collect(Collectors.toList());
+        if (expiredItems.size() > 0) {
+            Log.i(TAG, "clearInactiveItems:the expired items has been removed:" + expiredItems.size());
+            nativeServedItems.removeAll(expiredItems);
+            expiredItems.clear();
+        }
     }
 
-    NativeAddCell getItem(String name, boolean repeat, IServeCallback iCallback) {
 
+    NativeAddCell getItem(String name, IServeCallback iCallback) {
 
+        if (nativeServedItems.isEmpty()) {
+            Log.i(TAG, "getAd > served items is empty , requested from : " + name);
+            return null;
+        }
         NativeAd ad = getAd(name);
 
         if (ad != null) {
@@ -228,15 +243,11 @@ public class Native extends AdmobBaseClass {
         return null;
     }
 
-    private NativeAd getAd(String name/*, boolean repeat*/) {
-        if (nativeServedItems.isEmpty()) {
-            Log.i(TAG, "getAd > served items is empty , requested from : " + name);
-            return null;
-        }
-
+    NativeAd getAd(String name) {
         Log.i(TAG, "getAd > executed from : " + name);
         int target = getTarget(name);
 
+        //disabled items by admin from remote config e.g flurry
         if (target == 0) {
             //target number is 0
             Log.i(TAG, "getAd > isShow false, not in target!: " + name);
@@ -246,6 +257,7 @@ public class Native extends AdmobBaseClass {
 
         int i = 1;
 
+        //No need to get and set the counter for the items that are displayed each time
         if (target > 1) {
             //set counter loop
             i = getCounter("native_" + name) + 1;
@@ -261,43 +273,76 @@ public class Native extends AdmobBaseClass {
             long now = Calendar.getInstance().getTimeInMillis();
 
             //sort native ads per usage
-            Collections.sort(nativeServedItems, Comparator.comparingInt(a -> a.used));
+            Collections.sort(nativeServedItems, Comparator.comparingInt(NativeServedItem::getUsed));
 
-            for (NativeServedItem item : nativeServedItems) {
-                Log.i(TAG, "getAd: used:" + item.used);
+            //filter the already shown ad
+            NativeServedItem item = nativeServedItems.stream()
+                    .filter(p -> p.getTime() >= now && p.getName().equals(name))
+                    .findAny()
+                    .orElse(null);
 
-                //prevent shown native if repeat has been false
-//                if (repeat || item.used == 0) {
-
-                //check native ad timeout for 60 minutes
-                if (item.time >= now) {
-
-                    if (target > 1) {
-                        setCounter("native_" + name, 0);
-                    }
-
-                    item.used += 1;
-
-                    return item.nativeAd;
-                }
-//                }
+            //if already used item not found , find a item via minimum used
+            if (item == null) {
+                //filter the native ad timeout for 60 minutes
+                item = nativeServedItems.stream()
+                        .filter(p -> p.getTime() >= now)
+                        .findFirst()
+                        .orElse(null);
             }
 
-            //reserve native if the ads item are out of date.
-            Log.e(TAG, "getItem > the ads are out of date ,  server again...");
-            serve();
+            //the ad item not found , get the expired ad item anyway
+            if (item == null) {
+                item = nativeServedItems.stream()
+                        .filter(p -> p.getName().equals(name))
+                        .findAny()
+                        .orElse(nativeServedItems.stream()
+                                .findFirst()
+                                .orElse(null));
 
+                if (adLoader != null && !adLoader.isLoading()) {
+                    //reserve native if the ads item are out of date.
+                    Log.e(TAG, "getItem > the ads are out of date ,  server again...");
+                    serve();
+                }
+            }
+
+            if (item != null) {
+                Log.i(TAG, "getAd: used:" + item.getUsed() + ", time:" + ((item.getTime() - now) / 1000));
+
+                //No need to save the counter for the items that are displayed each time
+                if (target > 1) {
+                    setCounter("native_" + name, 0);
+                }
+
+                item.increaseUsed();
+                if (item.getName().isEmpty()) {
+                    item.setName(name);
+                }
+
+                return item.getNativeAd();
+            }
         }
+
 
         return null;
     }
 
 
+    int emptyTry;
+
     public void addNativeDialogs() {
         if (nativeServedItems.isEmpty()) {
-            Log.i(TAG, "addNativeDialogs >  nativeLists is empty! , return: ");
+            Log.i(TAG, "addNativeDialogs >  nativeLists is empty! , return >  emptyTry : " + emptyTry);
+            emptyTry++;
+            if (emptyTry >= 100) {
+                emptyTry = 0;
+                //reserve native if the ads item are out of date.
+                Log.e(TAG, "getItem > the ads are out of date ,  server again...");
+                serve();
+            }
             return;
         }
+        emptyTry = 0;
 
         Log.i(TAG, "addNativeDialogs exec! > nativeLists count:  " + nativeServedItems.size());
         int index;
@@ -318,7 +363,7 @@ public class Native extends AdmobBaseClass {
             }
 
             String tabName = "All";
-            int position = 0;
+            int position;
 
             if (index <= 0) {
                 //all dialogs
@@ -328,30 +373,32 @@ public class Native extends AdmobBaseClass {
                 if (MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.size() >= index) {
                     dialogs = MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.get(index - 1).dialogs;
                     tabName = MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.get(index - 1).name;
-                }/*else {
-                    dialogs = MessagesController.getInstance(UserConfig.selectedAccount).getDialogs(0);
-                }*/
+                }
             }
-            Log.i(TAG, "addNativeDialogs > apply native for tab index: " + tabName + " , tabs:" + MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.size());
+            //            Log.i(TAG, "addNativeDialogs > apply native for tab index: " + tabName + " , tabs:" + MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.size());
 
 
             if (dialogs == null) {
+                Log.i(TAG, "addNativeDialogs: dialogs is null , continue");
                 continue;
+
             }
-            Log.i(TAG, "addAdToList >  native  > tab index:" + item.getName());
 
             boolean adDialogExist = dialogs.stream().filter(p -> p instanceof AdDialogCell).findAny().orElse(null) != null;
             if (!adDialogExist) {
                 //get a native ad
                 NativeAd ad = getAd(item.getName());
-                AdDialogCell adDialogCell = new AdDialogCell(ad);
-                position = index == 0 ? 1 : 0;
-                dialogs.add(position, adDialogCell);
-                Log.i(TAG, String.format("addAdToList native:  dialog added on tab %s position:%s , dialog size:%s", tabName, position, dialogs.size()));
+                if (ad != null) {
+                    AdDialogCell adDialogCell = new AdDialogCell(ad);
+                    position = index == 0 ? 1 : 0;
+                    dialogs.add(position, adDialogCell);
+                    Log.i(TAG, String.format("addAdToList native:  dialog added on tab %s position:%s , dialog size:%s", tabName, position, dialogs.size()));
+                } else {
+                    Log.e(TAG, "addNativeDialogs: ad is null");
+                }
             }
-
-
         }
+
 
     }
 

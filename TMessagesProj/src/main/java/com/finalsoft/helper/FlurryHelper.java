@@ -41,8 +41,8 @@ public class FlurryHelper {
             return;
         }
         if (BuildVars.DEBUG_VERSION) {
+            Log.i(TAG, "FlurryHelper > initialize > BuildVars.FLURRY_APP_ID:" + flurryAppId);
         }
-        Log.i(TAG, "FlurryHelper > initialize > BuildVars.FLURRY_APP_ID:" + flurryAppId);
 
         new FlurryAgent.Builder().build(context, flurryAppId);
         FlurryConfig mFlurryConfig = FlurryConfig.getInstance();
@@ -292,6 +292,15 @@ public class FlurryHelper {
             String admob_rewarded_targets = mFlurryConfig.getString("admob_rewarded_targets", "");
             if (!admob_rewarded_targets.isEmpty()) {
                 admobController.setRewardedTargets(new Gson().fromJson(admob_rewarded_targets, listType));
+            }
+        } catch (JsonSyntaxException e) {
+            Log.e(TAG, "initAdmob > admob_rewarded_targets > error: ", e);
+        }
+
+        try {
+            String admob_open_app_targets = mFlurryConfig.getString("admob_open_app_targets", "");
+            if (!admob_open_app_targets.isEmpty()) {
+                admobController.setOpenAppTargets(new Gson().fromJson(admob_open_app_targets, listType));
             }
         } catch (JsonSyntaxException e) {
             Log.e(TAG, "initAdmob > admob_rewarded_targets > error: ", e);

@@ -5759,6 +5759,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
     @SuppressLint("NotifyDataSetChanged")
     private void initCustomData() {
+        Log.i(TAG, "onCreate: qwerty 3 initCustomData");
+
         //Customized: Check update app
         //region Customized: hide drawer menu items
         sideMenu.setOnItemLongClickListener((view, position) -> {
@@ -5877,13 +5879,14 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
 
     private void initAdmob() {
+        Log.i(TAG, "onCreate: qwerty 2 initAdmob");
+
         // Use an activity context to get the rewarded video instance.
         AdmobBaseClass.ICallback iCallback = new AdmobBaseClass.ICallback() {
             @Override
             public void before() {
                 if (BuildVars.DEBUG_VERSION) {
                     ArrayList<AdCountItem> adCountItems = new ArrayList<>();
-                    adCountItems.add(new AdCountItem(30, AdmobBaseClass.INTERSTITIAL_OPEN_APP));
                     adCountItems.add(new AdCountItem(30, AdmobBaseClass.INTERSTITIAL_OPEN_DIALOG));
                     adCountItems.add(new AdCountItem(1, AdmobBaseClass.INTERSTITIAL_TOGGLE_GHOST));
                     adCountItems.add(new AdCountItem(3, AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY));
@@ -5900,6 +5903,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     adCountItems.add(new AdCountItem(1, "tab_4"));
                     adCountItems.add(new AdCountItem(1, "tab_5"));
                     adCountItems.add(new AdCountItem(1, AdmobBaseClass.NATIVE_TOP_CHAT));
+                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.NATIVE_PROFILE));
                     Log.i(TAG, "LaunchActivity > before: Native count Items json:" + new Gson().toJson(adCountItems));
                     AdmobController.getInstance().setNativeTargets(adCountItems);
 
@@ -5907,6 +5911,10 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     adCountItems.add(new AdCountItem(5, "drawer_items"));
                     adCountItems.add(new AdCountItem(5, "donate"));
                     AdmobController.getInstance().setRewardedTargets(adCountItems);
+
+                    adCountItems.clear();
+                    adCountItems.add(new AdCountItem(5, AdmobBaseClass.OPEN_APP));
+                    AdmobController.getInstance().setOpenAppTargets(adCountItems);
                 }
             }
 
@@ -5923,11 +5931,10 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             Log.i(TAG, "loadNative > sort dialogs...");
         };
 
-        AdmobBaseClass.IServeCallback interstitialCallback = () -> AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_OPEN_APP);
+        AdmobController.getInstance().init(this, iCallback, nativeCallback);
 
-        AdmobController.getInstance().init(this, iCallback, nativeCallback, interstitialCallback);
-
-        offAdmod();
+        //show turn off admob dialog via recommend to the share app with his friends
+        offAdmob();
 
     }
 
@@ -6018,17 +6025,17 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         }
     }
 
-    private void offAdmod() {
+    private void offAdmob() {
         if (!SharedStorage.showAdmobTurnOffDialog()) {
             return;
         }
         if (AdmobController.getInstance().getShowAdmob() && SharedStorage.turnOffAdsTime() == 0) {
-            Log.i(TAG, "!q2w3e4r joinOurChannel: prepare to show random turn off ads");
+            Log.i(TAG, "offAdmob: prepare to show random turn off ads");
             final int min = 1;
             final int max = 10;
             Random r = new Random();
             final int a = r.nextInt((max - min) + 1) + min;
-            Log.i(TAG, "!q2w3e4r joinOurChannel: a:" + a);
+            Log.i(TAG, "offAdmob: a:" + a);
 
             if (a == 1 || a == 7) {
                 try {
@@ -6036,7 +6043,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     handler.postDelayed(() -> {
                         turnOffAdmobDialog(false);
                         // Do something after 5s = 5000ms
-                    }, 5000);
+                    }, 20000);
                 } catch (Exception e) {
                     Log.e(TAG, "offAdmod: ", e);
                 }

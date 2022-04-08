@@ -63,10 +63,6 @@ class Interstitial extends AdmobBaseClass {
         return i > 0 && getShowAdmob();
     }
 
-    private boolean isShow(String name) {
-        return getTarget(name) > 0;
-    }
-
     private int retry = 0;
     InterstitialAdLoadCallback interstitialAdLoadCallback;
 

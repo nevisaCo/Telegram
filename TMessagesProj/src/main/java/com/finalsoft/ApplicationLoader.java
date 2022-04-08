@@ -41,21 +41,19 @@ public class ApplicationLoader extends Application {
 
     @Override
     public void onCreate() {
-
+        Log.i(TAG, "onCreate: qwerty 1 ApplicationLoader");
 //        initLocal(this);
 
         SharedStorage.init(this);
 
-//        AdmobController.getInstance().init();
+        //the open-app ad need application loader context to open
+        AdmobController.getInstance().initOpenAppAd(this);
 
         HiddenController.getInstance().init();
 
         initCustomData((org.telegram.messenger.ApplicationLoader) this);
 
-        //        CheshmakPlus.with(this);
-
         super.onCreate();
-
 
         com.finalsoft.firebase.FireBaseLog.init(this);
 
@@ -113,8 +111,6 @@ public class ApplicationLoader extends Application {
                         + "\nAPI_URL:" + API_URL
                 );
             }
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -1,6 +1,6 @@
 package com.finalsoft.admob;
 
-import android.app.Activity;
+import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -18,17 +18,16 @@ import com.google.gson.reflect.TypeToken;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.BuildVars;
-import org.telegram.ui.LaunchActivity;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 
 public class AdmobBaseClass {
+    public static final String OPEN_APP = "open_app";
 
     public static final String INTERSTITIAL_REFRESH_PROXY = "refresh_proxy";
-    public static final String INTERSTITIAL_OPEN_APP = "open_app";
     public static final String INTERSTITIAL_OPEN_DIALOG = "open_dialog";
     public static final String INTERSTITIAL_TOGGLE_GHOST = "toggle_ghost";
     public static final String INTERSTITIAL_DONATE = "donate";
@@ -41,10 +40,10 @@ public class AdmobBaseClass {
     public static final String VIDEO_USE_PHOTO_PICKER = "use_photo_picker";
 
     public static final String NATIVE_TOP_CHAT = "top_chat";
+    public static final String NATIVE_PROFILE = "profile";
 //    public static final String NATIVE_TOP_CHAT="top_chat";
 
     //region vars
-    private static final int DEBUG_COUNT = 2;
     private int attemptToFail;
 
     public int getAttemptToFail() {
@@ -67,7 +66,7 @@ public class AdmobBaseClass {
 
     private boolean keysExist = true;
     protected final String TAG = Config.TAG + "ac";
-    private Activity context;
+
 
     //endregion
 
@@ -117,7 +116,6 @@ public class AdmobBaseClass {
     }
 
     protected int getCounter(String name) {
-
         return SharedStorage.admobCounter(name.toLowerCase());
     }
 
@@ -138,11 +136,11 @@ public class AdmobBaseClass {
             if (BuildVars.DEBUG_VERSION) {
                 admob_keys = new JSONObject()
                         .put("app", "ca-app-pub-3940256099942544~3347511713")
-                        .put("interstitial", "ca-app-pub-3940256099942544/1033173712")
+                        .put("app_open", "ca-app-pub-3940256099942544/3419835294")
+                        .put("rewarded_interstitial", "")
                         .put("banner", "ca-app-pub-3940256099942544/6300978111")
                         .put("rewarded", "ca-app-pub-3940256099942544/5224354917")
-                        .put("native", "ca-app-pub-3940256099942544/2247696110")
-                        .put("native_video", "ca-app-pub-3940256099942544/1044960115");
+                        .put("native", "ca-app-pub-3940256099942544/2247696110");
             } else {
                 String json = SharedStorage.admobKeys();
                 if (json == null || json.isEmpty()) {
@@ -173,8 +171,7 @@ public class AdmobBaseClass {
 
     }
 
-    protected void init(LaunchActivity launchActivity, ICallback iCallback) {
-        context = launchActivity;
+    protected void init(Context context, ICallback iCallback) {
         iCallback.before();
 
         try {
@@ -184,14 +181,12 @@ public class AdmobBaseClass {
 
             ai.metaData.putString("com.google.android.gms.ads.APPLICATION_ID", getKeys().getAppId());
 
-
             Log.i(TAG, "initAdmob: new mode");
-            MobileAds.initialize(launchActivity, initializationStatus -> {
+            MobileAds.initialize(context, initializationStatus -> {
 
                 iCallback.onResponse();
 
-
-                Log.i(TAG, "AdmobController > initAdmob > initialize successfully :)");
+                Log.i(TAG, "AdmobController > initAdmob > initialize successfully :)" + new Gson().toJson(initializationStatus));
             });
 
             if (BuildVars.DEBUG_VERSION) {
@@ -223,18 +218,22 @@ public class AdmobBaseClass {
     }
 
     public boolean getShowAdmob() {
+        if (!Config.ADMOB_FEATURE) {
+            return false;
+        }
+
         if (!keysExist) {
             Log.i(TAG, "getShowAdmob > keys is empty!");
             return false;
         }
-/*
-        long cache = SharedStorage.turnOffAdsTime();//some of users off admob with sent telegram messeges to hes contact
+
+        //some of users off admob with sent telegram messages to hes contact
+        long cache = SharedStorage.turnOffAdsTime();
         if (cache > 0) {
             if (cache >= Calendar.getInstance().getTimeInMillis()) {
                 return false;
             }
         }
-*/
 
         if (getKeys() == null) {
             Log.e(TAG, "AdmobController > getShowAdmob > keys is null");
