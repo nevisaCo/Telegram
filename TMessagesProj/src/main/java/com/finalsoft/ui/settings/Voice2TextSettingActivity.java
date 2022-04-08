@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.controller.AdmobController;
+import com.finalsoft.admob.AdmobController;
 import com.finalsoft.helper.AdDialogHelper;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -126,7 +126,7 @@ public class Voice2TextSettingActivity extends BaseFragment {
                 presentFragment(new LanguageSelectActivity(LanguageSelectActivity.Type.V2T));
             } else if (position == costRow) {
                 int v2tCost = BuildVars.DEBUG_VERSION ? 1 : SharedStorage.v2tCost();
-                int reward = SharedStorage.rewardes();
+                int reward = SharedStorage.rewards();
                 boolean video_error = SharedStorage.admobVideoErrorList();
                 new AdDialogHelper(getParentActivity()).show(
                         null, String.format(LocaleController.getString("GetCoinsText", R.string.GetCoinsText),
@@ -137,10 +137,10 @@ public class Voice2TextSettingActivity extends BaseFragment {
                         ), param -> {
                             if (param == 1) {
                                 //video
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobVideo, AdmobController.REWARD);
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdmobController.VIDEO_USE_V2T, true);
                             } else {
                                 //interstitial
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.REWARD);
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.INTERSTITIAL_USE_V2T, true);
                             }
                         }, false);
             }

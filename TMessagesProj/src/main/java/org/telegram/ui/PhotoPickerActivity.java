@@ -75,7 +75,6 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DividerCell;
@@ -101,10 +100,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.ShowDialogActivity;
-import com.finalsoft.controller.AdmobController;
+import com.finalsoft.admob.AdmobController;
 import com.finalsoft.helper.AdDialogHelper;
-import com.finalsoft.proxy.Communication;
 
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -802,10 +799,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
             //region Customized: show admob
             if (showAdmob && imageCost > 0 && view instanceof PhotoAttachPhotoCell) {
-                int myRewards = SharedStorage.rewardes();
+                int myRewards = SharedStorage.rewards();
                 if (myRewards >= imageCost) {
                     myRewards = myRewards - imageCost;
-                    SharedStorage.rewardes(myRewards);
+                    SharedStorage.rewards(myRewards);
                     Toast.makeText(getParentActivity(), String.format(LocaleController.getString("ShowInventory", R.string.ShowInventory), imageCost, myRewards), Toast.LENGTH_SHORT).show();
                 } else {
                     new AdDialogHelper(getParentActivity()).show(null, String.format(LocaleController.getString("GetCoinsText", R.string.GetCoinsText),
@@ -816,10 +813,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     ), param -> {
                         if (param == 1) {
                             //video
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobVideo, AdmobController.REWARD);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdmobController.VIDEO_USE_PHOTO_PICKER, true);
                         } else {
                             //interstitial
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.REWARD);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.INTERSTITIAL_USE_PHOTO_PICKER, true);
                         }
                     },false);
                     return;

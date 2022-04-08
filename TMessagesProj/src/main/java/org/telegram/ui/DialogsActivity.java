@@ -8,46 +8,8 @@
 
 package org.telegram.ui;
 
-import android.os.Handler;
-import android.util.Log;
-import android.view.ViewOutlineProvider;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.widget.Toast;
-import android.hardware.SensorManager;
-
-import com.finalsoft.Config;
-import com.finalsoft.SharedStorage;
-import com.finalsoft.controller.AdmobController;
-import com.finalsoft.controller.FavController;
-import com.finalsoft.controller.GhostController;
-import com.finalsoft.controller.HiddenController;
-import com.finalsoft.helper.CustomAlertCreator;
-import com.finalsoft.proxy.ProxyController;
-import com.finalsoft.tabhost.FilterPopup;
-import com.finalsoft.ui.settings.ChatSettingActivity;
-import com.finalsoft.ui.settings.GhostSettingActivity;
-import com.finalsoft.ui.tab.FolderSettingController;
-import com.finalsoft.ui.tab.InternalFilters;
-import com.finalsoft.ui.tab.FolderSettingsActivity;
-import com.squareup.seismic.ShakeDetector;
-
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ActionBar.MenuDrawable;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Cells.DialogCell;
-
 import static android.content.Context.SENSOR_SERVICE;
-
 import static org.telegram.ui.PasscodeActivity.TYPE_HIDE;
-
-import org.telegram.ui.Components.FragmentContextView;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -81,12 +43,15 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Vibrator;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Property;
 import android.util.StateSet;
 import android.util.TypedValue;
@@ -98,6 +63,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
@@ -112,6 +78,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -122,6 +89,23 @@ import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.admob.AdmobBaseClass;
+import com.finalsoft.admob.AdmobController;
+import com.finalsoft.controller.FavController;
+import com.finalsoft.controller.GhostController;
+import com.finalsoft.controller.HiddenController;
+import com.finalsoft.helper.CustomAlertCreator;
+import com.finalsoft.proxy.ProxyController;
+import com.finalsoft.tabhost.FilterPopup;
+import com.finalsoft.ui.settings.ChatSettingActivity;
+import com.finalsoft.ui.settings.GhostSettingActivity;
+import com.finalsoft.ui.tab.FolderSettingController;
+import com.finalsoft.ui.tab.FolderSettingsActivity;
+import com.finalsoft.ui.tab.InternalFilters;
+import com.squareup.seismic.ShakeDetector;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -130,6 +114,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FilesMigrationService;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
@@ -138,9 +123,10 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-
 import org.telegram.messenger.NotificationsController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
@@ -154,13 +140,17 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.MenuDrawable;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Cells.AccountSelectCell;
 import org.telegram.ui.Cells.ArchiveHintInnerCell;
+import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.DialogsEmptyCell;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.DrawerActionCell;
@@ -192,6 +182,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FilterTabsView;
 import org.telegram.ui.Components.FiltersListBottomSheet;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.JoinGroupAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
@@ -2364,9 +2355,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     showScrollbars(false);
                     switchToCurrentSelectedMode(true);
                     animatingForward = forward;
-
-//                    getActionBar().setTitle(filterTabsView.getCurrentTabId()+ "");
-
                 }
 
                 @Override
@@ -5259,7 +5247,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         TLRPC.Dialog dialog;
         if (adapter == searchViewPager.dialogsSearchAdapter) {
             if (onlySelect) {
-                onItemClick(view, position, adapter,x);
+                onItemClick(view, position, adapter, x);
                 return false;
             }
             long dialogId = 0;
@@ -5458,7 +5446,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (isOpen && afterSignup) {
             try {
                 fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
             if (getParentActivity() instanceof LaunchActivity) {
                 ((LaunchActivity) getParentActivity()).getFireworksOverlay().start();
             }
@@ -6455,7 +6444,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         boolean showDownloads = false;
-        for (int i = 0; i < getDownloadController().downloadingFiles.size(); i++){
+        for (int i = 0; i < getDownloadController().downloadingFiles.size(); i++) {
             if (getFileLoader().isLoadingFile(getDownloadController().downloadingFiles.get(i).getFileName())) {
                 showDownloads = true;
                 break;
@@ -6998,7 +6987,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         } else if (id == NotificationCenter.onDatabaseOpened) {
             checkSuggestClearDatabase();
-        }else {
+        } else {
             didReceivedMyNotification(id, args);
         }
     }
@@ -7586,7 +7575,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public RLottieImageView getFloatingButton() {
         return floatingButton;
     }
-
 
 
     private ActionBarPopupWindow sendPopupWindow;
@@ -8413,7 +8401,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 new Handler().postDelayed(() -> proxyItem.setVisibility(View.VISIBLE), 3000);
             }
 
-            AdmobController.getInstance().showInterstitialOnProxyRefresh();
+            AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY);
 
         } catch (Exception e) {
             android.util.Log.e(TAG, "doRefreshOfflineProxy: ", e);
@@ -9007,7 +8995,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void showFolderPopup() {
-        CustomAlertCreator.showInitFolders(getParentActivity(), getMessagesController().dialogFilters);
+        new Handler().postDelayed(() -> {
+            if (!SharedStorage.showEmptyFolderDialog()) {
+                CustomAlertCreator.showInitFolders(getParentActivity(), getMessagesController().dialogFilters);
+                SharedStorage.showEmptyFolderDialog(true);
+            }
+        }, 5000);
     }
 
     private void canCollapseSearchCustomized() {

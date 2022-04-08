@@ -5,19 +5,26 @@ import android.util.Log;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.controller.AdmobController;
+import com.finalsoft.admob.AdmobController;
+import com.finalsoft.admob.models.AdCountItem;
 import com.finalsoft.controller.PromoController;
 import com.finalsoft.proxy.Communication;
 import com.finalsoft.proxy.ProxyController;
 import com.flurry.android.FlurryAgent;
 import com.flurry.android.FlurryConfig;
 import com.flurry.android.FlurryConfigListener;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.SharedConfig;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 public class FlurryHelper {
     private static final String TAG = Config.TAG + "fh";
@@ -206,28 +213,6 @@ public class FlurryHelper {
         int admob_per_message = mFlurryConfig.getInt("admob_per_message", SharedStorage.admobPerMessage());
         SharedStorage.admobPerMessage(admob_per_message);//disabled if value set :0
 
-        int admob_per_dialog = mFlurryConfig.getInt("admob_per_dialog", 0);
-        admobController.setInterstitialCountOnDialog(admob_per_dialog);//disabled if value set :0
-
-        int interstitial_per_open_app = mFlurryConfig.getInt("interstitial_per_open_app", 0);
-        admobController.setInterstitialCountOnOpenApp(interstitial_per_open_app);//disabled if value set :0
-
-        int interstitial_per_refresh_proxy = mFlurryConfig.getInt("interstitial_per_refresh_proxy", 0);
-        admobController.setInterstitialCountOnProxy(interstitial_per_refresh_proxy);//disabled if value set :0
-
-        int interstitial_per_ghost = mFlurryConfig.getInt("interstitial_per_ghost", 0);
-        admobController.setInterstitialCountOnGhost(interstitial_per_ghost);//disabled if value set :0
-
-        SharedStorage.showAdmobTurnOffDialog(mFlurryConfig.getBoolean("turn_off_dialog", true));
-
-        try {
-            String native_tabs_list = mFlurryConfig.getString("native_tabs_list", "");
-            Log.i(TAG, "onActivateComplete: native_tabs_list:" + native_tabs_list);
-            admobController.setNativeTabs(native_tabs_list);
-        } catch (Exception e) {
-            Log.i(TAG, "initAdmob > native_tabs_list error: e");
-        }
-
         SharedStorage.showBannerInChats(mFlurryConfig.getBoolean("show_banner_in_chat", false));//disabled if value set :0
 
         SharedStorage.showBannerInGroups(mFlurryConfig.getBoolean("show_banner_in_group", false));//disabled if value set :0
@@ -246,6 +231,13 @@ public class FlurryHelper {
 
         int dm_cost = mFlurryConfig.getInt("download_manager_cost", SharedStorage.downloadManagerCost());
         SharedStorage.downloadManagerCost(dm_cost); //disabled if value set :0
+
+        int native_refresh_time = mFlurryConfig.getInt("native_refresh_time", 15);
+        if (native_refresh_time > 0) {
+            SharedStorage.admobNativeRefreshTime(native_refresh_time);
+        }else {
+            SharedStorage.admobNativeRefreshTime(15);
+        }
 
         //endregion
 
@@ -275,7 +267,38 @@ public class FlurryHelper {
             Log.i(TAG, "onActivateComplete: keys:" + keys);
         }
 
-        //endregion
+        Type listType = new TypeToken<ArrayList<AdCountItem>>() {
+        }.getType();
+
+        try {
+            String admob_native_targets = mFlurryConfig.getString("admob_native_targets", "");
+            if (!admob_native_targets.isEmpty()) {
+                admobController.setNativeTargets(new Gson().fromJson(admob_native_targets, listType));
+            }
+        } catch (JsonSyntaxException e) {
+            Log.e(TAG, "initAdmob > admob_native_targets > error: ", e);
+        }
+
+        try {
+            String admob_interstitial_targets = mFlurryConfig.getString("admob_interstitial_targets", "");
+            if (!admob_interstitial_targets.isEmpty()) {
+                admobController.setInterstitialTargets(new Gson().fromJson(admob_interstitial_targets, listType));
+            }
+        } catch (JsonSyntaxException e) {
+            Log.e(TAG, "initAdmob > admob_interstitial_targets > error: ", e);
+        }
+
+        try {
+            String admob_rewarded_targets = mFlurryConfig.getString("admob_rewarded_targets", "");
+            if (!admob_rewarded_targets.isEmpty()) {
+                admobController.setRewardedTargets(new Gson().fromJson(admob_rewarded_targets, listType));
+            }
+        } catch (JsonSyntaxException e) {
+            Log.e(TAG, "initAdmob > admob_rewarded_targets > error: ", e);
+        }
+
+        int attempt = mFlurryConfig.getInt("admob_retry_on_fail", 10);
+        admobController.retryOnFail(attempt);
         //endregion
     }
 

@@ -31,7 +31,7 @@ public class AdDialogHelper {
         AlertDialog.Builder builder = AlertsCreator.createSimpleAlert(context,
                 title == null ? LocaleController.getString("GetCoins", R.string.GetCoins) : title,
                 message == null ? String.format(LocaleController.getString("GetCoinsText", R.string.GetCoinsText),
-                        SharedStorage.rewardes(),
+                        SharedStorage.rewards(),
                         SharedStorage.proxyRefreshCost(),
                         video_error ? 0 : SharedStorage.videoRewards(),
                         SharedStorage.interstitialRewards()

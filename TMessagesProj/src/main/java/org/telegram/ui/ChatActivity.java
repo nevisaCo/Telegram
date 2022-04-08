@@ -8,32 +8,6 @@
 
 package org.telegram.ui;
 
-import com.finalsoft.Config;
-import com.finalsoft.SharedStorage;
-import com.finalsoft.controller.AdmobController;
-import com.finalsoft.controller.AutoAnswerController;
-import com.finalsoft.controller.DialogBottomMenuHiddenController;
-import com.finalsoft.controller.FavController;
-import com.finalsoft.controller.GhostController;
-import com.finalsoft.controller.HiddenController;
-import com.finalsoft.controller.MessageMenuController;
-import com.finalsoft.controller.ScheduledController;
-import com.finalsoft.helper.AdDialogHelper;
-import com.finalsoft.helper.DownloadHelper;
-import com.finalsoft.helper.MessageHelper;
-import com.finalsoft.helper.Voice2TextHelper;
-import com.finalsoft.proxy.ProxyController;
-import com.finalsoft.translator.TranslateBottomSheet;
-import com.finalsoft.translator.Translator;
-import com.finalsoft.ui.DialogBottomActionCell;
-import com.finalsoft.ui.MessageDetailsActivity;
-import com.finalsoft.ui.adapter.DialogBottomMenuLayoutAdapter;
-import com.finalsoft.ui.font.TextNicerActivity;
-import com.finalsoft.ui.settings.DialogBottomMenuSettingsActivity;
-import com.finalsoft.ui.settings.GhostSettingActivity;
-import com.finalsoft.ui.settings.Voice2TextSettingActivity;
-import com.finalsoft.ui.voice.VoiceChangeHelper;
-
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -134,6 +108,32 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
+import com.finalsoft.admob.AdmobBaseClass;
+import com.finalsoft.admob.AdmobController;
+import com.finalsoft.admob.ui.NativeAddCell;
+import com.finalsoft.controller.AutoAnswerController;
+import com.finalsoft.controller.DialogBottomMenuHiddenController;
+import com.finalsoft.controller.FavController;
+import com.finalsoft.controller.GhostController;
+import com.finalsoft.controller.HiddenController;
+import com.finalsoft.controller.MessageMenuController;
+import com.finalsoft.controller.ScheduledController;
+import com.finalsoft.helper.DownloadHelper;
+import com.finalsoft.helper.MessageHelper;
+import com.finalsoft.helper.Voice2TextHelper;
+import com.finalsoft.proxy.ProxyController;
+import com.finalsoft.translator.TranslateBottomSheet;
+import com.finalsoft.translator.Translator;
+import com.finalsoft.ui.DialogBottomActionCell;
+import com.finalsoft.ui.MessageDetailsActivity;
+import com.finalsoft.ui.adapter.DialogBottomMenuLayoutAdapter;
+import com.finalsoft.ui.font.TextNicerActivity;
+import com.finalsoft.ui.settings.DialogBottomMenuSettingsActivity;
+import com.finalsoft.ui.settings.GhostSettingActivity;
+import com.finalsoft.ui.settings.Voice2TextSettingActivity;
+import com.finalsoft.ui.voice.VoiceChangeHelper;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
@@ -6291,6 +6291,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             getMessagesController().hidePeerSettingsBar(did, currentUser, currentChat);
             updateTopPanel(true);
             updateInfoTopView(true);
+            Toast.makeText(context, "ddddddddddddddddddd", Toast.LENGTH_SHORT).show();
         });
 
         alertView = new FrameLayout(context);
@@ -23295,7 +23296,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
                 }
 
-                getSendMessagesHelper().sendMessage(fmessages, did, forwardFromMyName, false,true, 0);
+                getSendMessagesHelper().sendMessage(fmessages, did, forwardFromMyName, false, true, 0);
                 Log.i(TAG, "didSelectDialogs: forwardFromMyName:" + forwardFromMyName);
                 forwardFromMyName = false;//customized: remove quote on forward
             }
@@ -25581,7 +25582,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     BANNER_UNIT_ID = AdmobController.getInstance().getKeys().getBanner();
                 }
                 ((AdView) view).setAdUnitId(BANNER_UNIT_ID);
-//                MobileAds.initialize(mContext, initializationStatus -> {//                });
                 Log.i(TAG, "onCreateViewHolder: ADMOB");
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -25975,7 +25975,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         createUnreadMessageAfterId = 0;
                     }
                 } else if (view instanceof AdView) {
-                    //todo:admobe in messages
                     Log.i(TAG, "onBindViewHolder: ------ admob");
                     try {
                         AdView admobCell = (AdView) holder.itemView;
@@ -25998,6 +25997,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return 3;
                 }
             }
+
             if (position >= messagesStartRow && position < messagesEndRow) {
                 ArrayList<MessageObject> messages = isFrozen ? frozenMessages : ChatActivity.this.messages;
                 return messages.get(position - messagesStartRow).contentType;
@@ -28377,7 +28377,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     protected void doShowAdmob() {
-        AdmobController.getInstance().showInterstitialOnDialog();
+
+        AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_OPEN_DIALOG);
     }
 
     //region Customized: update Translate Status
@@ -28435,7 +28436,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 new Handler().postDelayed(() -> proxyItem.setVisibility(View.VISIBLE), 3000);
             }
 
-            AdmobController.getInstance().showInterstitialOnProxyRefresh();
+            AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY);
 
         } catch (Exception e) {
             Log.e(TAG, "doRefreshOfflineProxy: ", e);
@@ -28875,13 +28876,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     protected void doAddToDownloadManager() {
-        try {
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobBaseClass.INTERSTITIAL_USE_DOWNLOAD_MANAGER);
+/*        try {
             //region Customized: show admob
             if (SHOW_ADMOB && dmCost > 0) {
-                int myRewards = SharedStorage.rewardes();
+                int myRewards = SharedStorage.rewards();
                 if (myRewards >= dmCost) {
                     myRewards = myRewards - dmCost;
-                    SharedStorage.rewardes(myRewards);
+                    SharedStorage.rewards(myRewards);
                     Toast.makeText(getParentActivity(), String.format(LocaleController.getString("ShowInventory", R.string.ShowInventory), dmCost, myRewards), Toast.LENGTH_SHORT).show();
                 } else {
                     new AdDialogHelper(getParentActivity()).show(null, String.format(LocaleController.getString("GetCoinsText", R.string.GetCoinsText),
@@ -28912,7 +28914,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             downloadHelper.addToQueue(msgObj);
         } catch (Exception e) {
             Log.e(TAG, "doAddToDownloadManager: ", e);
-        }
+        }*/
     }
 
     protected void doMultipleForward(MessageObject messageObject, Context mContext) {
@@ -29579,7 +29581,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         //endregion
 
     }
+
     boolean forwardFromMyName = false;
+
     private void processSelectedMyOption(int option) {
         switch (option) {
             case forward_no_quote: {
@@ -29646,7 +29650,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         }
     }
-
+boolean nativeShown = false;
     private boolean showTopPanelForShare(TLRPC.User user, long did, boolean show) {
         if (show) {
             Log.d(TAG, "showTopPanelForShare: show original top panel , returned!");
@@ -29672,7 +29676,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         boolean result = false;
         try {
             SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-            int status = preferences.getInt("dialog_bar_vis33" + did, 0);
+            int status = preferences.getInt("top_panel_status_" + did, 0);
             if (!Config.SHARE_IN_CHAT_FEATURE) {
                 status = 2;
                 Log.i(TAG, "showTopPanelForShare: SHARE_IN_CHAT_FEATURE false");
@@ -29689,27 +29693,49 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     String str = SharedStorage.shareAppContent();
                     SendMessagesHelper.getInstance(UserConfig.selectedAccount).sendMessage(str, did, null, null, null, true, null, null, null, true, 0, null);
 
-                    preferences.edit().putInt("dialog_bar_vis33" + did, 1).apply();
+                    //if user share app , set 1 for never show the ad for this user ,
+                    preferences.edit().putInt("top_panel_status_" + did, 1).apply();
                     updateTopPanel(true);
                 });
 
                 result = true;
+                closeReportSpam.setOnClickListener(view -> {
+                    //if user ignore the share app , set 2 for show the ad this user ,
+                    preferences.edit().putInt("top_panel_status_" + did, 2).apply();
+                    updateTopPanel(true);
+                });
 
-            } else if (status == 2) {
-                //can show native admob
-                result = AdmobController.getInstance().initNativeInChat(topChatPanelView);//customized
+            } else if (status == 2) { //can show native admob
+
+                if (!nativeShown) {
+                    NativeAddCell nativeAddCell =  AdmobController.getInstance().getNativeItem("top_chat", null);
+
+                    result = nativeAddCell != null;
+                    if (result) {
+                        topChatPanelView.setTag("native");
+                        topChatPanelView.setClickable(true);
+                        topChatPanelView.addView(nativeAddCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 0, 35, 0));
+                        topChatPanelView.getLayoutParams().height = AndroidUtilities.dp(80);
+                        nativeShown = true;
+
+                        closeReportSpam.setOnClickListener(null);
+                        closeReportSpam.setClickable(true);
+                        closeReportSpam.setOnClickListener(view -> {
+                            topChatPanelView.setVisibility(View.GONE);
+                        });
+                    }
+                }else{
+                    //if false : ad hide smoothlly
+                    result = true;
+                }
+
+                //customized
                 Log.d(TAG, "showTopPanelForShare: already canceled, show admob! : " + result);
 
             } else {
                 Log.i(TAG, "showTopPanelForShare:already shared status :" + status);
             }
 
-            if (result) {
-                closeReportSpam.setOnClickListener(view -> {
-                    preferences.edit().putInt("dialog_bar_vis33" + did, 2).apply();
-                    updateTopPanel(true);
-                });
-            }
 
         } catch (Exception e) {
             Log.e(TAG, "showTopPanelForShare: ", e);

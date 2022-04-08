@@ -35,7 +35,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.controller.AdmobController;
+import com.finalsoft.admob.AdmobController;
 import com.finalsoft.helper.AdDialogHelper;
 import com.finalsoft.proxy.Communication;
 import com.finalsoft.proxy.ProxyController;
@@ -72,11 +72,6 @@ import org.telegram.ui.Cells.TextSettingsCell;
 
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
-
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -933,7 +928,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         proxyRefresh.setOnClickListener(view -> {
             int prc = SharedStorage.proxyRefreshCost();
             if ((AdmobController.getInstance().getShowAdmob() && prc > 0) || BuildVars.DEBUG_VERSION) {
-                int myRewards = SharedStorage.rewardes();
+                int myRewards = SharedStorage.rewards();
                 int proxyRefreshCost = SharedStorage.proxyRefreshCost();
                 if (myRewards >= proxyRefreshCost) {
                     Communication.getInstance().GetProxies(true, "proxy list");
@@ -942,10 +937,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     new AdDialogHelper(getParentActivity()).show(param -> {
                         if (param == 1) {
                             //video
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobVideo, AdmobController.REWARD);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdmobController.VIDEO_REFRESH_PROXY, true);
                         } else {
                             //interstitial
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.REWARD);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.INTERSTITIAL_REFRESH_PROXY, true);
                         }
                     });
                 }

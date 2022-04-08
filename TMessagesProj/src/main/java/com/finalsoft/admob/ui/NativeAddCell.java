@@ -1,4 +1,4 @@
-package com.finalsoft.ui.admob;
+package com.finalsoft.admob.ui;
 
 /*
  * Copyright Tesfamariam Gebre, 2018-2020.
@@ -15,9 +15,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.gms.ads.formats.NativeAd;
-import com.google.android.gms.ads.formats.UnifiedNativeAd;
-import com.google.android.gms.ads.formats.UnifiedNativeAdView;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdView;
+
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -30,27 +30,31 @@ import java.util.List;
 public class NativeAddCell extends LinearLayout {
     public static final int size = 56;
 
-    private UnifiedNativeAdView unifiedNativeAdView;
+    private NativeAdView nativeAdView;
     private BackupImageView avatarImageView;
     private TextView titleTextView;
     private TextView descTextView;
 
 
     public NativeAddCell(@NonNull Context context) {
+        this(context, false, true);
+    }
+
+    public NativeAddCell(@NonNull Context context, boolean topDivider, boolean bottomDivider) {
         super(context);
 
         setOrientation(VERTICAL);
 
-        unifiedNativeAdView = new UnifiedNativeAdView(context);
-        unifiedNativeAdView.setSelected(true);
-        addView(unifiedNativeAdView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
-        unifiedNativeAdView.setCallToActionView(unifiedNativeAdView);
+        nativeAdView = new NativeAdView(context);
+        nativeAdView.setSelected(true);
+        addView(nativeAdView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        nativeAdView.setCallToActionView(nativeAdView);
 
 
         avatarImageView = new BackupImageView(context);
         avatarImageView.setRoundRadius(AndroidUtilities.dp(size >> 1));
 //        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(2));
-        unifiedNativeAdView.addView(avatarImageView, LayoutHelper.createFrame(56, 56, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 16 : 10, 8, LocaleController.isRTL ? 10 : 16, 8));
+        nativeAdView.addView(avatarImageView, LayoutHelper.createFrame(56, 56, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 16 : 10, 8, LocaleController.isRTL ? 10 : 16, 8));
 //        Sew Neh Mariamen betam new meemechegn abo
 
         titleTextView = new TextView(context);
@@ -63,7 +67,7 @@ public class NativeAddCell extends LinearLayout {
         titleTextView.setTextSize(15);
         titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 //        unifiedNativeAdView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.LEFT | Gravity.TOP, 80, 10, 0 , 0));
-        unifiedNativeAdView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 70 : 80, 14, LocaleController.isRTL ? 80 : 70, 0));
+        nativeAdView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 70 : 80, 14, LocaleController.isRTL ? 80 : 70, 0));
 
 
         descTextView = new TextView(context);
@@ -72,7 +76,7 @@ public class NativeAddCell extends LinearLayout {
         descTextView.setMaxLines(3);
         descTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         descTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        unifiedNativeAdView.addView(descTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 20 : 80, 40, LocaleController.isRTL ? 80 : 20, 0));
+        nativeAdView.addView(descTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 20 : 80, 40, LocaleController.isRTL ? 80 : 20, 0));
 
 
         TextView contactChange = new TextView(context);
@@ -86,18 +90,20 @@ public class NativeAddCell extends LinearLayout {
         contactChange.setPadding(pad, pad, pad, pad);
         contactChange.setText("Ad");
         contactChange.setTypeface(contactChange.getTypeface(), Typeface.BOLD);
-        unifiedNativeAdView.addView(contactChange, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 14 : 0, 12, LocaleController.isRTL ? 0 : 14, 0));
+        nativeAdView.addView(contactChange, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 14 : 0, 12, LocaleController.isRTL ? 0 : 14, 0));
 
 
-        View view = new View(context);
-        view.setBackgroundColor((Theme.dividerPaint.getColor()));
-        addView(view, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0.5f, Gravity.BOTTOM, LocaleController.isRTL ? 0 : 72, 0, LocaleController.isRTL ? 72 : 0, 0));
+        if (bottomDivider) {
+            View view = new View(context);
+            view.setBackgroundColor((Theme.dividerPaint.getColor()));
+            addView(view, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0.5f, Gravity.BOTTOM, LocaleController.isRTL ? 0 : 72, 0, LocaleController.isRTL ? 72 : 0, 0));
+        }
 
 
     }
 
 
-    public void setAdd(UnifiedNativeAd nativeAd) {
+    public void setAdd(NativeAd nativeAd) {
 
         List<NativeAd.Image> images = nativeAd.getImages();
         if (images.size() > 0) {
@@ -120,7 +126,7 @@ public class NativeAddCell extends LinearLayout {
             descTextView.setVisibility(View.VISIBLE);
             descTextView.setText(nativeAd.getBody());
         }
-        unifiedNativeAdView.setNativeAd(nativeAd);
+        nativeAdView.setNativeAd(nativeAd);
     }
 
 

@@ -8,10 +8,13 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.MessagesController.getGlobalMainSettings;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -22,7 +25,6 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -39,12 +41,11 @@ import android.os.StatFs;
 import android.os.SystemClock;
 import android.provider.ContactsContract;
 import android.provider.Settings;
-import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.TypedValue;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -75,8 +76,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.UpdateApp;
+import com.finalsoft.admob.AdmobBaseClass;
+import com.finalsoft.admob.AdmobController;
+import com.finalsoft.admob.models.AdCountItem;
 import com.finalsoft.contactsChanges.ContactChangesActivity;
-import com.finalsoft.controller.AdmobController;
 import com.finalsoft.controller.DrawerMenuItemsHideController;
 import com.finalsoft.controller.GhostController;
 import com.finalsoft.controller.PromoController;
@@ -94,15 +97,6 @@ import com.finalsoft.ui.profile.ProfileMakerFragment;
 import com.finalsoft.ui.settings.CustomSettingsActivity;
 import com.finalsoft.ui.settings.DrawerMenuSettingsActivity;
 import com.finalsoft.ui.settings.GhostSettingActivity;
-import com.google.android.gms.ads.AdError;
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.InterstitialAd;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.rewarded.RewardItem;
-import com.google.android.gms.ads.rewarded.RewardedAd;
-import com.google.android.gms.ads.rewarded.RewardedAdCallback;
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.gms.common.api.Status;
 import com.google.android.play.core.review.ReviewInfo;
 import com.google.android.play.core.review.ReviewManager;
@@ -209,11 +203,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.Random;
-
-import static org.telegram.messenger.MessagesController.getGlobalMainSettings;
 
 public class LaunchActivity extends BasePermissionsActivity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, ImageUpdater.ImageUpdaterDelegate {
 
@@ -231,9 +223,9 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     private ArrayList<TLRPC.User> contactsToSend;
     private Uri contactsToSendUri;
     private int currentConnectionState;
-    private static ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
-    private static ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
-    private static ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<>();
+    private static final ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
+    private static final ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
+    private static final ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<>();
     private ViewTreeObserver.OnGlobalLayoutListener onGlobalLayoutListener;
     private ArrayList<Parcelable> importingStickers;
     private ArrayList<String> importingStickersEmoji;
@@ -570,7 +562,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
         sideMenu.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         sideMenu.setAllowItemsInteractionDuringAnimation(false);
-        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator,false, id -> drawerMenuItemClick(id)));
+        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator, false, id -> drawerMenuItemClick(id)));
         sideMenuContainer.addView(sideMenu, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         drawerLayoutContainer.setDrawerLayout(sideMenuContainer);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sideMenuContainer.getLayoutParams();
@@ -2605,9 +2597,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                         if (dids.size() <= 1) {
                             if (videoPath != null) {
                                 return true;
-                            } else if (photoPathsArray != null && photoPathsArray.size() > 0) {
-                                return true;
-                            }
+                            } else return photoPathsArray != null && photoPathsArray.size() > 0;
                         }
                     }
                 }
@@ -3639,8 +3629,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         }
         updateLayout = new FrameLayout(this) {
 
-            private Paint paint = new Paint();
-            private Matrix matrix = new Matrix();
+            private final Paint paint = new Paint();
+            private final Matrix matrix = new Matrix();
             private LinearGradient updateGradient;
             private int lastGradientWidth;
 
@@ -5766,10 +5756,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     private PasscodeView.PasscodeViewDelegate passcodeViewDelegate;
 
     private final static String TAG = Config.TAG + "la";
-    private RewardedAd rewardedAd;
-    InterstitialAd mInterstitialAd;
-    boolean fromDialog = true;
 
+    @SuppressLint("NotifyDataSetChanged")
     private void initCustomData() {
         //Customized: Check update app
         //region Customized: hide drawer menu items
@@ -5887,93 +5875,65 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         }
     }
 
-    AdmobController admobController = AdmobController.getInstance();
 
     private void initAdmob() {
         // Use an activity context to get the rewarded video instance.
+        AdmobBaseClass.ICallback iCallback = new AdmobBaseClass.ICallback() {
+            @Override
+            public void before() {
+                if (BuildVars.DEBUG_VERSION) {
+                    ArrayList<AdCountItem> adCountItems = new ArrayList<>();
+                    adCountItems.add(new AdCountItem(30, AdmobBaseClass.INTERSTITIAL_OPEN_APP));
+                    adCountItems.add(new AdCountItem(30, AdmobBaseClass.INTERSTITIAL_OPEN_DIALOG));
+                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.INTERSTITIAL_TOGGLE_GHOST));
+                    adCountItems.add(new AdCountItem(3, AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY));
+                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.INTERSTITIAL_DONATE));
+                    AdmobController.getInstance().setInterstitialTargets(adCountItems);
+                    Log.i(TAG, "LaunchActivity > before: Interstitial count Items json:" + new Gson().toJson(adCountItems));
 
-        mInterstitialAd = new InterstitialAd(LaunchActivity.this);
+                    adCountItems.clear();
+                    adCountItems.add(new AdCountItem(1, "tab_-1"));
+                    adCountItems.add(new AdCountItem(1, "tab_0"));
+                    adCountItems.add(new AdCountItem(1, "tab_1"));
+                    adCountItems.add(new AdCountItem(1, "tab_2"));
+                    adCountItems.add(new AdCountItem(1, "tab_3"));
+                    adCountItems.add(new AdCountItem(1, "tab_4"));
+                    adCountItems.add(new AdCountItem(1, "tab_5"));
+                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.NATIVE_TOP_CHAT));
+                    Log.i(TAG, "LaunchActivity > before: Native count Items json:" + new Gson().toJson(adCountItems));
+                    AdmobController.getInstance().setNativeTargets(adCountItems);
 
-        admobController.initAdmob(LaunchActivity.this, () -> {
+                    adCountItems.clear();
+                    adCountItems.add(new AdCountItem(5, "drawer_items"));
+                    adCountItems.add(new AdCountItem(5, "donate"));
+                    AdmobController.getInstance().setRewardedTargets(adCountItems);
+                }
+            }
 
-            admobController.loadNative(LaunchActivity.this);
+            @Override
+            public void onResponse() {
 
-            admobController.showInterstitialOnAppOpen();
+            }
+        };
 
-            initRewarded();
+        AdmobBaseClass.IServeCallback nativeCallback = () -> {
+            //notify when the native ad serve completed
+            MessagesController.getInstance(UserConfig.selectedAccount).sortDialogs(null);
+            MessagesController.getInstance(UserConfig.selectedAccount).loadDialogs(0, 0, 20, true);
+            Log.i(TAG, "loadNative > sort dialogs...");
+        };
 
-            Log.i(TAG, "LaunchActivity > initAdmob success");
+        AdmobBaseClass.IServeCallback interstitialCallback = () -> AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_OPEN_APP);
 
-        });
+        AdmobController.getInstance().init(this, iCallback, nativeCallback, interstitialCallback);
 
         offAdmod();
 
     }
 
 
-    private void showAdmobInterstitial(Object arg) {
-        Log.i(TAG, "showAdmobInterstitial: run, arg:" + arg.toString());
-        if (BuildVars.DEBUG_VERSION) {
-            Toast.makeText(this, "preparing to show Ad...", Toast.LENGTH_SHORT).show();
-        }
-        try {
-            int type = (int) arg;
-
-            fromDialog = type == AdmobController.ON_DIALOG_INTERSTITIAL;
-            String unitId = admobController.getInterstitialUnitId(type);
-            if (unitId.isEmpty()) {
-                Log.e(TAG, "showAdmobInterstitial > unitId is empty and type:" + type);
-                return;
-            }
-
-            if (mInterstitialAd.getAdUnitId() != unitId) {
-                mInterstitialAd = new InterstitialAd(LaunchActivity.this);
-                mInterstitialAd.setAdUnitId(unitId);
-            }
-            AndroidUtilities.runOnUIThread(() -> {
-                mInterstitialAd.loadAd(new AdRequest.Builder().build());
-                mInterstitialAd.setAdListener(new AdListener() {
-                    @Override
-                    public void onAdLoaded() {
-                        super.onAdLoaded();
-                        mInterstitialAd.show();
-                        admobController.clearCounter(type);
-                        SharedStorage.rewardes(SharedStorage.rewardes() + SharedStorage.interstitialRewards());
-                        Log.i(TAG, "showAdmobInterstitial > onAdLoaded: ");
-                    }
-
-                    @Override
-                    public void onAdClosed() {
-                        super.onAdClosed();
-                        Log.i(TAG, "showAdmobInterstitial > onAdClosed: ");
-                    }
-
-                    @Override
-                    public void onAdClicked() {
-                        super.onAdClicked();
-                        SharedStorage.rewardes(SharedStorage.rewardes() + SharedStorage.interstitialRewards());
-                        Log.i(TAG, "showAdmobInterstitial > onAdClicked: ");
-                    }
-
-                    @Override
-                    public void onAdFailedToLoad(LoadAdError loadAdError) {
-                        super.onAdFailedToLoad(loadAdError);
-                        admobController.clearCounter(type);
-                        Log.e(TAG, "showAdmobInterstitial > onAdFailedToLoad: " + loadAdError.getResponseInfo());
-                        if (BuildVars.DEBUG_VERSION) {
-                            Toast.makeText(LaunchActivity.this, "Ad load fail:" + loadAdError.getCode(), Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-            });
-
-        } catch (Exception e) {
-            Log.e(TAG, "showAdmobInterstitial: ", e);
-        }
-    }
-
     //region VIDEO
-    private void initRewarded() {
+  /*  private void initRewarded() {
         String rewarded_key = admobController.getRewardedUnitId();
         if (!rewarded_key.isEmpty()) {
             rewardedAd = new RewardedAd(LaunchActivity.this, rewarded_key);
@@ -5981,9 +5941,12 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             Log.e(TAG, "showAdmobVideo > video unit id is empty! ");
         }
     }
+*/
+    private void showRewarded(Object... args) {
+        String name = (String) args[0];
+        AdmobController.getInstance().showRewarded(LaunchActivity.this, name, rewardItem -> Toast.makeText(LaunchActivity.this, "" + rewardItem.getAmount(), Toast.LENGTH_SHORT).show());
 
-    private void showRewarded(Object arg) {
-        if (rewardedAd == null) {
+    /*    if (rewardedAd == null) {
             Log.e(TAG, "showRewarded: rewardedAd is null");
             return;
         }
@@ -6029,7 +5992,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                 super.onRewardedAdFailedToLoad(loadAdError);
                 Log.e(TAG, "showRewarded > onRewardedAdFailedToLoad: " + loadAdError.getResponseInfo());
             }
-        });
+        });*/
 
     }
 
@@ -6292,6 +6255,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     }
 
     private void drawerMenuItemClick(int id) {
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, "drawer_items");
         if (id == DrawerLayoutAdapter.NEW_GROUP) {
             Bundle args = new Bundle();
             presentFragment(new GroupCreateActivity(args));
@@ -6526,7 +6490,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
     private void doRemoveObserver() {
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.openSavedMessage);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showAdmobVideo);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showAdmobRewarded);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showAdmobInterstitial);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.updateGhostMode);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.updateFragmentSettings);//Customized:
@@ -6535,7 +6499,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
     private void doAddObserver() {
 //        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.openSavedMessage);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.openSavedMessage);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showAdmobVideo);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showAdmobRewarded);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showAdmobInterstitial);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.updateGhostMode);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.updateFragmentSettings);
@@ -6549,10 +6513,10 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
             actionBarLayout.rebuildAllFragmentViews(false, false);
         } else if (id == NotificationCenter.showAdmobInterstitial) {
             Log.i(TAG, "didReceivedNotification: showAdmobInterstitial");
-            showAdmobInterstitial(args[0]);
-        } else if (id == NotificationCenter.showAdmobVideo) {
+            AdmobController.getInstance().showInterstitial((String) args[0]);
+        } else if (id == NotificationCenter.showAdmobRewarded) {
             Log.i(TAG, "didReceivedNotification: showAdmobVideo");
-            showRewarded(args[0]);
+            showRewarded(args);
         } else if (id == NotificationCenter.updateGhostMode) {
             try {
                 int arg = ((int) args[0]);
@@ -6637,7 +6601,9 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
     void doDonate() {
         if (!Config.ADMOB_REWARDED_FEATURE) {
-            showAdmobInterstitial(AdmobController.DONATE);
+
+            AdmobController.getInstance().showInterstitial("donate");
+
             return;
         }
         try {
@@ -6649,9 +6615,9 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     String.format(LocaleController.getString("DonateDialogMessages", R.string.DonateDialogMessages), interstitial_count, video_count),
                     param -> {
                         if (param == 1) {
-                            showRewarded(AdmobController.DONATE);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, "donate");
                         } else {
-                            showAdmobInterstitial(AdmobController.DONATE);
+                            AdmobController.getInstance().showInterstitial("donate");
                         }
                     }, true);
         } catch (JSONException e) {
@@ -6730,7 +6696,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
 
     Voice2TextHelper voice2TextHelper = new Voice2TextHelper(this);
-    private int VOICE_RECOGNITION_REQUEST_CODE = 12346;
+    private final int VOICE_RECOGNITION_REQUEST_CODE = 12346;
 
     private void onMyActivityResult(int requestCode, int resultCode, Intent data) {
         //region Customized: voice to text

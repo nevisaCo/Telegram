@@ -185,18 +185,18 @@ public class PromoController {
         if (!getShowPromo()) {
             return;
         }
-        ArrayList<TLRPC.Dialog> dialogs = null;
         for (PromoItem promoItem : promoItems) {
             if (promoItem.getDialog() == null) {
                 continue;
             }
-            for (Integer item : promoItem.getTabs()) {
+            for (Integer tabIndex : promoItem.getTabs()) {
+                ArrayList<TLRPC.Dialog> dialogs = null;
 
-                if (item == 0) {
-                    dialogs = MessagesController.getInstance(UserConfig.selectedAccount).getAllDialogs();
+                if (tabIndex < 1) {
+                    dialogs = MessagesController.getInstance(UserConfig.selectedAccount).getDialogs(tabIndex == 0 ? 0 : 1);
                 } else {
-                    if (MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.size() >= item) {
-                        dialogs = MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.get(item - 1).dialogs;
+                    if (MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.size() >= tabIndex) {
+                        dialogs = MessagesController.getInstance(UserConfig.selectedAccount).dialogFilters.get(tabIndex - 1).dialogs;
                     }
                 }
 

@@ -27,6 +27,11 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import com.finalsoft.Config;
+import com.finalsoft.admob.ui.AdDialogCell;
+import com.finalsoft.admob.ui.NativeAddCell;
+import com.google.android.gms.ads.AdLoader;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
@@ -63,27 +68,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
-import com.finalsoft.Config;
-import com.finalsoft.controller.AdmobController;
-import com.finalsoft.ui.admob.DialogAddCell;
-import com.finalsoft.ui.admob.NativeAddCell;
-import com.google.android.gms.ads.AdLoader;
-
 public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     public final static int VIEW_TYPE_DIALOG = 0,
-        VIEW_TYPE_FLICKER = 1,
-        VIEW_TYPE_RECENTLY_VIEWED = 2,
-        VIEW_TYPE_DIVIDER = 3,
-        VIEW_TYPE_ME_URL = 4,
-        VIEW_TYPE_EMPTY = 5,
-        VIEW_TYPE_USER = 6,
-        VIEW_TYPE_HEADER = 7,
-        VIEW_TYPE_SHADOW = 8,
-        VIEW_TYPE_ARCHIVE = 9,
-        VIEW_TYPE_LAST_EMPTY = 10,
-        VIEW_TYPE_NEW_CHAT_HINT = 11,
-        VIEW_TYPE_TEXT = 12,
-        VIEW_TYPE_CONTACTS_FLICKER = 13;
+            VIEW_TYPE_FLICKER = 1,
+            VIEW_TYPE_RECENTLY_VIEWED = 2,
+            VIEW_TYPE_DIVIDER = 3,
+            VIEW_TYPE_ME_URL = 4,
+            VIEW_TYPE_EMPTY = 5,
+            VIEW_TYPE_USER = 6,
+            VIEW_TYPE_HEADER = 7,
+            VIEW_TYPE_SHADOW = 8,
+            VIEW_TYPE_ARCHIVE = 9,
+            VIEW_TYPE_LAST_EMPTY = 10,
+            VIEW_TYPE_NEW_CHAT_HINT = 11,
+            VIEW_TYPE_TEXT = 12,
+            VIEW_TYPE_CONTACTS_FLICKER = 13;
 
     private Context mContext;
     private ArchiveHintCell archiveHintCell;
@@ -486,7 +485,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case VIEW_TYPE_LAST_EMPTY: {
                 view = new LastEmptyView(mContext);
                 break;
-            }case NATIVE: {
+            }
+            case NATIVE: {
                 view = new NativeAddCell(mContext);
                 break;
             }
@@ -555,6 +555,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public int lastDialogsEmptyType = -1;
+
     public int dialogsEmptyType() {
         if (dialogsType == 7 || dialogsType == 8) {
             if (MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId)) {
@@ -666,7 +667,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             case NATIVE: {
                 NativeAddCell nativeAdView = (NativeAddCell) holder.itemView;
-                DialogAddCell dialog = (DialogAddCell) getItem(i);
+                AdDialogCell dialog = (AdDialogCell) getItem(i);
                 nativeAdView.setAdd(dialog.getAd());
                 break;
             }
@@ -772,7 +773,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         }
 
         //customized
-        if (nativeAds && size > 0 && dialogsArray.get(i) instanceof DialogAddCell) {
+        if (size > 0 && dialogsArray.get(i) instanceof AdDialogCell) {
             return NATIVE;
         }
 
@@ -809,7 +810,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     //region Customized:
     private final static int NATIVE = 20;
     private final static String TAG = Config.TAG + "dad";
-    private boolean nativeAds = AdmobController.getInstance().getShowNative("DialogAdapter");
+//    private boolean nativeAds = AdmobController.getInstance().getShowNative("DialogAdapter");
     //endregion
 
     public void didDatabaseCleared() {
@@ -901,7 +902,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
         private boolean preloadIsAvilable() {
             return false;
-           // return DownloadController.getInstance(UserConfig.selectedAccount).getCurrentDownloadMask() != 0;
+            // return DownloadController.getInstance(UserConfig.selectedAccount).getCurrentDownloadMask() != 0;
         }
 
         public void updateList() {

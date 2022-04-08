@@ -6,18 +6,14 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.util.Log;
 
-import com.finalsoft.controller.AdmobController;
+import com.finalsoft.admob.AdmobController;
 import com.finalsoft.controller.HiddenController;
 import com.finalsoft.helper.FireBaseHelper;
 import com.finalsoft.helper.FlurryHelper;
 import com.finalsoft.helper.ca;
 import com.finalsoft.proxy.Communication;
 
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.UserConfig;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -50,7 +46,7 @@ public class ApplicationLoader extends Application {
 
         SharedStorage.init(this);
 
-        AdmobController.getInstance().init();
+//        AdmobController.getInstance().init();
 
         HiddenController.getInstance().init();
 

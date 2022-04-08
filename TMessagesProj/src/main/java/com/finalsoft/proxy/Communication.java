@@ -23,7 +23,6 @@ import com.google.gson.Gson;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 
@@ -163,7 +162,7 @@ public class Communication extends Application {
                                 if (jsonArray.length() > 0) {
                                     ProxyController.getInstance().add(jsonArray, myApi, "getProxies");
                                     if (refresh) {
-                                        SharedStorage.rewardes(SharedStorage.rewardes() - ApplicationLoader.PROXY_REFRESH_COST);
+                                        SharedStorage.rewards(SharedStorage.rewards() - ApplicationLoader.PROXY_REFRESH_COST);
                                     }
                                     SharedStorage.proxyRefreshCountDown(0, 0);
 

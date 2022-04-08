@@ -242,7 +242,7 @@ public class NotificationCenter {
     public static final int openSavedMessage = totalEvents++;//150
     public static final int updateTabCounter = totalEvents++;
     public static final int showAdmobInterstitial = totalEvents++;
-    public static final int showAdmobVideo = totalEvents++;
+    public static final int showAdmobRewarded = totalEvents++;
     public static final int updateFragmentSettings = totalEvents++;
     public static final int updateGhostMode = totalEvents++;
     public static final int updatePersonalTargetLanguage = totalEvents++;

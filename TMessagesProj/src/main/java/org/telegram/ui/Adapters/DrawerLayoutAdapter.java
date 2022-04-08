@@ -22,7 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.controller.AdmobController;
+import com.finalsoft.admob.AdmobController;
 import com.finalsoft.controller.DrawerMenuItemsHideController;
 import com.finalsoft.helper.forward.ForwardHelper;
 import com.finalsoft.ui.drawer.DrawerGridActionCell;
@@ -32,7 +32,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -49,8 +48,6 @@ import org.telegram.ui.Components.SideMenultItemAnimator;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
-import androidx.recyclerview.widget.RecyclerView;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 

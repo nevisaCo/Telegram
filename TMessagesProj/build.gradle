@@ -42,10 +42,10 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 
     //region Customized:
-    implementation 'com.google.firebase:firebase-core:18.0.0'
-    implementation 'com.google.firebase:firebase-analytics:18.0.0'
+    implementation 'com.google.firebase:firebase-core:20.1.2'
+    implementation 'com.google.firebase:firebase-analytics:20.1.2'
 
-    implementation 'com.google.firebase:firebase-ads:19.5.0'
+    implementation 'com.google.android.gms:play-services-ads:20.6.0'
 
     implementation 'com.squareup.picasso:picasso:2.71828'
 
@@ -346,7 +346,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 30
         versionName "8.6.2"
 

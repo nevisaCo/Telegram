@@ -3,6 +3,8 @@ package com.finalsoft.controller;
 import android.text.TextUtils;
 
 import com.finalsoft.SharedStorage;
+import com.finalsoft.admob.AdmobBaseClass;
+import com.finalsoft.admob.AdmobController;
 
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
@@ -44,7 +46,7 @@ public class GhostController {
         MessagesController.getInstance(UserConfig.selectedAccount).updateGhostMode(status);
         ConnectionsManager.getInstance(UserConfig.selectedAccount).updateGhostMode(status);
         if (status) {
-            AdmobController.getInstance().showInterstitialOnGhost();
+            AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_TOGGLE_GHOST);
         }
     }
 

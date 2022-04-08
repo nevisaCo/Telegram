@@ -23,6 +23,7 @@ public class PromoItem {
         this.label = label;
         this.last_message = last_message;
         this.tabs = tabs;
+
     }
 
     public String getLink() {
