@@ -1,16 +1,13 @@
 package com.finalsoft.controller;
 
 import android.content.res.Resources;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.helper.NumberHelper;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
 public class LocalController {
@@ -52,14 +49,16 @@ public class LocalController {
             }
         }
 
-        return s
-                .replace("telegram.org", "telegram.org")
-                .replace("Telegram", appName)
-                .replace("telegram", appName)
-                .replace("텔레그램", appName)
-                .replace("تيليجرام", appName)
-                .replace("تلگرام", appName)
-                .replace("It is **free** and **secure**", "Use Telegram's API");
+        //change intro text
+        if (s.contains("forever. No ads.")) {
+            s = s.replace(". No ads.", ". Maybe Contain ads.");
+        } else if (s.contains("It is **free** and **secure**")){
+            s = s.replace("It is **free** and **secure**", "Use Telegram's API");
+        }
+
+        return s.replaceAll("Telegram|telegram|텔레그램|تلگرام|تيليجرام", appName);
+
+
     }
 
 }
