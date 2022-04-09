@@ -5895,8 +5895,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     Log.i(TAG, "LaunchActivity > before: Interstitial count Items json:" + new Gson().toJson(adCountItems));
 
                     adCountItems.clear();
-                    adCountItems.add(new AdCountItem(1, "tab_-1"));
-                    adCountItems.add(new AdCountItem(1, "tab_0"));
+                    adCountItems.add(new AdCountItem(1, "tab_-1",10));
+                    adCountItems.add(new AdCountItem(1, "tab_0",12));
                     adCountItems.add(new AdCountItem(1, "tab_1"));
                     adCountItems.add(new AdCountItem(1, "tab_2"));
                     adCountItems.add(new AdCountItem(1, "tab_3"));
