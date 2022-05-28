@@ -154,6 +154,7 @@ public class ApplicationLoader extends com.finalsoft.ApplicationLoader {
         }
 
         SharedConfig.loadConfig();
+        SharedPrefsHelper.init(applicationContext);
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             UserConfig.getInstance(a).loadConfig();
             MessagesController.getInstance(a);

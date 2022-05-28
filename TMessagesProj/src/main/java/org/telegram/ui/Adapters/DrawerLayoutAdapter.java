@@ -34,6 +34,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.ActionBarLayout;
+import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DividerCell;
@@ -52,6 +54,7 @@ import java.util.Collections;
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
+    private DrawerLayoutContainer mDrawerLayoutContainer;
     private ArrayList<Item> items = new ArrayList<>();
     private ArrayList<Integer> accountNumbers = new ArrayList<>();
     private boolean accountsShown;
@@ -59,8 +62,9 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     private SideMenultItemAnimator itemAnimator;
     private boolean hasGps;
 
-    public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator) {
+    public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, DrawerLayoutContainer drawerLayoutContainer) {
         mContext = context;
+        mDrawerLayoutContainer = drawerLayoutContainer;
         itemAnimator = animator;
         accountsShown = UserConfig.getActivatedAccountsCount() > 1 && MessagesController.getGlobalMainSettings().getBoolean("accountsShown", true);
         Theme.createCommonDialogResources(context);
