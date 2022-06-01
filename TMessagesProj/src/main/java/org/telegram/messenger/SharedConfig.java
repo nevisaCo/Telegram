@@ -540,7 +540,6 @@ public class SharedConfig {
         Log.i(TAG, "checkPasscode: hide mode:" + hideMode + " , passcodeSalt.length:" + passcodeSalt.length);
 
         if (hideMode) {
-
             if (SharedStorage.hiddenModePassCode().isEmpty()) {
                 Log.i(TAG, "checkPasscode: 1");
                 boolean result = Utilities.MD5(passcode).equals(passcodeHash);

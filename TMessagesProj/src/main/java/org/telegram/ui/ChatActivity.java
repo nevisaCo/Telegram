@@ -2171,6 +2171,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         replacingChatActivity = false;
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public View createView(Context context) {
         textSelectionHelper = new TextSelectionHelper.ChatListTextSelectionHelper() {
@@ -2996,6 +2997,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         selectedMessagesCountTextView.setTextColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
+
         selectedMessagesCountTextView.setOnTouchListener((v, event) -> true);
 
         if (currentEncryptedChat == null) {
@@ -3021,10 +3023,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             actionModeViews.add(actionMode.addItemWithWidth(copy, R.drawable.msg_copy, AndroidUtilities.dp(54), LocaleController.getString("Copy", R.string.Copy)));
             actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), LocaleController.getString("Delete", R.string.Delete)));
         }
+
         actionMode.getItem(edit).setVisibility(canEditMessagesCount == 1 && selectedMessagesIds[0].size() + selectedMessagesIds[1].size() == 1 ? View.VISIBLE : View.GONE);
         actionMode.getItem(copy).setVisibility(!getMessagesController().isChatNoForwards(currentChat) && selectedMessagesCanCopyIds[0].size() + selectedMessagesCanCopyIds[1].size() != 0 ? View.VISIBLE : View.GONE);
         actionMode.getItem(star).setVisibility(selectedMessagesCanStarIds[0].size() + selectedMessagesCanStarIds[1].size() != 0 ? View.VISIBLE : View.GONE);
         actionMode.getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
+
         checkActionBarMenu(false);
 
         scrimPaint = new Paint();
@@ -3094,7 +3098,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             AdjustPanLayoutHelper adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
-
                 @Override
                 protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
                     wasManualScroll = true;
@@ -3373,7 +3376,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 cell.setInvalidatesParent(false);
                 canvas.restore();
             }
-
 
             @Override
             protected void dispatchDraw(Canvas canvas) {
@@ -13953,10 +13955,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         avatarContainer.setTitleIcons(currentEncryptedChat != null ? getThemedDrawable(Theme.key_drawable_lockIconDrawable) : null, !UserObject.isReplyUser(currentUser) && !isThreadChat() ? rightIcon : null);
         if (muteItem != null) {
             if (isMuted) {
-                muteItem.getRightIcon().setVisibility(View.GONE);
+//                muteItem.getRightIcon().setVisibility(View.GONE);
                 muteItem.setTextAndIcon(LocaleController.getString("Unmute", R.string.Unmute), R.drawable.msg_mute);
             } else {
-                muteItem.getRightIcon().setVisibility(View.VISIBLE);
+//                muteItem.getRightIcon().setVisibility(View.VISIBLE);
                 if (getMessagesController().isDialogNotificationsSoundEnabled(dialog_id)) {
                     muteItem.setTextAndIcon(LocaleController.getString("Mute", R.string.Mute), R.drawable.msg_unmute);
                 } else {
@@ -13964,6 +13966,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         }
+
         if (chatNotificationsPopupWrapper != null) {
             chatNotificationsPopupWrapper.update(dialog_id);
         }
@@ -29037,14 +29040,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         MessagesController.getInstance(UserConfig.selectedAccount).sortDialogs(null);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     protected void doDeleteChat(int id) {
         if (getParentActivity() == null) {
             return;
         }
         final boolean isChat = (int) dialog_id < 0 && (int) (dialog_id >> 32) != 1;
 
-        AlertsCreator.createClearOrDeleteDialogAlert(org.telegram.ui.ChatActivity.this, id == clear_history,
-                currentChat, currentUser, currentEncryptedChat != null, (param) -> {
+        AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, id == clear_history,currentChat, currentUser, currentEncryptedChat != null, true,true, (param) -> {
                     if (id == clear_history
                             && ChatObject.isChannel(currentChat)
                             && (!currentChat.megagroup || !TextUtils.isEmpty(currentChat.username))) {
@@ -29079,7 +29082,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                                     .apply();
                                             updatePinnedMessageView(true);
                                         }
-                                        getMessagesController().deleteDialog(dialog_id, 1, param);
+                                        getMessagesController().deleteDialog(dialog_id, 1);
                                         clearingHistory = false;
                                         clearHistory(false, null);
                                         chatAdapter.notifyDataSetChanged();
@@ -29090,11 +29093,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             chatAdapter.notifyDataSetChanged();
                         }
                     }
-                });
+                },themeDelegate);
     }
 
     protected void openRightsEdit(int action, long user_id, TLRPC.ChatParticipant participant, TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights, String rank) {
-        ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, currentChat.id, adminRights, currentChat.default_banned_rights, bannedRights, rank, action, true, false);
+        ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, currentChat.id, adminRights, currentChat.default_banned_rights, bannedRights, rank, action, true, false , null);
         fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
             @Override
             public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank) {

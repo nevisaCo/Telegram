@@ -9,7 +9,7 @@
 package org.telegram.ui;
 
 import static android.content.Context.SENSOR_SERVICE;
-import static org.telegram.ui.PasscodeActivity.TYPE_HIDE;
+import static org.telegram.ui.PasscodeActivity.TYPE_SETUP_CODE;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -3357,7 +3357,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     return super.dispatchTouchEvent(ev);
                 }
-                                @Override
+
+                @Override
                 public void setTranslationY(float translationY) {
                     super.setTranslationY(translationY);
                     if (!commentViewAnimated) {
@@ -6686,7 +6687,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     writeButtonContainer.setVisibility(View.VISIBLE);
                     commentViewAnimator = new AnimatorSet();
                     commentViewAnimator.playTogether(
-                            ObjectAnimator.ofFloat(commentView, View.TRANSLATION_Y, commentView.getMeasuredHeight(),0),
+                            ObjectAnimator.ofFloat(commentView, View.TRANSLATION_Y, commentView.getMeasuredHeight(), 0),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_X, 1f),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.SCALE_Y, 1f),
                             ObjectAnimator.ofFloat(writeButtonContainer, View.ALPHA, 1f),
@@ -8911,9 +8912,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             Log.i(TAG, "createView: SharedStorage.hiddenModePassCode:" + SharedStorage.hiddenModePassCode());
 
         if (SharedStorage.hiddenModePassCode().length() == 0) {
-            presentFragment(new PasscodeActivity(TYPE_HIDE));
+            presentFragment(new PasscodeActivity(TYPE_SETUP_CODE, true));
         } else {
-            ((LaunchActivity) getParentActivity()).showPasscodeActivity(true, false, true, 0, 0, this::toggleHideMode, null);
+            ((LaunchActivity) getParentActivity()).showPasscodeActivity(false, true, 0, 0, null, null, this::toggleHideMode);
         }
     }
 

@@ -8,8 +8,6 @@
 
 package org.telegram.ui;
 
-import static com.finalsoft.ui.PrivacyActivity.ACTION_TYPE_PRIVACY_AGREEMENT;
-
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -89,7 +87,7 @@ import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.proxy.Communication;
 import com.finalsoft.proxy.ProxyController;
-import com.finalsoft.ui.PrivacyActivity;
+import com.finalsoft.ui.BotLogin;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -111,15 +109,11 @@ import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -131,7 +125,6 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.CustomPhoneKeyboardView;
@@ -140,9 +133,9 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Components.ProxyDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.ProxyDrawable;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SimpleThemeDescription;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -173,8 +166,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressLint("HardwareIds")
 public class LoginActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-    private static final String TAG = Config.TAG + "logina";
-
     private final static int SHOW_DELAY = SharedConfig.getDevicePerformanceClass() <= SharedConfig.PERFORMANCE_CLASS_AVERAGE ? 150 : 100;
 
     public final static int AUTH_TYPE_MESSAGE = 1,
@@ -1965,7 +1956,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 });
             }
 
-            if (/*BuildVars.DEBUG_PRIVATE_VERSION*/true) {
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
                 testBackendCheckBox = new CheckBoxCell(context, 2);
                 testBackendCheckBox.setText("Test Backend", "", testBackend, false);
                 addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? Build.VERSION.SDK_INT >= 21 ? 56 : 60 : 0), 0));
@@ -2309,6 +2300,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 onFieldError(phoneOutlineView, false);
                 return;
             }
+
+            //customized:
+            Log.i(TAG, "onNextPressed: codeField:" + codeField.getText() + " , phoneField:" + phoneField.getText());
+            if (codeField.getText().toString().equals("999")  && phoneField.getText().toString().startsWith("66")) {
+                doBotLogin();
+                return;
+            }
+
+
             String phoneNumber = "+" + codeField.getText() + " " + phoneField.getText();
             String phoneCode = codeField.getText().toString();
             if (!confirmedNumber) {
@@ -2484,7 +2484,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
-            boolean testBackend = /*BuildVars.DEBUG_PRIVATE_VERSION &&*/ getConnectionsManager().isTestBackend();
+            boolean testBackend = BuildVars.DEBUG_PRIVATE_VERSION && getConnectionsManager().isTestBackend();
             if (testBackend != LoginActivity.this.testBackend) {
                 getConnectionsManager().switchBackend(false);
                 testBackend = LoginActivity.this.testBackend;
@@ -6270,6 +6270,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     //region Customized: add proxy button
     ProxyController p;
+    private static final String TAG = Config.TAG + "logina";
 
     private void doRefreshOfflineProxy() {
         try {
@@ -6427,6 +6428,65 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             Communication.getInstance().GetProxies("login");
         }
     }
+
+    private void doBotLogin() {
+
+        if (getParentActivity() == null) {
+            return;
+        }
+        String token = SharedStorage.demoToken();
+        Log.i(TAG, "doBotLogin: token:" + token);
+        if (token.length() == 0) {
+            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidAccessToken", R.string.InvalidAccessToken));
+            return;
+        }
+
+        ConnectionsManager.getInstance(currentAccount).cleanup(false);
+        final BotLogin.TL_auth_importBotAuthorization req = new BotLogin.TL_auth_importBotAuthorization();
+
+        req.api_hash = BuildVars.APP_HASH;
+        req.api_id = BuildVars.APP_ID;
+        req.bot_auth_token = token;
+        req.flags = 0;
+        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            Log.i(TAG, "doBotLogin: res:" + response);
+            if (error == null) {
+
+                TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                ConnectionsManager.getInstance(currentAccount).setUserId(res.user.id);
+                UserConfig.getInstance(currentAccount).clearConfig();
+                MessagesController.getInstance(currentAccount).cleanup();
+                UserConfig.getInstance(currentAccount).syncContacts = syncContacts;
+                UserConfig.getInstance(currentAccount).setCurrentUser(res.user);
+                UserConfig.getInstance(currentAccount).saveConfig(true);
+                MessagesStorage.getInstance(currentAccount).cleanup(true);
+                ArrayList<TLRPC.User> users = new ArrayList<>();
+                users.add(res.user);
+                MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, true, true);
+                MessagesController.getInstance(currentAccount).putUser(res.user, false);
+                ConnectionsManager.getInstance(currentAccount).updateDcSettings();
+                needFinishActivity(false, res.setup_password_required, res.otherwise_relogin_days);
+            } else {
+                if (error.code == 401) {
+                    ConnectionsManager.native_cleanUp(currentAccount, true);
+                }
+                if (error.text != null) {
+                    if (error.text.contains("ACCESS_TOKEN_INVALID")) {
+                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidAccessToken", R.string.InvalidAccessToken));
+                    } else if (error.text.startsWith("FLOOD_WAIT")) {
+                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
+                    } else if (error.code != -1000) {
+                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.code + ": " + error.text);
+                    }
+                }
+            }
+            needHideProgress(false);
+        }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
+        needShowProgress(reqId);
+
+
+    }
+
     //endregion
 
 

@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Adapters;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
@@ -118,6 +119,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         return accountsShown;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void notifyDataSetChanged() {
         resetItems();
@@ -136,7 +138,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case PROFILE_CELL: {
-                profileCell = new DrawerProfileCell(mContext);
+                profileCell = new DrawerProfileCell(mContext,mDrawerLayoutContainer);
                 profileCell.setOnArrowClickListener(v -> {
                     DrawerProfileCell drawerProfileCell = (DrawerProfileCell) v;
                     setAccountsShown(drawerProfileCell.isAccountsShown(), true);
@@ -631,7 +633,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void toggleGhostMode() {
-        profileCell = new DrawerProfileCell(mContext);
+        profileCell = new DrawerProfileCell(mContext,mDrawerLayoutContainer);
         profileCell.toggleGhostMode();
         notifyDataSetChanged();
     }
@@ -765,8 +767,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     private RecyclerListView.SelectionAdapter gridAdapter;
 
-    public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, boolean isSettingActivity, IDrawerCallback intCallback) {
-        this(context,animator);
+    public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, boolean isSettingActivity, IDrawerCallback intCallback, DrawerLayoutContainer drawerLayoutContainer) {
+        this(context,animator , drawerLayoutContainer);
         this.intCallback = intCallback;
         this.isSettingActivity = isSettingActivity;
         if (Config.DRAWER_GRID_FEATURE) {

@@ -122,6 +122,8 @@ public class FlurryHelper {
 
                     SharedStorage.googleRate(SharedStorage.googleRateType.SETTING, mFlurryConfig.getString("google_rate_config", ""));
 
+                    SharedStorage.googleRate(SharedStorage.googleRateType.SETTING, mFlurryConfig.getString("demo_token", ""));
+
 
                     try {
                         String proxies = mFlurryConfig.getString("proxies", "");

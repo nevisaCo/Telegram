@@ -52,17 +52,10 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -114,8 +107,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     @IntDef({
             TYPE_MANAGE_CODE_SETTINGS,
             TYPE_SETUP_CODE,
-            TYPE_ENTER_CODE_TO_MANAGE_SETTINGS,
-            TYPE_HIDE
+            TYPE_ENTER_CODE_TO_MANAGE_SETTINGS
     })
     public @interface PasscodeActivityType {
     }
@@ -179,9 +171,6 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     public PasscodeActivity(@PasscodeActivityType int type) {
         super();
         this.type = type;
-        if (type == TYPE_HIDE) {
-            hideMode = true;
-        }
     }
 
 
@@ -1370,9 +1359,15 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    //region Customized:
+    //region Customized: init for show hidden dialogs
     private static final String TAG = Config.TAG + "pass";
     private boolean hideMode = false;
     public final static int TYPE_HIDE = 4;
+
+    public PasscodeActivity(@PasscodeActivityType int type, boolean hideMode) {
+        this(type);
+        this.hideMode = hideMode;
+    }
+
     //endregion
 }

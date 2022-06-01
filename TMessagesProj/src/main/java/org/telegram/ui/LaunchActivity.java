@@ -550,7 +550,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
         sideMenu.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         sideMenu.setAllowItemsInteractionDuringAnimation(false);
-        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator, false, id -> drawerMenuItemClick(id)));
+        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator, false, this::drawerMenuItemClick, drawerLayoutContainer));
         sideMenuContainer.addView(sideMenu, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         drawerLayoutContainer.setDrawerLayout(sideMenuContainer);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sideMenuContainer.getLayoutParams();
@@ -1169,11 +1169,11 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
     //customized:
     public void showPasscodeActivity(boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {
-        showPasscodeActivity(false, fingerprint, animated, x, y, onShow, onStart);
+        showPasscodeActivity(fingerprint, animated, x, y, onShow, onStart, null);
     }
 
-    public void showPasscodeActivity(boolean hideMode, boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {
-        this.hideMode = hideMode;
+    public void showPasscodeActivity(boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart, Runnable onPassAccepted/*customized*/) {
+        this.hideMode = onPassAccepted != null;
         if (drawerLayoutContainer == null) {
             return;
         }
@@ -1190,9 +1190,6 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         } else if (ArticleViewer.hasInstance() && ArticleViewer.getInstance().isVisible()) {
             ArticleViewer.getInstance().close(false, true);
         }
-//        passcodeView.setVisibility(View.VISIBLE);
-//        passcodeView.onShow(hideMode,fingerprint, animated, x, y,onShow,onStart);
-
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject != null && messageObject.isRoundVideo()) {
             MediaController.getInstance().cleanupPlayer(true, true);
@@ -1212,9 +1209,13 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
         SharedConfig.isWaitingForPasscodeEnter = true;
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
         passcodeView.setDelegate(() -> {
-            if (hideMode && passcodeViewDelegate != null) {//customized:
+            //region customized:
+            onPassAccepted.run();
+            if (hideMode && passcodeViewDelegate != null) {
                 passcodeViewDelegate.didAcceptedPassword();
             }
+            //endregion
+
             SharedConfig.isWaitingForPasscodeEnter = false;
             if (passcodeSaveIntent != null) {
                 handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true);
@@ -2896,7 +2897,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                 if (user.bot_attach_menu) {
                                     TLRPC.TL_messages_getAttachMenuBot getAttachMenuBot = new TLRPC.TL_messages_getAttachMenuBot();
                                     getAttachMenuBot.bot = MessagesController.getInstance(intentAccount).getInputUser(res.peer.user_id);
-                                    ConnectionsManager.getInstance(intentAccount).sendRequest(getAttachMenuBot, (response1, error1) -> AndroidUtilities.runOnUIThread(()->{
+                                    ConnectionsManager.getInstance(intentAccount).sendRequest(getAttachMenuBot, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
                                         if (response1 instanceof TLRPC.TL_attachMenuBotsBot) {
                                             TLRPC.TL_attachMenuBotsBot attachMenuBotsBot = (TLRPC.TL_attachMenuBotsBot) response1;
                                             MessagesController.getInstance(intentAccount).putUsers(attachMenuBotsBot.users, false);
@@ -3104,7 +3105,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                             }
 
                                             @Override
-                                            public void didChangeOwner(TLRPC.User user) {}
+                                            public void didChangeOwner(TLRPC.User user) {
+                                            }
                                         });
                                         actionBarLayout.presentFragment(editRightsActivity, false);
                                     }));
@@ -5026,7 +5028,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     } else {
                         BulletinFactory.of(container, null).createErrorBulletin((String) args[1]).show();
                     }
-                } if (type == Bulletin.TYPE_ERROR_SUBTITLE) {
+                }
+                if (type == Bulletin.TYPE_ERROR_SUBTITLE) {
                     if (fragment != null) {
                         BulletinFactory.of(fragment).createErrorBulletinSubtitle((String) args[1], (String) args[2], fragment.getResourceProvider()).show();
                     } else {
@@ -6085,8 +6088,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                     Log.i(TAG, "LaunchActivity > before: Interstitial count Items json:" + new Gson().toJson(adCountItems));
 
                     adCountItems.clear();
-                    adCountItems.add(new AdCountItem(1, "tab_-1",10));
-                    adCountItems.add(new AdCountItem(1, "tab_0",12));
+                    adCountItems.add(new AdCountItem(1, "tab_-1", 10));
+                    adCountItems.add(new AdCountItem(1, "tab_0", 12));
                     adCountItems.add(new AdCountItem(1, "tab_1"));
                     adCountItems.add(new AdCountItem(1, "tab_2"));
                     adCountItems.add(new AdCountItem(1, "tab_3"));

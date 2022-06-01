@@ -142,7 +142,8 @@ class Interstitial extends AdmobBaseClass {
                     public void onAdShowedFullScreenContent() {
                         super.onAdShowedFullScreenContent();
                         setCounter(KEY_COUNTER + name, 0);
-                        serve(null);
+                        mInterstitialAd = null;
+//                        serve(null);
 
                     }
 

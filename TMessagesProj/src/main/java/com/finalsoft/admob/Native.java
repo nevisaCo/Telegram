@@ -357,7 +357,7 @@ public class Native extends AdmobBaseClass {
                 emptyTry = 0;
                 //reserve native if the ads item are out of date.
                 Log.e(TAG, "getItem > the ads are out of date ,  serve again...");
-                serve();
+//                serve();
             }
             return;
         }
@@ -412,7 +412,7 @@ public class Native extends AdmobBaseClass {
                 NativeAd ad = getAd(item.getName());
                 if (ad != null) {
                     AdDialogCell adDialogCell = new AdDialogCell(ad);
-                    position = index == 0 ? 1 : 0;
+                    position = index == 0 && dialogs.size() > 0 ? 1 : 0;
                     dialogs.add(position, adDialogCell);
                     Log.i(TAG, String.format("addAdToList native:  dialog added on tab %s position:%s , dialog size:%s", tabName, position, dialogs.size()));
 

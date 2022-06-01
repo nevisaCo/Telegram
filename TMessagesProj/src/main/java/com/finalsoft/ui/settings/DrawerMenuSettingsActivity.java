@@ -93,7 +93,7 @@ public class DrawerMenuSettingsActivity extends BaseFragment {
         listView.setVerticalScrollBarEnabled(false);
         frameLayout.addView(listView,
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        listView.setAdapter(adapter = new DrawerLayoutAdapter(context, null, true, null));
+        listView.setAdapter(adapter = new DrawerLayoutAdapter(context, null, true, null, null));
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (!(view instanceof DrawerActionCell)) {
                 return;

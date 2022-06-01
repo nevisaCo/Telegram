@@ -3389,11 +3389,6 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                         }
                     }
 
-                    @Override
-                    public void didLongPress(ChatActionCell cell, float x, float y) {
-                        createMenu(cell, false);
-                    }
-
 //                    @Override
                     public void needOpenUserProfile(int uid) {
                         if (uid < 0) {

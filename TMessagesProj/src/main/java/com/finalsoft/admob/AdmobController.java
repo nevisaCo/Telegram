@@ -78,7 +78,7 @@ public class AdmobController extends AdmobBaseClass {
 
                 Native.getInstance().serve(nativeCallback);
 
-                Interstitial.getInstance().serve(interstitialCallback);
+//                Interstitial.getInstance().serve(interstitialCallback);
 
                 iCallback.onResponse();
 

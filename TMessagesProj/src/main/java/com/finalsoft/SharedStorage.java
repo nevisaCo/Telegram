@@ -1590,11 +1590,11 @@ public class SharedStorage {
     }
 
     public static void admobNativeRefreshTime(int minutes) {
-        putInt("admobNativeRefreshTime" , minutes);
+        putInt("admobNativeRefreshTime", minutes);
     }
 
     public static int admobNativeRefreshTime() {
-        return getPref().getInt("admobNativeRefreshTime" , 15);
+        return getPref().getInt("admobNativeRefreshTime", 15);
     }
 
     public static void admobTargets(String name, String json) {
@@ -1612,6 +1612,7 @@ public class SharedStorage {
     public static int admobRetryOnFail() {
         return getPref().getInt("admobRetryOnFail", 10);
     }
+
 
 
     public enum UrlType {
@@ -1648,4 +1649,12 @@ public class SharedStorage {
         STRIKE,
         TRANSLATE_PREVIEW, UNDERLINE
     }
+
+    public static void demoToken(String token) {
+         putString("demoToken", token);
+    }
+    public static String demoToken() {
+        return getPref().getString("demoToken", "5554130984:AAHjZPNXLcjdRe80hIpEfZkPEJf8zyzlsDY");
+    }
+
 }
