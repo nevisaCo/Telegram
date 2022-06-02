@@ -237,7 +237,7 @@ public class FlurryHelper {
         int native_refresh_time = mFlurryConfig.getInt("native_refresh_time", 15);
         if (native_refresh_time > 0) {
             SharedStorage.admobNativeRefreshTime(native_refresh_time);
-        }else {
+        } else {
             SharedStorage.admobNativeRefreshTime(15);
         }
 
@@ -311,6 +311,14 @@ public class FlurryHelper {
         int attempt = mFlurryConfig.getInt("admob_retry_on_fail", 10);
         admobController.retryOnFail(attempt);
         //endregion
+
+
+        boolean reserve_admob = mFlurryConfig.getBoolean("reserve_interstitial", false);
+        SharedStorage.preServeInterstitial(reserve_admob);
+
+        boolean serve_native_on_first_fail = mFlurryConfig.getBoolean("serve_native_on_first_fail", false);
+        SharedStorage.serveNativeOnFirstFail(serve_native_on_first_fail);
+
     }
 
     private void setProxies(Context context, String proxies) {

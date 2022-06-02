@@ -127,7 +127,7 @@ class Interstitial extends AdmobBaseClass {
 
                 if (mInterstitialAd == null) {
                     Log.i(TAG, "showAdmobInterstitial: mInterstitialAd is null, returned.");
-                    serve(null);
+                    serve(() -> show(name));
                     return;
                 }
 
@@ -142,8 +142,11 @@ class Interstitial extends AdmobBaseClass {
                     public void onAdShowedFullScreenContent() {
                         super.onAdShowedFullScreenContent();
                         setCounter(KEY_COUNTER + name, 0);
-                        mInterstitialAd = null;
-//                        serve(null);
+                        if (SharedStorage.preServeInterstitial()) {
+                            serve(null);
+                        } else {
+                            mInterstitialAd = null;
+                        }
 
                     }
 

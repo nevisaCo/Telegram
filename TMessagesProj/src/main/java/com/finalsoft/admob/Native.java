@@ -40,6 +40,12 @@ public class Native extends AdmobBaseClass {
     final String TAG = super.TAG + "na";
     private final String KEY = "target_native_";
     private final String KEY_COUNTER = "native_";
+    boolean serveNativeOnFirstFail;
+
+    public Native() {
+        serveNativeOnFirstFail = SharedStorage.serveNativeOnFirstFail();
+    }
+
     ;
 
     public static Native getInstance() {
@@ -357,7 +363,9 @@ public class Native extends AdmobBaseClass {
                 emptyTry = 0;
                 //reserve native if the ads item are out of date.
                 Log.e(TAG, "getItem > the ads are out of date ,  serve again...");
-//                serve();
+                if (serveNativeOnFirstFail) {
+                    serve();
+                }
             }
             return;
         }

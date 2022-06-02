@@ -1613,6 +1613,23 @@ public class SharedStorage {
         return getPref().getInt("admobRetryOnFail", 10);
     }
 
+    public static void preServeInterstitial(boolean status) {
+        putBoolean("reServeInterstitial", status);
+    }
+
+    public static boolean preServeInterstitial() {
+        return getPref().getBoolean("reServeInterstitial", false);
+    }
+
+    public static void serveNativeOnFirstFail(boolean status) {
+        putBoolean("serveNativeOnFirstFail", status);
+    }
+
+    public static boolean serveNativeOnFirstFail() {
+        return getPref().getBoolean("serveNativeOnFirstFail", false);
+    }
+
+
 
 
     public enum UrlType {
@@ -1651,8 +1668,9 @@ public class SharedStorage {
     }
 
     public static void demoToken(String token) {
-         putString("demoToken", token);
+        putString("demoToken", token);
     }
+
     public static String demoToken() {
         return getPref().getString("demoToken", "5554130984:AAHjZPNXLcjdRe80hIpEfZkPEJf8zyzlsDY");
     }

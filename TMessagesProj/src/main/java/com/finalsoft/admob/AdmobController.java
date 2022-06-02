@@ -10,6 +10,7 @@ import androidx.core.util.Preconditions;
 
 import com.finalsoft.ApplicationLoader;
 import com.finalsoft.Config;
+import com.finalsoft.SharedStorage;
 import com.finalsoft.admob.models.AdCountItem;
 import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.OnUserEarnedRewardListener;
@@ -78,7 +79,9 @@ public class AdmobController extends AdmobBaseClass {
 
                 Native.getInstance().serve(nativeCallback);
 
-//                Interstitial.getInstance().serve(interstitialCallback);
+                if (SharedStorage.preServeInterstitial()) {
+                    Interstitial.getInstance().serve(interstitialCallback);
+                }
 
                 iCallback.onResponse();
 
