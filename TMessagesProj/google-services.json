@@ -35,6 +35,36 @@
         }
       }
     }
+    ,    {
+      "client_info": {
+        "mobilesdk_app_id": "1:13428268361:android:bb416fd154dd8f236e0e98",
+        "android_client_info": {
+          "package_name": "org.boomchat.messenger.beta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "13428268361-hjp2ojb0oic51j8ofg1uq083b7cbkv21.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJPXaKg4cucXaxcI0VPnQxEsFpq3K8ihI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "13428268361-hjp2ojb0oic51j8ofg1uq083b7cbkv21.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+
   ],
   "configuration_version": "1"
 }

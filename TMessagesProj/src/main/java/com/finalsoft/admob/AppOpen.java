@@ -52,13 +52,12 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
     }
 
 
-
     private int getTarget(String name) {
         AdCountItem adCountItem = openAppItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
         if (adCountItem != null) {
             return adCountItem.getCount();
-
         }
+
         return 0;
     }
 
@@ -205,7 +204,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
                     serve(this::showAdIfAvailable);
                 }
             }
-        }else {
+        } else {
             Log.i(TAG, "showAdIfAvailable: target is 0");
         }
     }

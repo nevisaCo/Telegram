@@ -45,10 +45,14 @@ class Interstitial extends AdmobBaseClass {
     }
 
     private int getTarget(String name) {
-        AdCountItem adCountItem = interstitialItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
-        if (adCountItem != null) {
-            return adCountItem.getCount();
+        try {
+            AdCountItem adCountItem = interstitialItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
+            if (adCountItem != null) {
+                return adCountItem.getCount();
 
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "getTarget: ", e);
         }
         return 0;
     }
@@ -59,7 +63,12 @@ class Interstitial extends AdmobBaseClass {
     }
 
     private boolean isActive() {
-        int i = interstitialItems.stream().mapToInt(AdCountItem::getCount).sum();
+        int i = 0;
+        try {
+            i = interstitialItems.stream().mapToInt(AdCountItem::getCount).sum();
+        } catch (Exception e) {
+            Log.e(TAG, "isActive: ", e);
+        }
         return i > 0 && getShowAdmob();
     }
 
