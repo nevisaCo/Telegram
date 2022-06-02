@@ -13,7 +13,6 @@ import android.content.SharedPreferences;
 import android.os.Build;
 
 public class BuildVars extends com.finalsoft.Config {
-
     public static boolean DEBUG_VERSION =false;
     public static boolean LOGS_ENABLED = false;
     public static boolean DEBUG_PRIVATE_VERSION = false;

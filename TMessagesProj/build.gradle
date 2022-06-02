@@ -376,6 +376,7 @@ android {
         ]
 
         buildConfigField "Integer", "MAX_ACCOUNT_COUNT", MAX_ACCOUNT_COUNT
+        buildConfigField "Integer", "PRIMARY_COLOR", PRIMARY_COLOR
         buildConfigField "Integer", "APP_ID", APP_ID
         buildConfigField "String", "APP_HASH", APP_HASH
         buildConfigField "String", "OFFICIAL_CHANNELS", OFFICIAL_CHANNELS
