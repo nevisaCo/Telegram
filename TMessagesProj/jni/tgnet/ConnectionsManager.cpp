@@ -32,6 +32,7 @@
 #include "ByteArray.h"
 #include "Config.h"
 #include "ProxyCheckInfo.h"
+#include "Handshake.h"
 
 #ifdef ANDROID
 #include <jni.h>
@@ -145,7 +146,7 @@ ConnectionsManager& ConnectionsManager::getInstance(int32_t instanceNum) {
         case 2:
             static ConnectionsManager instance2(2);
             return instance2;
-        case 3:
+          case 3:
             static ConnectionsManager instance3(3);
             return instance3;
         case 4:
@@ -1912,6 +1913,9 @@ void ConnectionsManager::switchBackend(bool restart) {
     scheduleTask([&, restart] {
         currentDatacenterId = 1;
         testBackend = !testBackend;
+        if (!restart) {
+            Handshake::cleanupServerKeys();
+        }
         datacenters.clear();
         initDatacenters();
         saveConfig();
@@ -3028,8 +3032,13 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum, bool workaround) {
                     if (dcOption->secret != nullptr) {
                         secret = std::string((const char *) dcOption->secret->bytes, dcOption->secret->length);
                     }
-                    if (LOGS_ENABLED) DEBUG_D("getConfig add %s:%d to dc%d, flags %d, has secret = %d[%d]", dcOption->ip_address.c_str(), dcOption->port, dcOption->id, dcOption->flags, dcOption->secret != nullptr ? 1 : 0, dcOption->secret != nullptr ? dcOption->secret->length : 0);
-                    addresses->push_back(TcpAddress(dcOption->ip_address, dcOption->port, dcOption->flags, secret));
+                    if (LOGS_ENABLED) DEBUG_D("getConfig add %s:%d to dc%d, flags %d, has_secret = %d[%d], try_this_port_only = %d", dcOption->ip_address.c_str(), dcOption->port, dcOption->id, dcOption->flags, dcOption->secret != nullptr ? 1 : 0, dcOption->secret != nullptr ? dcOption->secret->length : 0, dcOption->thisPortOnly ? 1 : 0);
+                    if (dcOption->thisPortOnly) {
+                        addresses->insert(addresses->begin(), TcpAddress(dcOption->ip_address, dcOption->port, dcOption->flags, secret));
+                    } else {
+                        addresses->push_back(TcpAddress(dcOption->ip_address, dcOption->port, dcOption->flags, secret));
+                    }
+
                 }
             };
 

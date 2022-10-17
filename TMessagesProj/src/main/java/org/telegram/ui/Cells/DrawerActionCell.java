@@ -16,8 +16,11 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -25,31 +28,41 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Switch;
 
 import java.util.Set;
 
 public class DrawerActionCell extends FrameLayout {
 
-    private TextView textView;
+    private ImageView imageView;
+    private RLottieImageView lottieImageView;
+    private AnimatedTextView textView;
     private int currentId;
     private RectF rect = new RectF();
+    private int currentLottieId;
     private Switch checkBox;
 
     public DrawerActionCell(Context context) {
         super(context);
 
-        textView = new TextView(context);
+        imageView = new ImageView(context);
+        addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 19, 12, 0, 0));
+
+        lottieImageView = new RLottieImageView(context);
+        lottieImageView.setAutoRepeat(false);
+        lottieImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
+        addView(lottieImageView, LayoutHelper.createFrame(28, 28, Gravity.LEFT | Gravity.TOP, 17, 10, 0, 0));
+
+        textView = new AnimatedTextView(context, true, true, true);
+        textView.setAnimationProperties(.6f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        textView.setTextSize(AndroidUtilities.dp(15));
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setLines(1);
-        textView.setMaxLines(1);
-        textView.setSingleLine(true);
-        textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        textView.setCompoundDrawablePadding(AndroidUtilities.dp(29));
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19, 0, 16, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19 + 24 + 29, 0, 16, 0));
 
         checkBox = new Switch(context);
         checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked,
@@ -95,7 +108,6 @@ public class DrawerActionCell extends FrameLayout {
         super.onAttachedToWindow();
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
     }
-
     public void setChecked(boolean checked) {
         checkBox.setChecked(checked, true);
     }
@@ -108,15 +120,40 @@ public class DrawerActionCell extends FrameLayout {
         checkBox.setVisibility(show ? VISIBLE : GONE);
     }
 
-    public void setTextAndIcon(int id, String text, int resId) {
+    public void setTextAndIcon(int id, String text, int resId, int lottieId) {
         currentId = id;
         try {
-            textView.setText(text);
-            Drawable drawable = getResources().getDrawable(resId).mutate();
-            if (drawable != null) {
-                drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
+            textView.setText(text, false);
+            if (lottieId != 0) {
+                imageView.setImageDrawable(null);
+                lottieImageView.setAnimation(currentLottieId = lottieId, 28, 28);
+            } else {
+                Drawable drawable = getResources().getDrawable(resId).mutate();
+                if (drawable != null) {
+                    drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
+                }
+                imageView.setImageDrawable(drawable);
+                lottieImageView.clearAnimationDrawable();
+                currentLottieId = 0;
             }
-            textView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public void updateText(String text) {
+        textView.setText(text);
+    }
+
+    public void updateIcon(int lottieId) {
+        try {
+            if (lottieId != currentLottieId) {
+                lottieImageView.setOnAnimationEndListener(() -> {
+                    lottieImageView.setAnimation(currentLottieId = lottieId, 28, 28);
+                    lottieImageView.setOnAnimationEndListener(null);
+                });
+                lottieImageView.playAnimation();
+            }
         } catch (Throwable e) {
             FileLog.e(e);
         }
@@ -127,5 +164,7 @@ public class DrawerActionCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
         info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+        info.setText(textView.getText());
+        info.setClassName(TextView.class.getName());
     }
 }
