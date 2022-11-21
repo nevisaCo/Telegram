@@ -1071,6 +1071,10 @@ public class LocaleController extends LocalController {
     }
 
     public static String formatPluralStringComma(String key, int plural) {
+        return formatPluralStringComma(key, plural, ',');
+    }
+
+    public static String formatPluralStringComma(String key, int plural, char symbol) {
         try {
             if (key == null || key.length() == 0 || getInstance().currentPluralRules == null) {
                 return "LOC_ERR:" + key;
@@ -1079,7 +1083,7 @@ public class LocaleController extends LocalController {
             param = key + "_" + param;
             StringBuilder stringBuilder = new StringBuilder(String.format(Locale.US, "%d", plural));
             for (int a = stringBuilder.length() - 3; a > 0; a -= 3) {
-                stringBuilder.insert(a, ',');
+                stringBuilder.insert(a, symbol);
             }
 
             String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(param) : null;

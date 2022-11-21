@@ -17,7 +17,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -29,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AccountInstance;
+
 import com.finalsoft.Config;
 import com.finalsoft.admob.ui.AdDialogCell;
 import com.finalsoft.admob.ui.NativeAddCell;
@@ -72,7 +72,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
-public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
+public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements DialogCell.DialogCellDelegate {
     public final static int VIEW_TYPE_DIALOG = 0,
             VIEW_TYPE_FLICKER = 1,
             VIEW_TYPE_RECENTLY_VIEWED = 2,
@@ -86,8 +86,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             VIEW_TYPE_LAST_EMPTY = 10,
             VIEW_TYPE_NEW_CHAT_HINT = 11,
             VIEW_TYPE_TEXT = 12,
-        VIEW_TYPE_CONTACTS_FLICKER = 13,
-        VIEW_TYPE_HEADER_2 = 14;
+            VIEW_TYPE_CONTACTS_FLICKER = 13,
+            VIEW_TYPE_HEADER_2 = 14;
 
     private Context mContext;
     private ArchiveHintCell archiveHintCell;
@@ -421,7 +421,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                     DialogCell dialogCell = new DialogCell(parentFragment, mContext, true, false, currentAccount, null);
                     dialogCell.setArchivedPullAnimation(pullForegroundDrawable);
                     dialogCell.setPreloader(preloader);
-                dialogCell.updateGhostMode();
+                    dialogCell.setDialogCellDelegate(this);
+                    dialogCell.updateGhostMode();//customized:
                     view = dialogCell;
                 }
                 break;
@@ -621,7 +622,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                             if (chat.participants_count != 0) {
                                 subtitle = LocaleController.formatPluralStringComma("Subscribers", chat.participants_count);
                             } else {
-                                if (TextUtils.isEmpty(chat.username)) {
+                                if (!ChatObject.isPublic(chat)) {
                                     subtitle = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
                                 } else {
                                     subtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
@@ -633,7 +634,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                             } else {
                                 if (chat.has_geo) {
                                     subtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation);
-                                } else if (TextUtils.isEmpty(chat.username)) {
+                                } else if (!ChatObject.isPublic(chat)) {
                                     subtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
                                 } else {
                                     subtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
@@ -926,6 +927,21 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
+    @Override
+    public void onButtonClicked(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public void onButtonLongPress(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public boolean canClickButtonInside() {
+        return selectedDialogs.isEmpty();
+    }
+
     public static class DialogsPreloader {
 
         private final int MAX_REQUEST_COUNT = 4;
@@ -1102,6 +1118,5 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), height);
         }
-
     }
 }

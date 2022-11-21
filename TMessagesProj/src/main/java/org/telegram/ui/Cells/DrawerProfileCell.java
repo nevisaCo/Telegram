@@ -17,7 +17,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -31,15 +30,12 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
@@ -59,6 +55,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -73,7 +70,6 @@ import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -97,7 +93,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     private ImageView shadowView;
     private ImageView arrowView;
     private RLottieImageView darkThemeView;
-    private RLottieDrawable sunDrawable;
+    private static RLottieDrawable sunDrawable;
     private boolean updateRightDrawable = true;
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable status;
     private AnimatedStatusView animatedStatus;
@@ -153,7 +149,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         nameTextView.setTextSize(15);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 76, 28));
+        nameTextView.setEllipsizeByGradient(true);
+        nameTextView.setRightDrawableOutside(true);
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 52, 28));
 
         phoneTextView = new TextView(context);
         phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -161,7 +159,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         phoneTextView.setMaxLines(1);
         phoneTextView.setSingleLine(true);
         phoneTextView.setGravity(Gravity.LEFT);
-        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 76, 9));
+        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 52, 9));
 
 
         int lm = addCustomIcon(context);        //Customized: add cloud icon in profile cell
@@ -173,14 +171,18 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
         setArrowState(false);
 
-        sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
-        if (Theme.isCurrentThemeDay()) {
-            sunDrawable.setCustomEndFrame(36);
-        } else {
-            sunDrawable.setCustomEndFrame(0);
-            sunDrawable.setCurrentFrame(36);
+        boolean playDrawable;
+        if (playDrawable = sunDrawable == null) {
+            sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            sunDrawable.setPlayInDirectionOfCustomEndFrame(true);
+            if (Theme.isCurrentThemeDay()) {
+                sunDrawable.setCustomEndFrame(0);
+                sunDrawable.setCurrentFrame(0);
+            } else {
+                sunDrawable.setCurrentFrame(35);
+                sunDrawable.setCustomEndFrame(36);
+            }
         }
-        sunDrawable.setPlayInDirectionOfCustomEndFrame(true);
         darkThemeView = new RLottieImageView(context) {
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
@@ -206,6 +208,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         if (Build.VERSION.SDK_INT >= 21) {
             darkThemeView.setBackgroundDrawable(Theme.createSelectorDrawable(darkThemeBackgroundColor = Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(17)));
             Theme.setRippleDrawableForceSoftware((RippleDrawable) darkThemeView.getBackground());
+        }
+        if (!playDrawable && sunDrawable.getCustomEndFrame() != sunDrawable.getCurrentFrame()) {
+            darkThemeView.playAnimation();
         }
         darkThemeView.setOnClickListener(v -> {
             if (switchingTheme) {
@@ -744,8 +749,15 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             nameTextView.invalidate();
         } else if (id == NotificationCenter.userEmojiStatusUpdated) {
             setUser((TLRPC.User) args[0], accountsShown);
-        } else if (id == NotificationCenter.currentUserPremiumStatusChanged || id == NotificationCenter.updateInterfaces) {
+        } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {
             setUser(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser(), accountsShown);
+        } else if (id == NotificationCenter.updateInterfaces) {
+            int flags = (int) args[0];
+            if ((flags & MessagesController.UPDATE_MASK_NAME) != 0 || (flags & MessagesController.UPDATE_MASK_AVATAR) != 0 ||
+                (flags & MessagesController.UPDATE_MASK_STATUS) != 0 || (flags & MessagesController.UPDATE_MASK_PHONE) != 0 ||
+                (flags & MessagesController.UPDATE_MASK_EMOJI_STATUS) != 0) {
+                setUser(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser(), accountsShown);
+            }
         }
     }
 
