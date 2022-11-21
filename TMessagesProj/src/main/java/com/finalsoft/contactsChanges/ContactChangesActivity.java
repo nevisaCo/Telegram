@@ -118,8 +118,8 @@ public abstract class ContactChangesActivity extends BaseFragment implements Not
             }
         });
         ActionBarMenu createMenu = this.actionBar.createMenu();
-        createMenu.addItem(delete, R.drawable.chats_delete);
-        ActionBarMenuItem filterItem = createMenu.addItem(filter, R.drawable.menu_settings);
+        createMenu.addItem(delete, R.drawable.msg_delete);
+        ActionBarMenuItem filterItem = createMenu.addItem(filter, R.drawable.msg_settings);
         this.dbHelper = new DBHelper();
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setVisibility(View.INVISIBLE);

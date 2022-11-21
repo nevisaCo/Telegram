@@ -792,7 +792,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     public void setOnArrowClickListener(final OnClickListener onClickListener) {
         arrowView.setOnClickListener(v -> {
             accountsShown = !accountsShown;
-            arrowView.setImageResource(accountsShown ? R.drawable.collapse_up : R.drawable.menu_expand);
+            arrowView.setImageResource(accountsShown ? R.drawable.collapse_up : R.drawable.msg_expand);
             onClickListener.onClick(DrawerProfileCell.this);
             arrowView.setContentDescription(accountsShown ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
         });
@@ -834,7 +834,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             cloudView = new ImageView(context);
             cloudView.setScaleType(ImageView.ScaleType.CENTER);
             cloudView.setContentDescription(LocaleController.getString("SavedMessages", R.string.SavedMessages));
-            cloudView.setImageResource(R.drawable.menu_saved);
+            cloudView.setImageResource(R.drawable.msg_saved);
             cloudView.setPadding(10, 10, 10, 10);
             addView(cloudView, LayoutHelper.createFrame(wh, wh, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
             cloudView.setOnClickListener(v -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.openSavedMessage, 0));

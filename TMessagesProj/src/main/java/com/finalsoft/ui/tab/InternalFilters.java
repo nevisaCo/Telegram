@@ -52,7 +52,7 @@ public class InternalFilters {
                     it.contacts = true;
                     it.non_contacts = true;
                     it.exclude_archived = true;
-                    it.emoticon = String.valueOf( R.drawable.menu_contacts);
+                    it.emoticon = String.valueOf( R.drawable.msg_contacts);
                 });
 
         /*contactsFilter = */
@@ -64,7 +64,7 @@ public class InternalFilters {
 
                     it.contacts = true;
                     it.exclude_archived = true;
-                    it.emoticon = String.valueOf( R.drawable.menu_chats);
+                    it.emoticon = String.valueOf( R.drawable.msg_chats_add);
 
                 });
 
@@ -75,7 +75,7 @@ public class InternalFilters {
                 MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS,
                 (it) -> {
                     it.non_contacts = true;
-                    it.emoticon = String.valueOf( R.drawable.menu_secret_14);
+                    it.emoticon = String.valueOf( R.drawable.msg_secret_14);
 
                 });
 
@@ -88,7 +88,7 @@ public class InternalFilters {
 
                     it.groups = true;
                     it.exclude_archived = true;
-                    it.emoticon = String.valueOf( R.drawable.menu_groups);
+                    it.emoticon = String.valueOf( R.drawable.msg_groups);
 
                 });
 
@@ -125,7 +125,7 @@ public class InternalFilters {
 
                     it.broadcasts = true;
                     it.exclude_archived = true;
-                    it.emoticon = String.valueOf( R.drawable.menu_broadcast);
+                    it.emoticon = String.valueOf( R.drawable.msg_channel);
 
                 });
 
@@ -264,7 +264,7 @@ public class InternalFilters {
         suggestedFilter.filter.title = name;
         suggestedFilter.filter.flags = flag;
         
-        builder.apply(suggestedFilter.filter);
+        builder.apply((TLRPC.TL_dialogFilter) suggestedFilter.filter);
 
         internalFilters.add(suggestedFilter);
 

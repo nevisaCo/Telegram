@@ -269,7 +269,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
 
     public static class FilterCell extends FrameLayout {
 
-        private SimpleTextView textView;
+        private TextView textView;
         private TextView valueTextView;
         @SuppressWarnings("FieldCanBeLocal")
         private ImageView moveImageView;
@@ -293,14 +293,14 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             moveImageView.setClickable(true);
             addView(moveImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
 
-            textView = new SimpleTextView(context);
+            textView = new TextView(context);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             textView.setTextSize(16);
             textView.setMaxLines(1);
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.other_lockedfolders2);
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
-            textView.setRightDrawable(drawable);
+            textView.setCompoundDrawables(null,null, drawable,null);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : 64, 14, LocaleController.isRTL ? 64 : 80, 0));
 
             valueTextView = new TextView(context);
@@ -431,7 +431,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 }
             }
             progressToLock = Utilities.clamp(progressToLock, 1f, 0f);
-            textView.setRightDrawableScale(progressToLock);
+//            textView.setRightDrawableScale(progressToLock);
             textView.invalidate();
         }
 
@@ -1044,7 +1044,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
     private void createSettingMenu() {
         ActionBarMenu menu = actionBar.createMenu();
         ActionBarMenuItem settingItem;
-        settingItem = menu.addItem(0, R.drawable.menu_settings);
+        settingItem = menu.addItem(0, R.drawable.msg_settings);
         settingItem.setOnClickListener(view -> {
             presentFragment(new FolderSettingsActivity());
         });

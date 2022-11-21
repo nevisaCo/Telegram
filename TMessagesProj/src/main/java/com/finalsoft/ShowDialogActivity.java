@@ -95,7 +95,7 @@ public class ShowDialogActivity extends Activity  {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
         if (show_header) {
-            builder.setTopImage(R.drawable.profile_info,
+            builder.setTopImage(R.drawable.msg_info,
                     Theme.getColor(Theme.key_dialogTopBackground));
         }
 

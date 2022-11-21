@@ -78,7 +78,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
+//            applicationIdSuffix ".beta"
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
@@ -90,7 +90,7 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
-            applicationIdSuffix ".web"
+//            applicationIdSuffix ".web"
             minifyEnabled true
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
@@ -186,7 +186,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 30
         versionName APP_VERSION_NAME
         ndkVersion "21.4.7075529"
@@ -201,6 +201,14 @@ android {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
+
+        manifestPlaceholders = [
+                admobAppId     : ADMOB_APPLICATION_ID,
+                admobAppIdDebug: "ca-app-pub-3940256099942544~3347511713",
+                mapApiKey      : MAP_API_KEY,
+                repositoryId   : REPOSITORY_ID,
+                repositoryRsa  : REPOSITORY_RSA
+        ]
     }
 
     buildFeatures {

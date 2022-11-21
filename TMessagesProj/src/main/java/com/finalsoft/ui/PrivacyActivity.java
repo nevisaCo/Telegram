@@ -229,7 +229,7 @@ public class PrivacyActivity extends BaseFragment {
 
         if (currentType == ACTION_TYPE_PRIVACY_AGREEMENT) {
             imageView.setBackgroundDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(100), Theme.getColor(Theme.key_chats_archiveBackground)));
-            imageView.setImageResource(R.drawable.menu_policy);
+            imageView.setImageResource(R.drawable.msg_policy);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
 
             titleTextView.setText(LocaleController.getString("PrivacyPolicy", R.string.PrivacyPolicy));

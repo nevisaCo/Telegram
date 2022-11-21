@@ -40,7 +40,7 @@ public class DownloadHelper {
                 }
             }
             if (!canSave) {
-                File f = FileLoader.getPathToMessage(messageObject.messageOwner);
+                File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(messageObject.messageOwner);
                 if (f.exists()) {
                     canSave = true;
                 }

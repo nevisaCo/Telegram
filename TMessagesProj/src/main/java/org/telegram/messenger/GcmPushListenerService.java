@@ -8,11 +8,15 @@
 
 package org.telegram.messenger;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.finalsoft.firebase.CloudMessagingController;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+
+import org.json.JSONException;
 
 import java.util.Map;
 

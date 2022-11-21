@@ -134,15 +134,15 @@ public class MessageMenuController {
             R.drawable.msg_download,
 
             R.drawable.ic_g_translate,
-            R.drawable.menu_recent,
+            R.drawable.msg_recent,
             R.drawable.msg_prpr,
             R.drawable.msg_repeat,
-            R.drawable.menu_saved,
-            R.drawable.chats_delete,
+            R.drawable.msg_saved,
+            R.drawable.msg_delete,
             R.drawable.msg_report,
-            R.drawable.actions_addadmin,
-            R.drawable.actions_permissions,
-            R.drawable.menu_info,
-            R.drawable.menu_settings,
+            R.drawable.msg_admins,
+            R.drawable.msg_permissions,
+            R.drawable.msg_info,
+            R.drawable.msg_settings,
     };
 }

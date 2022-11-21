@@ -111,7 +111,7 @@ public class DownloadService extends Service implements DownloadController.FileD
         for (MessageObject messageObject : messageObjects) {
             TLObject attach = getDownloadObject(messageObject);
             loadFile(attach, messageObject);
-            File pathToMessage = FileLoader.getPathToMessage(messageObject.messageOwner);
+            File pathToMessage = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
             if (pathToMessage != null && !pathToMessage.exists()) {
                 DownloadController.getInstance(currentAccount).addLoadingFileObserver(FileLoader.getAttachFileName(attach), DownloadService.this);
                 return;

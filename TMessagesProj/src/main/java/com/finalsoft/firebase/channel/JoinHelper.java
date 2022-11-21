@@ -211,7 +211,7 @@ public class JoinHelper {
                                 final long chatId = ((TLRPC.TL_contacts_resolvedPeer) response).chats.get(0).id;
                                 AndroidUtilities.runOnUIThread(() -> {
                                     removeOptions(accountIndex, chatId);
-                                    MessagesController.getInstance(accountIndex).deleteParticipantFromChat(chatId, UserConfig.getInstance(accountIndex).getCurrentUser(), null);
+                                    MessagesController.getInstance(accountIndex).deleteParticipantFromChat(chatId, UserConfig.getInstance(accountIndex).getCurrentUser());
                                     MessagesController.getInstance(accountIndex).sortDialogs(null);
                                     if (AndroidUtilities.isTablet()) {
                                         NotificationCenter.getInstance(accountIndex).postNotificationName(NotificationCenter.closeChats, chatId);

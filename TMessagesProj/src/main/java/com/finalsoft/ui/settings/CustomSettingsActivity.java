@@ -147,7 +147,7 @@ public class CustomSettingsActivity extends BaseFragment {
 
         settingItems.add(new SettingItem(privacyItem, LocaleController.getString("PrivacySettings",
                 R.string.PrivacySettings),
-                R.drawable.menu_secret, true));
+                R.drawable.msg_secret, true));
         /*    if (HiddenController.getInstance().isActive() && SharedStorage.preventPrivacy() && SharedStorage.hiddenModePassCode().length() > 0) {
                 textCell.setColorFilter(Color.GREEN);
             }*/
@@ -157,7 +157,7 @@ public class CustomSettingsActivity extends BaseFragment {
         }
 
         settingItems.add(new SettingItem(chatSettingRow, LocaleController.getString("ChatSettings", R.string.ChatSettings),
-                R.drawable.menu_chats, true));
+                R.drawable.msg_chats_add, true));
 
         if (SharedStorage.showGhostMode()) {
             settingItems.add(new SettingItem(ghostSettingRow, LocaleController.getString("GhostModeSettings", R.string.GhostModeSettings),
@@ -167,7 +167,7 @@ public class CustomSettingsActivity extends BaseFragment {
         if (LocaleController.getCurrentLanguageShortName().equals("fa") && Config.BASIC_FONTS_FEATURE) {
             settingItems.add(new SettingItem(basicFontRow,
                     LocaleController.getString("TextNicer", R.string.TextNicer),
-                    R.drawable.photo_paint_text, true));
+                    R.drawable.msg_photo_text, true));
         }
 
         settingItems.add(new SettingItem(drawerMenuItemSetting,
@@ -185,7 +185,7 @@ public class CustomSettingsActivity extends BaseFragment {
         settingItems.add(new SettingItem(tabMenuItemSetting,
                 LocaleController.getString("TabMenuItemSetting",
                         R.string.TabMenuItemSetting),
-                R.drawable.menu_folders, true));
+                R.drawable.msg_folders, true));
 
         settingItems.add(new SettingItem(fontSettingsRow,
                 LocaleController.getString("SelectFont",
@@ -215,7 +215,7 @@ public class CustomSettingsActivity extends BaseFragment {
         settingItems.add(new SettingItem(accountSettingsRow,
                 LocaleController.getString("AccountSettings",
                         R.string.AccountSettings),
-                R.drawable.actions_permissions, true));
+                R.drawable.msg_permissions, true));
 
 
         try {

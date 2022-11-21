@@ -1306,6 +1306,14 @@ public class SharedStorage {
         return getPref().getBoolean("proxyCustomStatus", proxyServer());
     }
 
+    public static void proxyClearPerRefresh(boolean status) {
+        putBoolean("proxyClearPerRefresh", status);
+    }
+
+    public static boolean proxyClearPerRefresh() {
+        return getPref().getBoolean("proxyClearPerRefresh", false);
+    }
+
     public static void proxyRefreshInDialogs(boolean status) {
 
         putBoolean("proxyRefreshInDialogs", status);

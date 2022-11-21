@@ -49,6 +49,10 @@ public class ProxyController {
 
         try {
             clearInactiveProxies();
+
+            clearOldProxies();
+
+
             for (int i = 0; i < jsonArray.length(); i++) {
                 try {
                     JSONObject jsonObject = jsonArray.getJSONObject(i);
@@ -153,6 +157,16 @@ public class ProxyController {
             Log.i(TAG, "increaseCounter: r0:" + r0 + " , r1:" + r1);
         } catch (Exception e) {
             Log.e(TAG, "increaseCounter: ", e);
+        }
+    }
+
+    private void clearOldProxies() {
+        if (SharedConfig.proxyList.size() == 0) {
+            return;
+        }
+        if (SharedStorage.proxyClearPerRefresh()){
+            SharedConfig.proxyList.clear();
+            SharedConfig.currentProxy = null;
         }
     }
 

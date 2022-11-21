@@ -1235,7 +1235,7 @@ public class FilterTabsView extends FrameLayout {
         addTab(id, stableId, text, emotion + "",false,false);
     }
 
-    public void addTab(int id, int stableId, String text, boolean isDefault, boolean isLocked) {
+    public void addTab(int id, int stableId, String text,String emotion, boolean isDefault, boolean isLocked) {
         int position = tabs.size();
         if (position == 0 && selectedTabId == -1) {
             selectedTabId = id;

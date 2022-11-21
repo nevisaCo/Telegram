@@ -104,7 +104,7 @@ public class CustomAlertCreator {
 
         builder.setView(checkBoxCell);
 
-        builder.setTopImage(R.drawable.menu_folders, Theme.getColor(Theme.key_dialogTopBackground));
+        builder.setTopImage(R.drawable.msg_folders, Theme.getColor(Theme.key_dialogTopBackground));
 
         builder.setPositiveButton(LocaleController.getString("Agree", R.string.Agree), (dialogInterface, i) ->
         {

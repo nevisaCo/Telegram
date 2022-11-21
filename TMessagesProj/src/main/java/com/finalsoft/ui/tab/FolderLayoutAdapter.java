@@ -132,7 +132,7 @@ public class FolderLayoutAdapter extends RecyclerListView.SelectionAdapter
             items.add(
                     new Item(SHOW_NAMES,
                             LocaleController.getString("ShowFolderName", R.string.ShowFolderName),
-                            R.drawable.photo_paint_text));
+                            R.drawable.msg_photo_text));
 
             items.add(
                     new Item(SHOW_ICONS, LocaleController.getString("ShowFolderIcon", R.string.ShowFolderIcon),
@@ -150,12 +150,12 @@ public class FolderLayoutAdapter extends RecyclerListView.SelectionAdapter
                 items.add(
                         new Item(DIALOGS_FILTER_ON_TITLE,
                                 LocaleController.getString("ShowDialogsOnTitle", R.string.ShowDialogsOnTitle),
-                                R.drawable.photo_tools));
+                                R.drawable.photo_add));
 
                 items.add(
                         new Item(DIALOGS_FILTER_ON_PEN,
                                 LocaleController.getString("ShowDialogsOnPen", R.string.ShowDialogsOnPen),
-                                R.drawable.photo_tools));
+                                R.drawable.ic_all_dialogs));
 
                 items.add(
                         new Item(SHOW_UNREAD_ONLY,
@@ -176,7 +176,7 @@ public class FolderLayoutAdapter extends RecyclerListView.SelectionAdapter
                 items.add(
                         new Item(ACTIONBAR_SHADOW,
                                 LocaleController.getString("ShowActionBarShadow", R.string.ShowActionBarShadow),
-                                R.drawable.photo_tools));
+                                R.drawable.attach_shadow));
             }
 
 /*            items.add(
@@ -187,7 +187,7 @@ public class FolderLayoutAdapter extends RecyclerListView.SelectionAdapter
             items.add(
                     new Item(FIX_X,
                             LocaleController.getString("TabMenuFixX", R.string.TabMenuFixX),
-                            R.drawable.tool_cropfix));
+                            R.drawable.msg_photo_cropfix));
 
             items.add(
                     new Item(SHOW_ARCHIVE_ON_TABS,

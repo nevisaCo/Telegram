@@ -127,7 +127,7 @@ public class DialogBottomMenuLayoutAdapter extends RecyclerListView.SelectionAda
             items.add(
                     new Item(Type.FIX_X.ordinal(),
                             LocaleController.getString("TabMenuFixX", R.string.TabMenuFixX),
-                            R.drawable.tool_cropfix, DialogType.ALL));
+                            R.drawable.msg_photo_cropfix, DialogType.ALL));
 
             items.add(
                     new Item(Type.HELP_LINE.ordinal(),
@@ -157,7 +157,7 @@ public class DialogBottomMenuLayoutAdapter extends RecyclerListView.SelectionAda
             items.add(
                     new Item(Type.BOOKMARKED.ordinal(),
                             LocaleController.getString("GoToBookmarked", R.string.GoToBookmarked),
-                            R.drawable.menu_bookmarks_ny));
+                            R.drawable.msg_saved_ny));
 
             items.add(
                     new Item(Type.MUTE.ordinal(),
@@ -173,7 +173,7 @@ public class DialogBottomMenuLayoutAdapter extends RecyclerListView.SelectionAda
             if (showDiscuss && dialogType == DialogType.CHANNEL) {
                 items.add(new Item(Type.DISCUSS.ordinal(),
                         LocaleController.getString("ChannelDiscuss", R.string.ChannelDiscuss),
-                        R.drawable.menu_groups));
+                        R.drawable.msg_groups));
             }
 
             if (HiddenController.getInstance().isActive()) {
@@ -189,7 +189,7 @@ public class DialogBottomMenuLayoutAdapter extends RecyclerListView.SelectionAda
                         new Item(Type.FAV.ordinal(),
                                 LocaleController.getString("AddToFavorites", R.string.AddToFavorites),
                                 isEditMode ? R.drawable.msg_fave
-                                        : FavController.is(did) ? R.drawable.ic_ab_fave : R.drawable.msg_fave));
+                                        : FavController.is(did) ? R.drawable.msg_unfave : R.drawable.msg_fave));
             }
 
             items.add(new Item(Type.REPORT.ordinal(),
@@ -209,7 +209,7 @@ public class DialogBottomMenuLayoutAdapter extends RecyclerListView.SelectionAda
 
             items.add(new Item(Type.BASIC_FONT.ordinal(),
                     LocaleController.getString("TextNicer", R.string.TextNicer),
-                    R.drawable.photo_paint_text, DialogType.USER, SharedStorage.basicFont() != 0));
+                    R.drawable.msg_photo_text, DialogType.USER, SharedStorage.basicFont() != 0));
 
             items.add(new Item(Type.BOLD.ordinal(),
                     LocaleController.getString("Bold", R.string.Bold),
@@ -252,7 +252,7 @@ public class DialogBottomMenuLayoutAdapter extends RecyclerListView.SelectionAda
 
         items.add(new Item(Type.SETTING.ordinal(),
                 LocaleController.getString("Settings", R.string.Settings),
-                R.drawable.menu_settings, DialogType.ALL));
+                R.drawable.msg_settings, DialogType.ALL));
 
         //endregion
 

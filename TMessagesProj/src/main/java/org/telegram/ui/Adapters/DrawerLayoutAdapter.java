@@ -152,7 +152,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                     }
                 };
                 break;
-            }
+
             case EMPTY_CELL: {
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));
                 break;
@@ -353,8 +353,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         int peopleNearbyIcon;
         if (eventType == 0) {
             newGroupIcon = R.drawable.msg_groups_ny;
-            //newSecretIcon = R.drawable.msg_secret_ny;
-            //newChannelIcon = R.drawable.msg_channel_ny;
+            newSecretIcon = R.drawable.msg_secret_ny;
+            newChannelIcon = R.drawable.msg_channel_ny;
             contactsIcon = R.drawable.msg_contacts_ny;
             callsIcon = R.drawable.msg_calls_ny;
             savedIcon = R.drawable.msg_saved_ny;
@@ -364,8 +364,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             peopleNearbyIcon = R.drawable.msg_nearby_ny;
         } else if (eventType == 1) {
             newGroupIcon = R.drawable.msg_groups_14;
-            //newSecretIcon = R.drawable.msg_secret_14;
-            //newChannelIcon = R.drawable.msg_channel_14;
+            newSecretIcon = R.drawable.msg_secret_14;
+            newChannelIcon = R.drawable.msg_channel_14;
             contactsIcon = R.drawable.msg_contacts_14;
             callsIcon = R.drawable.msg_calls_14;
             savedIcon = R.drawable.msg_saved_14;
@@ -375,8 +375,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             peopleNearbyIcon = R.drawable.msg_secret_14;
         } else if (eventType == 2) {
             newGroupIcon = R.drawable.msg_groups_hw;
-            //newSecretIcon = R.drawable.msg_secret_hw;
-            //newChannelIcon = R.drawable.msg_channel_hw;
+            newSecretIcon = R.drawable.msg_secret_hw;
+            newChannelIcon = R.drawable.msg_channel_hw;
             contactsIcon = R.drawable.msg_contacts_hw;
             callsIcon = R.drawable.msg_calls_hw;
             savedIcon = R.drawable.msg_saved_hw;
@@ -386,8 +386,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             peopleNearbyIcon = R.drawable.msg_secret_hw;
         } else {
             newGroupIcon = R.drawable.msg_groups;
-            //newSecretIcon = R.drawable.msg_secret;
-            //newChannelIcon = R.drawable.msg_channel;
+            newSecretIcon = R.drawable.msg_secret;
+            newChannelIcon = R.drawable.msg_channel;
             contactsIcon = R.drawable.msg_contacts;
             callsIcon = R.drawable.msg_calls;
             savedIcon = R.drawable.msg_saved;
@@ -420,7 +420,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             }
 
             items.add(new Item(BIG_AVATAR, LocaleController.getString("ShowBigAvatar", R.string.ShowBigAvatar),
-                    R.drawable.profile_photos));
+                    R.drawable.msg_photos));
             items.add(null); // divider
         }
 
@@ -467,7 +467,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         if (BuildVars.PROFILE_IMAGE_COLLECTION_FEATURE) {
             items.add(new Item(PROFILE_IMAGES,
                     LocaleController.getString("ProfileImageCollection", R.string.ProfileImageCollection),
-                    R.drawable.menu_camera, true));
+                    R.drawable.msg_camera, true));
         }
 
 
@@ -524,7 +524,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
         items.add(new Item(CLEAR_CACHE, LocaleController.getString("ClearCache", R.string.ClearCache), R.drawable.msg_clear));
         items.add(new Item(DATA_USAGE, LocaleController.getString("NetworkUsage", R.string.NetworkUsage),
-                R.drawable.menu_data, true));
+                R.drawable.msg_data, true));
 
         items.add(new Item(SETTINGS, LocaleController.getString("Settings", R.string.Settings), settingsIcon, false));
 
@@ -544,12 +544,12 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         if (BuildVars.SUPPORT_GROUP_FEATURE) {
             items.add(new Item(SUPPORT_GROUP,
                     LocaleController.getString("SupportGroup", R.string.SupportGroup),
-                    R.drawable.menu_groups, true));
+                    R.drawable.msg_groups, true));
         }
 
         items.add(new Item(OFFICIAL_CHANNEL,
                 LocaleController.getString("OfficialChannel", R.string.OfficialChannel),
-                R.drawable.menu_broadcast, true));
+                newChannelIcon, true));
 
 /*    items.add(new Item(INVITE, LocaleController.getString("InviteFriends", R.string.InviteFriends),
         eventType ? R.drawable.menu_invite_ny : R.drawable.menu_invite));*/
@@ -568,7 +568,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             if (SharedStorage.showDonate()) {
                 items.add(new Item(DONATE,
                         LocaleController.getString("Donate", R.string.Donate),
-                        R.drawable.menu_secret_ny, false));
+                        R.drawable.msg_secret_ny, false));
             }
         }
 
@@ -581,7 +581,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         if (BuildVars.DRAWER_SETTING_FEATURE) {
             items.add(new Item(DRAWER_MENU_SETTINGS,
                     LocaleController.getString("DrawerMenuItemSetting", R.string.DrawerMenuItemSetting),
-                    R.drawable.photo_tools, false));
+                    R.drawable.msg_photo_settings, false));
         }
         //endregion
 

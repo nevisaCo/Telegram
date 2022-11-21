@@ -4432,7 +4432,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPages[a].dialogsType = 0;
             viewPages[a].listView.updatePullState();
         } else {
-            MessagesController.DialogFilter filter = getMessagesController().dialogFilters.get(viewPages[a].selectedType);//todo:
             if (viewPages[a == 0 ? 1 : 0].dialogsType == 7) {
                 viewPages[a].dialogsType = 8;
             } else {
@@ -4508,7 +4507,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 filterTabsView.removeTabs();
                 for (int a = 0, N = filters.size(); a < N; a++) {
                     if (filters.get(a).isDefault()) {
-                        filterTabsView.addTab(a, 0, LocaleController.getString("FilterAllChats", R.string.FilterAllChats), R.drawable.msg_media, true,  filters.get(a).locked);
+                        filterTabsView.addTab(a, 0, LocaleController.getString("FilterAllChats", R.string.FilterAllChats), R.drawable.msg_media);
                     } else {
                         filterTabsView.addTab(a, filters.get(a).localId, filters.get(a).name,filters.get(a).emoticon, false,  filters.get(a).locked);
                     }
@@ -9203,14 +9202,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         // region Customized: on proxy icon long click
         if (SharedStorage.chatSettings(SharedStorage.keys.CLOUD_IN_CHAT)) {
-            savedItem = menu.addItem(saved_item_id, R.drawable.menu_saved);
+            savedItem = menu.addItem(saved_item_id, R.drawable.msg_saved);
             savedItem.setOnLongClickListener(view -> {
                 presentFragment(new ChatSettingActivity());
                 return true;
             });
         }
         if (SharedStorage.showDonate() && SharedStorage.actionBarDonate() && SharedStorage.chatSettings(SharedStorage.keys.SHOW_GIFT)) {
-            donateItem = menu.addItem(donate_item_id, R.drawable.menu_secret_ny);
+            donateItem = menu.addItem(donate_item_id, R.drawable.msg_secret_ny);
         }
 
         if (SharedStorage.showGhostMode() && SharedStorage.showGhostInDialogs() && SharedStorage.ghostModeActive()) {
@@ -9695,7 +9694,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 R.drawable.msg_markread,
                 R.drawable.ic_layer_close,
                 R.drawable.msg_markread,
-                R.drawable.menu_settings,
+                R.drawable.msg_settings,
         };
 
         int itemCount = label.length;

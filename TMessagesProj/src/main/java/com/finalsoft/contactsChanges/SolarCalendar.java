@@ -137,7 +137,7 @@ public class SolarCalendar {
     }
 
     public String getWeekDay() {
-        String strWeekDay = BuildConfig.FLAVOR;
+        String strWeekDay ="0";// BuildConfig.FLAVOR;
         switch (weekDay) {
             case 0:
                 return LocaleController.getString("Sunday", R.string.Sunday);
@@ -159,7 +159,7 @@ public class SolarCalendar {
     }
 
     public String getMonth() {
-        String strMonth = BuildConfig.FLAVOR;
+        String strMonth = "0" ;//BuildConfig.FLAVOR;
         switch (month) {
             case 1:
                 return LocaleController.getString("Farvardin", R.string.Farvardin);

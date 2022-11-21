@@ -6693,7 +6693,7 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
         showGoogleRateDialog();
 
-        initTheme();
+//        initTheme();
 
         //region change profile image
         imageUpdater = new ImageUpdater(false);
@@ -7005,20 +7005,20 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
                         if (photo != null || video != null) {
                             if (small != null && avatar != null) {
-                                File destFile = FileLoader.getPathToAttach(small, true);
-                                File src = FileLoader.getPathToAttach(avatar, true);
+                                File destFile = FileLoader.getInstance(currentAccount).getPathToAttach(small, true);
+                                File src = FileLoader.getInstance(currentAccount).getPathToAttach(avatar, true);
                                 src.renameTo(destFile);
                                 String oldKey = avatar.volume_id + "_" + avatar.local_id + "@50_50";
                                 String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
                                 ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, 1), true);
                             }
                             if (big != null && avatarBig != null) {
-                                File destFile = FileLoader.getPathToAttach(big, true);
-                                File src = FileLoader.getPathToAttach(avatarBig, true);
+                                File destFile = FileLoader.getInstance(currentAccount).getPathToAttach(big, true);
+                                File src = FileLoader.getInstance(currentAccount).getPathToAttach(avatarBig, true);
                                 src.renameTo(destFile);
                             }
                             if (videoSize != null && videoPath != null) {
-                                File destFile = FileLoader.getPathToAttach(videoSize, "mp4", true);
+                                File destFile = FileLoader.getInstance(currentAccount).getPathToAttach(videoSize, "mp4", true);
                                 File src = new File(videoPath);
                                 src.renameTo(destFile);
                             }
@@ -7319,6 +7319,16 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
 
                 @Override
                 public void onApplyCaption(CharSequence caption) {
+
+                }
+
+                @Override
+                public void onOpen() {
+
+                }
+
+                @Override
+                public void onClose() {
 
                 }
             });

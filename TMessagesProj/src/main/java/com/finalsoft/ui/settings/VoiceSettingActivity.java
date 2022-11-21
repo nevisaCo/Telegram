@@ -327,7 +327,7 @@ public class VoiceSettingActivity extends BaseFragment {
         for (MessageMenuController.Type item : MessageMenuController.Type.values()) {
             int tag_val = item.ordinal();
             DrawerActionCell textCell = new DrawerActionCell(context);
-            textCell.setTextAndIcon(item.ordinal(), MessageMenuController.labels[tag_val], MessageMenuController.icons[tag_val]);
+            textCell.setTextAndIcon(item.ordinal(), MessageMenuController.labels[tag_val], MessageMenuController.icons[tag_val],0);
             textCell.showCheckBox(true);
             textCell.setChecked(MessageMenuController.is(item));
             textCell.setTag(tag_val);

@@ -35,7 +35,7 @@ public class AnsweringMachine {
                                 boolean answered = AutoAnswerController.is(userId);
                                 if (!answered) {
                                     AutoAnswerController.add(userId);
-                                    SendMessagesHelper.getInstance(UserConfig.selectedAccount).sendMessage(AnsweringMachine.answeringText, userId, null, null, null, true, null, null, null, true, 0,null);
+                                    SendMessagesHelper.getInstance(UserConfig.selectedAccount).sendMessage(AnsweringMachine.answeringText, userId, null, null, null, true, null, null, null, true, 0,null,false);
                                     MessagesController.getInstance(UserConfig.selectedAccount).markMessageContentAsRead(messageObject);
                                 }
                             }

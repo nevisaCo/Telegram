@@ -57,7 +57,7 @@ public class DialogBottomActionCell extends FrameLayout {
         } else {
             icon = new ImageView(context);
             icon.setColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon));
-            icon.setImageResource(R.drawable.profile_voice);
+            icon.setImageResource(R.drawable.msg_voice_unmuted);
             //int mrg = AndroidUtilities.dp(1);
             addView(icon, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT,
                     Gravity.CENTER, 12, 0, 12, 0));

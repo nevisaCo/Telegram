@@ -5103,7 +5103,7 @@ public class Theme {
         SharedPreferences themeConfig = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
 
         ThemeInfo themeInfo = new ThemeInfo();
-        themeInfo.name = "Default";
+/*        themeInfo.name = "Default";
         themeInfo.assetName = "theme.attheme";
         themeInfo.previewBackgroundColor = 0x6086630;
         themeInfo.previewInColor = 0xffffffff;
@@ -5112,7 +5112,7 @@ public class Theme {
         themes.add(currentDayTheme = currentTheme = defaultTheme = themeInfo);
         themesDict.put("Default", themeInfo);
 
-        themeInfo = new ThemeInfo();
+        themeInfo = new ThemeInfo();*/
         themeInfo.name = "Blue";
         themeInfo.assetName = "bluebubbles.attheme";
         themeInfo.previewBackgroundColor = 0xff95beec;
@@ -9188,8 +9188,8 @@ public class Theme {
 
             //customized:
             chat_markDrawable = createRoundRectDrawable(AndroidUtilities.dp(16), 0xffffffff);
-            chat_markIconDrawable = resources.getDrawable(R.drawable.msg_fave);
-            chat_markFilledIconDrawable = resources.getDrawable(R.drawable.ic_ab_fave);
+            chat_markIconDrawable = resources.getDrawable(R.drawable.msg_unfave);
+            chat_markFilledIconDrawable = resources.getDrawable(R.drawable.msg_fave);
 
             chat_shareIconDrawable = resources.getDrawable(R.drawable.share_arrow).mutate();
             chat_replyIconDrawable = resources.getDrawable(R.drawable.fast_reply);

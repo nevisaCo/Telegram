@@ -4,7 +4,6 @@ repositories {
     mavenCentral()
     google()
     jcenter()
-
 }
 
 configurations {
@@ -80,9 +79,9 @@ android {
     compileSdkVersion 31
     buildToolsVersion '31.0.0'
     ndkVersion "21.4.7075529"
-
-    defaultConfig.applicationId = PACKAGE_NAME
-
+/*
+    defaultConfig.applicationId = String.valueOf("\""+ APP_PACKAGE+"\"")
+*/
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
     externalNativeBuild {
@@ -100,7 +99,7 @@ android {
 
     dexOptions {
         jumboMode = true
-//        javaMaxHeapSize "4g" //Customized:
+        javaMaxHeapSize "4g" //Customized:
     }
 
     compileOptions {
@@ -113,9 +112,9 @@ android {
     defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 30
-        versionName "8.9.0"
+        versionName APP_VERSION_NAME
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
@@ -137,9 +136,11 @@ android {
                 repositoryRsa  : REPOSITORY_RSA
         ]
 
+        buildConfigField "Integer", "VERSION_CODE", APP_VERSION_CODE
         buildConfigField "Integer", "MAX_ACCOUNT_COUNT", MAX_ACCOUNT_COUNT
         buildConfigField "Integer", "PRIMARY_COLOR", PRIMARY_COLOR
         buildConfigField "Integer", "APP_ID", APP_ID
+        buildConfigField "String", "APPLICATION_ID", String.valueOf("\""+ APP_PACKAGE+"\"")
         buildConfigField "String", "APP_HASH", APP_HASH
         buildConfigField "String", "OFFICIAL_CHANNELS", OFFICIAL_CHANNELS
         buildConfigField "String", "SUPPORT_GROUP", SUPPORT_GROUP
@@ -181,8 +182,6 @@ android {
         HA_public {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.debug
-//            applicationIdSuffix ".beta"
             minifyEnabled true
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
@@ -219,14 +218,6 @@ android {
     }
 }
 
-/*    defaultConfig.versionCode = 2636 * Integer.parseInt(VERSION_RATIO)
-
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            outputFileName = PACKAGE_NAME + "_" +defaultConfig.versionName + "_"+ defaultConfig.versionCode + ".apk"
-            output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
-        }
-    }*/
 
 def getProps(String propName) {
     def propsFile = rootProject.file('local.properties')

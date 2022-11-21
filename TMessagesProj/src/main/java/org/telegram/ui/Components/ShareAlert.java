@@ -1665,7 +1665,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 long key = selectedDialogs.keyAt(a);
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                     SendMessagesHelper.getInstance(currentAccount)
-                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, true, 0, null);
+                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, entities, null, null, withSound, 0, null,false);
                 }
                 if (fromMyName && sendingMessageObjects.get(0).messageOwner != null) {
                     if (isCaption && smart) {
@@ -1686,14 +1686,14 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 long key = selectedDialogs.keyAt(a);
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                     SendMessagesHelper.getInstance(currentAccount)
-                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, true, 0, null);
+                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, entities, null, null, withSound, 0, null,false);
                 }
                 if (fromMyName) {
                     Log.i(TAG, "ShareAlert: 5");
                     SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(sendingMessageObjects.get(0), key);
                 } else {
                     Log.i(TAG, "ShareAlert: 6");
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText[a], key, null, null, null, true, null, null, null, true, 0, null);
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText[a], key, null, null, null, true, entities, null, null, withSound, 0, null,false);
                 }
             }
         }
@@ -2981,7 +2981,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
 
             //region Edit Text
-            editTextMessage = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG);
+            editTextMessage = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG, true);
             editTextMessage.onResume();
             EditTextBoldCursor editText1 = editTextMessage.getEditText();
             editText1.setMaxLines(20);

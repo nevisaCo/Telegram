@@ -8280,7 +8280,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         true,
                         0,
                         messageObject.messageOwner.media.ttl_seconds,
-                        messageObject);
+                        messageObject,false);
                 Log.i(TAG, "processProForward: photo");
             } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_document) {
 
@@ -8288,7 +8288,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         null, messageObject.messageOwner.attachPath,
                         did, messageObject.replyMessageObject, null,
                         captionMessage,
-                        messageObject.messageOwner.entities, null, params, true, 0, messageObject.messageOwner.media.ttl_seconds, messageObject,null);
+                        messageObject.messageOwner.entities, null, params, true, 0, messageObject.messageOwner.media.ttl_seconds, messageObject,null,false);
                 Log.i(TAG, "processProForward: doc");
             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVenue || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo) {
                 sendMessage(messageObject.messageOwner.media, did,
@@ -8331,7 +8331,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             } else {
                 entities = null;
             }
-            sendMessage(captionMessage, did, messageObject.replyMessageObject,null, webPage, true, entities, null, null, true, 0,null);
+            sendMessage(captionMessage, did, messageObject.replyMessageObject,null, webPage, true, entities, null, null, true, 0,null,false);
         } else if ((int) did != 0) {
             Log.i(TAG, "processProForward: 3");
             ArrayList<MessageObject> arrayList = new ArrayList<>();

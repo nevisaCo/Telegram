@@ -95,7 +95,7 @@ public class MessageDetailsActivity extends BaseFragment {
             }
         }
         if (filePath == null || filePath.length() == 0) {
-            filePath = FileLoader.getPathToMessage(messageObject.messageOwner).toString();
+            filePath = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner).toString();
         }
         if (messageObject.messageOwner.media != null && messageObject.messageOwner.media.document != null) {
             if (TextUtils.isEmpty(messageObject.messageOwner.media.document.file_name)) {

@@ -115,7 +115,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         searchItem.setSearchFieldHint(LocaleController.getString("SearchImages", R.string.SearchImages));
         String defaultKey = SharedStorage.profileImageDefaultKey();
         if (recentSearches.size() == 0) {
-            processSearch(defaultKey, false);
+            EditText editText = new EditText(getContext());
+            editText.setText(defaultKey);
+            processSearch(editText);
         }
     }
 

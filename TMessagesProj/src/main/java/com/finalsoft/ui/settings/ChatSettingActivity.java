@@ -588,7 +588,7 @@ public class ChatSettingActivity extends BaseFragment {
             int tag_val = item.ordinal();
             DrawerActionCell textCell = new DrawerActionCell(context);
             textCell.setTextAndIcon(item.ordinal(),MessageMenuController.labels[tag_val],
-                    MessageMenuController.icons[tag_val]);
+                    MessageMenuController.icons[tag_val],0);
             textCell.showCheckBox(true);
             textCell.setChecked(MessageMenuController.is(item));
             textCell.setTag(tag_val);

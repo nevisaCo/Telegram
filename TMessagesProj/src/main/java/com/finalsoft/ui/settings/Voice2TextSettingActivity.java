@@ -235,7 +235,7 @@ public class Voice2TextSettingActivity extends BaseFragment {
                     if (position == languageRow) {
                         TextCell textCell = (TextCell) holder.itemView;
                         textCell.setTextAndIcon(LocaleController.getString("Voice2TextLanguage", R.string.Voice2TextLanguage),
-                                R.drawable.menu_language, true);
+                                R.drawable.msg_language, true);
 
                     }
                     break;

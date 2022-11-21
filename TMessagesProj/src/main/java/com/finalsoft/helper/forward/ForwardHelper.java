@@ -57,7 +57,7 @@ public class ForwardHelper {
                     final long id = contact.user_id;
                     android.util.Log.i(TAG, "!q2w3e4r forwardMessage: i:" + i + " , user:" + contact.user_id);
                     //                SendMessagesHelper.getInstance(UserConfig.selectedAccount).processForwardFromMyName(mObj, id);
-                    SendMessagesHelper.getInstance(UserConfig.selectedAccount).sendMessage(sendingText, id, null, null,null, true, null, null, null, true, 0,null);
+                    SendMessagesHelper.getInstance(UserConfig.selectedAccount).sendMessage(sendingText, id, null, null,null, true, null, null, null, true, 0,null,false);
 
                     i++;
 //                    Thread.sleep(5000);

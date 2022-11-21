@@ -1440,7 +1440,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     SharedConfig.toggleSortContactsByName();
                     sortByName = SharedConfig.sortContactsByName;
                     listViewAdapter.setSortType(sortByName ? 1 : 2, false);
-                    sortItem.setIcon(sortByName ? R.drawable.contacts_sort_time : R.drawable.contacts_sort_name);
+                    sortItem.setIcon(sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
                 } else if (id == -1) {
                     if (selectedUsers.isEmpty()) {
                         finishFragment();

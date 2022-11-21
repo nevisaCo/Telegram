@@ -502,6 +502,16 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
         }
 
         @Override
+        public void onOpen() {
+
+        }
+
+        @Override
+        public void onClose() {
+
+        }
+
+        @Override
         public boolean allowCaption() {
             return true;
         }
@@ -810,7 +820,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
 
         ActionBarMenu menu = actionBar.createMenu();
 
-        ActionBarMenuItem setting = menu.addItem(1, R.drawable.menu_settings);
+        ActionBarMenuItem setting = menu.addItem(1, R.drawable.msg_settings);
         setting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -1549,7 +1559,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                         }
                     }
                     if (!canSave) {
-                        File f = FileLoader.getPathToMessage(messageObject.messageOwner);
+                        File f = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
                         if (f.exists()) {
                             canSave = true;
                         }
@@ -2572,7 +2582,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = FileLoader.getInstance(currentAccount).getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 if (selectedObject.type == 3 || selectedObject.type == 1) {
                     if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -2593,7 +2603,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = FileLoader.getInstance(currentAccount).getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType(selectedObject.getDocument().mime_type);
@@ -2610,7 +2620,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = FileLoader.getInstance(currentAccount).getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
@@ -2638,7 +2648,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     }
                 }
                 if (path == null || path.length() == 0) {
-                    path = FileLoader.getPathToMessage(selectedObject.messageOwner).toString();
+                    path = FileLoader.getInstance(currentAccount).getPathToMessage(selectedObject.messageOwner).toString();
                 }
                 MediaController.saveFile(path, getParentActivity(), selectedObject.isMusic() ? 3 : 2, fileName, selectedObject.getDocument() != null ? selectedObject.getDocument().mime_type : "");
                 break;
@@ -2914,6 +2924,16 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
 
     @Override
     public void onApplyCaption(CharSequence caption) {
+
+    }
+
+    @Override
+    public void onOpen() {
+
+    }
+
+    @Override
+    public void onClose() {
 
     }
 
@@ -3344,7 +3364,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                                     f = new File(message.messageOwner.attachPath);
                                 }
                                 if (f == null || !f.exists()) {
-                                    f = FileLoader.getPathToMessage(message.messageOwner);
+                                    f = FileLoader.getInstance(currentAccount).getPathToMessage(message.messageOwner);
                                 }
                                 Intent intent = new Intent(Intent.ACTION_VIEW);
                                 if (Build.VERSION.SDK_INT >= 24) {
@@ -3358,9 +3378,9 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                                 alertUserOpenError(message);
                             }
                         } else if (message.type == 4) {
-                            if (!AndroidUtilities.isGoogleMapsInstalled(DownloadManagerActivity.this)) {
+                           /* if (!AndroidUtilities.isGoogleMapsInstalled(DownloadManagerActivity.this)) {
                                 return;
-                            }
+                            }*/
                             LocationActivity fragment = new LocationActivity(2);
                             fragment.setMessageObject(message);
                             presentFragment(fragment);
@@ -3678,7 +3698,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
         for (MessageObject messageObject : messageObjects) {
             TLObject attach = getDownloadObject(messageObject);
             loadFile(attach, messageObject);
-            File pathToMessage = FileLoader.getPathToMessage(messageObject.messageOwner);
+            File pathToMessage = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
             if (pathToMessage != null && !pathToMessage.exists()) {
                 DownloadController.getInstance(currentAccount).addLoadingFileObserver(FileLoader.getAttachFileName(attach), DownloadManagerActivity.this);
                 return;
@@ -3712,7 +3732,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
             }
         }
         if (!downloaded) {
-            File f = FileLoader.getPathToMessage(messageObject.messageOwner);
+            File f = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
             if (f.exists()) {
                 downloaded = true;
             }
@@ -3752,7 +3772,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                             }
                         }
                         if (!downloaded) {
-                            File f = FileLoader.getPathToMessage(message);
+                            File f = FileLoader.getInstance(currentAccount).getPathToMessage(message);
                             if (f.exists()) {
                                 downloaded = true;
                             }
