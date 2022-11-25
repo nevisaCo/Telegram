@@ -24,8 +24,8 @@ public class BuildVars  extends com.finalsoft.Config {
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = false;
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
-    public static int BUILD_VERSION = 2927;
-    public static String BUILD_VERSION_STRING = "9.1.4";
+    public static int BUILD_VERSION = 2929;
+    public static String BUILD_VERSION_STRING = "9.1.6";
     public static int APP_ID = BuildConfig.APP_ID;
     public static String APP_HASH = BuildConfig.APP_HASH;
 
