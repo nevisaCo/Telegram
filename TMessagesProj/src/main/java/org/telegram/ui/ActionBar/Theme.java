@@ -5234,7 +5234,7 @@ public class Theme {
         SharedPreferences themeConfig = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
 
         ThemeInfo themeInfo = new ThemeInfo();
-/*        themeInfo.name = "Default";
+        themeInfo.name = "Default";
         themeInfo.assetName = "theme.attheme";
         themeInfo.previewBackgroundColor = 0x6086630;
         themeInfo.previewInColor = 0xffffffff;
@@ -5243,7 +5243,7 @@ public class Theme {
         themes.add(currentDayTheme = currentTheme = defaultTheme = themeInfo);
         themesDict.put("Default", themeInfo);
 
-        themeInfo = new ThemeInfo();*/
+        themeInfo = new ThemeInfo();
         themeInfo.name = "Blue";
         themeInfo.assetName = "bluebubbles.attheme";
         themeInfo.previewBackgroundColor = 0xff95beec;

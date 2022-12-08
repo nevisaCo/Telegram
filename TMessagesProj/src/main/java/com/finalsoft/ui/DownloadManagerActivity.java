@@ -1487,7 +1487,8 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     0,
                     0,
                     0,
-                    lastLoadIndex++);
+                    lastLoadIndex++,
+                    false);
 
             //emptyViewContainer.setVisibility(View.INVISIBLE);
         }
@@ -1750,7 +1751,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     messages.add(messages.size() - 1, messageObject);
                 }
                 for (final long longValue : hashMap.keySet()) {
-                    MediaDataController.getInstance(currentAccount).loadReplyMessagesForMessages(hashMap.get(longValue), longValue, false, null);
+                    MediaDataController.getInstance(currentAccount).loadReplyMessagesForMessages(messages, longValue, false, 0, null);
                 }
                 if (first) {
                     if (chatListView != null) {
@@ -2042,8 +2043,8 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
     protected void onDialogDismiss(Dialog dialog) {
         if (closeChatDialog != null && dialog == closeChatDialog) {
             MessagesController.getInstance(currentAccount).deleteDialog(dialog_id, 0);
-            if (parentLayout != null && !parentLayout.fragmentsStack.isEmpty() && parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1) != this) {
-                BaseFragment fragment = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1);
+            if (parentLayout != null && !this.parentLayout.getFragmentStack().isEmpty() && parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 1) != this) {
+                BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 1);
                 removeSelfFromStack();
                 fragment.finishFragment();
             } else {
@@ -2109,7 +2110,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
 //            pinnedMessageImageView.setImage(pinnedImageLocation, "50_50", (Drawable) null, pinnedMessageObject);
 //        }
 
-        NotificationsController.getInstance(currentAccount).setOpenedDialogId(dialog_id);
+        NotificationsController.getInstance(currentAccount).setOpenedDialogId(dialog_id,0);
         if (scrollToTopOnResume) {
             if (scrollToTopUnReadOnResume && scrollToMessage != null) {
                 if (chatListView != null) {
@@ -2174,7 +2175,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
         }
         paused = true;
         wasPaused = true;
-        NotificationsController.getInstance(currentAccount).setOpenedDialogId(0);
+        NotificationsController.getInstance(currentAccount).setOpenedDialogId(0,0);
         CharSequence draftMessage = null;
         boolean searchWebpage = true;
 
@@ -2199,7 +2200,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     ((ViewGroup) fragmentView).addView(fragmentContextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
                 }
             } else {
-                actionBar.setBackButtonDrawable(new BackDrawable(parentLayout == null || parentLayout.fragmentsStack.isEmpty() || parentLayout.fragmentsStack.get(0) == DownloadManagerActivity.this || parentLayout.fragmentsStack.size() == 1));
+                actionBar.setBackButtonDrawable(new BackDrawable(parentLayout == null || parentLayout.getFragmentStack().isEmpty() || parentLayout.getFragmentStack().get(0) == DownloadManagerActivity.this || parentLayout.getFragmentStack().size() == 1));
                 if (fragmentContextView != null && fragmentContextView.getParent() != null) {
                     fragmentView.setPadding(0, 0, 0, 0);
                     ((ViewGroup) fragmentView).removeView(fragmentContextView);
@@ -2664,7 +2665,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
     }
 
     @Override
-    public void didSelectDialogs(DialogsActivity fragment, ArrayList<Long> dids, CharSequence message, boolean param) {
+    public void didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param) {
         if (dialog_id != 0 && (forwaringMessage != null || !selectedMessagesIds[0].isEmpty() || !selectedMessagesIds[1].isEmpty())) {
             ArrayList<MessageObject> fmessages = new ArrayList<>();
             if (forwaringMessage != null) {
@@ -2688,7 +2689,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                 actionBar.hideActionMode();
             }
 
-            long did = dids.get(0);
+            long did = dids.get(0).dialogId;
             if (did != dialog_id) {
                 int lower_part = (int) did;
                 if (lower_part != 0) {
@@ -3163,7 +3164,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public boolean needPlayMessage(MessageObject messageObject) {
+                    public boolean needPlayMessage(MessageObject messageObject, boolean mute) {
                         if (messageObject.isVoice() || messageObject.isRoundVideo()) {
                             boolean result = MediaController.getInstance().playMessage(messageObject);
                             MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(messageObject, false) : null, false);
@@ -3352,6 +3353,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                                     message,
                                     message.type != 0 ? dialog_id : 0,
                                     message.type != 0 ? mergeDialogId : 0,
+                                    0,
                                     DownloadManagerActivity.this,
                                     false)
                             ) {
@@ -3405,7 +3407,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                         if (photoSize != null) {
                             PhotoViewer.getInstance().openPhoto(photoSize.location, DownloadManagerActivity.this);
                         } else {
-                            PhotoViewer.getInstance().openPhoto(message, 0, 0, DownloadManagerActivity.this, false);
+                            PhotoViewer.getInstance().openPhoto(message, 0, 0,0, DownloadManagerActivity.this, false);
                         }
                     }
 

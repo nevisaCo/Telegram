@@ -146,6 +146,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public View createView(Context context) {
+
         actionBar.setAddToContainer(false);
 
         ScrollView scrollView = new ScrollView(context);
@@ -241,7 +242,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 if (eglThread == null && surface != null) {
                     eglThread = new EGLThread(surface);
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.postRunnable(()->{
+                    eglThread.postRunnable(() -> {
                         float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
                         Intro.setPage(currentViewPagerPage);
                         Intro.setDate(time);
@@ -249,7 +250,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         if (eglThread != null && eglThread.isAlive() && eglThread.eglDisplay != null && eglThread.eglSurface != null) {
                             try {
                                 eglThread.egl10.eglSwapBuffers(eglThread.eglDisplay, eglThread.eglSurface);
-                            } catch (Exception ignored) {} // If display or surface already destroyed
+                            } catch (Exception ignored) {
+                            } // If display or surface already destroyed
                         }
                     });
                     eglThread.postRunnable(eglThread.drawRunnable);
@@ -358,9 +360,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             startPressed = true;
 
             //Customized:show policy agreement
-            if (SharedStorage.privacyAgreementShown()){
+            if (SharedStorage.privacyAgreementShown()) {
                 presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
-            }else {
+            } else {
                 presentFragment(new PrivacyActivity(PrivacyActivity.ACTION_TYPE_PRIVACY_AGREEMENT), true);
             }
             destroyed = true;
@@ -390,7 +392,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         loaderDialog.dismiss();
 
                         NotificationCenter.getGlobalInstance().removeObserver(this, id);
-                        AndroidUtilities.runOnUIThread(()->{
+                        AndroidUtilities.runOnUIThread(() -> {
                             presentFragment(new LoginActivity().setIntroView(frameContainerView, startMessagingButton), true);
                             destroyed = true;
                         }, 100);
@@ -685,7 +687,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             EGLConfig[] configs = new EGLConfig[1];
             int[] configSpec;
             if (EmuDetector.with(getParentActivity()).detect()) {
-                configSpec = new int[] {
+                configSpec = new int[]{
                         EGL10.EGL_RED_SIZE, 8,
                         EGL10.EGL_GREEN_SIZE, 8,
                         EGL10.EGL_BLUE_SIZE, 8,
@@ -694,7 +696,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         EGL10.EGL_NONE
                 };
             } else {
-                configSpec = new int[] {
+                configSpec = new int[]{
                         EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
                         EGL10.EGL_RED_SIZE, 8,
                         EGL10.EGL_GREEN_SIZE, 8,
@@ -723,7 +725,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 return false;
             }
 
-            int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
+            int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null) {
                 if (BuildVars.LOGS_ENABLED) {
@@ -959,7 +961,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         bottomPages.invalidate();
         if (fromTheme) {
             if (eglThread != null) {
-                eglThread.postRunnable(()->{
+                eglThread.postRunnable(() -> {
                     eglThread.loadTexture(R.drawable.intro_powerful_mask, 17, Theme.getColor(Theme.key_windowBackgroundWhite), true);
                     eglThread.updatePowerfulTextures();
 

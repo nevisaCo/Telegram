@@ -19,6 +19,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdOptions;
+import com.google.android.gms.auth.api.signin.internal.Storage;
 import com.google.gson.Gson;
 
 import org.telegram.messenger.BuildVars;
@@ -34,6 +35,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Native extends AdmobBaseClass {
+    public interface IGetNativeItem {
+        void onServe(NativeAddCell nativeAddCell);
+    }
 
     @SuppressLint("StaticFieldLeak")
     private static Native aNative;
@@ -230,7 +234,11 @@ public class Native extends AdmobBaseClass {
         try {
 
             Log.i(TAG, "AdmobController > loadNative > serve > native request Items size:" + nativeRequestItems.size());
-            adLoader.loadAds(new AdRequest.Builder().build(), Math.min(nativeRequestItems.size(), 5));
+            if (loadSingleNative()) {
+                adLoader.loadAd(new AdRequest.Builder().build());
+            } else {
+                adLoader.loadAds(new AdRequest.Builder().build(), Math.min(nativeRequestItems.size(), 5));
+            }
         } catch (Exception e) {
             Log.e(TAG, "AdmobController > loadNative > serve >  ", e);
         }
@@ -249,7 +257,7 @@ public class Native extends AdmobBaseClass {
     }
 
 
-    NativeAddCell getItem(String name, IServeCallback iCallback) {
+    public void getItem(String name,@NonNull IGetNativeItem iCallback) {
         if (!nativeServedItems.isEmpty()) {
             NativeAd ad = getAd(name);
 
@@ -257,15 +265,13 @@ public class Native extends AdmobBaseClass {
                 NativeAddCell nativeAddCell = new NativeAddCell(context, false, false);
                 nativeAddCell.setAdd(ad);
                 nativeAddCell.setBackgroundColor(Color.TRANSPARENT);
-                if (iCallback != null) {
-                    iCallback.onServe();
-                }
-                return nativeAddCell;
+                iCallback.onServe(nativeAddCell);
             }
+        } else {
+            serve(() -> getItem(name, iCallback));
         }
 
         Log.i(TAG, "getAd > served items is empty , requested from : " + name);
-        return null;
     }
 
     NativeAd getAd(String name) {
@@ -425,6 +431,9 @@ public class Native extends AdmobBaseClass {
                     Log.i(TAG, String.format("addAdToList native:  dialog added on tab %s position:%s , dialog size:%s", tabName, position, dialogs.size()));
 
                     //repeat ad on the lists
+                    //in tab_0:
+                    //if the gap is less than  < 0, then show the Ad repeatedly only when tabs are disabled
+                    //if the gap is greater than > 0, the Ad repeating in any condition
                     int repeatGap = item.getRepeatGap();
                     boolean repeatAd = repeatGap > 0 || (index == 0 && dialogFilterSize == 0 && repeatGap < 0);
                     if (repeatAd) {

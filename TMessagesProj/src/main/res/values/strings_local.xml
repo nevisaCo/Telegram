@@ -184,7 +184,6 @@
 
     <string name="IPv6">Try connecting through IPv6</string>
     <string name="MessageMenu">Message menu</string>
-    <string name="Hide">Hide</string>
     <string name="DeleteAllFromSelf">Delete all from yourself</string>
     <string name="DeleteAllFromSelfAlert">Warning! This will **delete all messages from you** in this chat for **all** participants.</string>
     <string name="BotLogin">Bot Login</string>
@@ -410,5 +409,9 @@
     <string name="FiltersFirstSetupInfo">Dear user, you do not have custom tabs, to display tabs, you need to create your favorite tabs with a few clicks and in a completely customized way. Would you like to do that?</string>
     <string name="ShowRefreshInDialogs">Show refresh in home</string>
     <string name="PrivacyAgreement">By Continuing you agree to all terms of services and privacy policy of telegram</string>
+    <string name="VpnStatus">VPN Status</string>
+    <string name="VpnStatusMessage">Your phone VPN is on. Sending messages may be affected. Do you want to turn on/off Telegram\'s internal proxy?</string>
+    <string name="TurnOffProxy">Turn Off Proxy</string>
+    <string name="TurnOnProxy">Turn On Proxy</string>
 
 </resources>

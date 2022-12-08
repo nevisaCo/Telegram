@@ -62,7 +62,7 @@ public class UpdateBiz {
             if(baseUpdate instanceof TLRPC.TL_updateUserName) {
               TLRPC.TL_updateUserName updateUserName = (TLRPC.TL_updateUserName) baseUpdate;
                var5.setOldValue(this.formatUserSearchName(currentUser.username, currentUser.first_name, currentUser.last_name));
-               var5.setNewValue(this.formatUserSearchName(updateUserName.username, updateUserName.first_name, updateUserName.last_name));
+               var5.setNewValue(this.formatUserSearchName(updateUserName.usernames.get(0).username, updateUserName.first_name, updateUserName.last_name));
                var5.setType(2);
             } else if(baseUpdate instanceof TLRPC.TL_updateUserPhone) {
                TLRPC.TL_updateUserPhone updateUserPhone = (TLRPC.TL_updateUserPhone) baseUpdate;

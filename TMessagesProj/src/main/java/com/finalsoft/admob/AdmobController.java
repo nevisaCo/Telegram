@@ -75,11 +75,13 @@ public class AdmobController extends AdmobBaseClass {
 
             @Override
             public void onResponse() {
-                Reward.getInstance().serve(launchActivity);
-
-                Native.getInstance().serve(nativeCallback);
-
-                if (SharedStorage.preServeInterstitial()) {
+                if (preServeReward()) {
+                    Reward.getInstance().serve(launchActivity);
+                }
+                if (preServeNative()) {
+                    Native.getInstance().serve(nativeCallback);
+                }
+                if (preServeInterstitial()) {
                     Interstitial.getInstance().serve(interstitialCallback);
                 }
 
@@ -153,8 +155,8 @@ public class AdmobController extends AdmobBaseClass {
     }
 
 
-    public NativeAddCell getUINativeItem(String name, IServeCallback callback) {
-        return Native.getInstance().getItem(name, callback);
+    public void getUINativeItem(String name, Native.IGetNativeItem callback) {
+         Native.getInstance().getItem(name, callback);
     }
 
     public NativeAd getNativeAd(String name) {

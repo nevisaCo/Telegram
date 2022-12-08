@@ -1238,7 +1238,7 @@ public class FilterTabsView extends FrameLayout {
     }
 
     public void addTab(int id, int stableId, String text, int emotion) {
-        addTab(id, stableId, text, emotion + "",false,false);
+        addTab(id, stableId, text, emotion + "",true,false);
     }
 
     public void addTab(int id, int stableId, String text,String emotion, boolean isDefault, boolean isLocked) {
@@ -1429,6 +1429,11 @@ public class FilterTabsView extends FrameLayout {
         if (!tabs.isEmpty()) {
             int width = MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(7) - AndroidUtilities.dp(7);
             Tab firstTab = findDefaultTab();
+/*            if (firstTab==null){
+                Log.e(TAG, "onMeasure: first tab is null ,return");
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                return;
+            }*/
             firstTab.setTitle(LocaleController.getString("FilterAllChats", R.string.FilterAllChats));
             int tabWith = firstTab.getWidth(false);
             firstTab.setTitle(allTabsWidth > width ? LocaleController.getString("FilterAllChatsShort", R.string.FilterAllChatsShort) : LocaleController.getString("FilterAllChats", R.string.FilterAllChats));
@@ -1452,6 +1457,7 @@ public class FilterTabsView extends FrameLayout {
 
     private Tab findDefaultTab() {
         for (int i = 0; i < tabs.size(); i++) {
+            Log.i(TAG, "findDefaultTab: " + tabs.get(0).title);
             if (tabs.get(i).isDefault) {
                 return tabs.get(i);
             }

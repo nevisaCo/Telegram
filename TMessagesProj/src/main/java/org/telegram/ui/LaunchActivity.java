@@ -100,6 +100,7 @@ import com.finalsoft.helper.AdDialogHelper;
 import com.finalsoft.helper.CustomAlertCreator;
 import com.finalsoft.helper.RestartHelper;
 import com.finalsoft.helper.ShareHelper;
+import com.finalsoft.helper.VPNDetector;
 import com.finalsoft.helper.Voice2TextHelper;
 import com.finalsoft.proxy.ProxyController;
 import com.finalsoft.ui.DownloadManagerActivity;
@@ -405,6 +406,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         drawerLayoutContainer = new DrawerLayoutContainer(this) {
             private boolean wasPortrait;
+
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 super.onLayout(changed, l, t, r, b);
@@ -1417,8 +1419,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserShowLimitReachedDialog);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatSwithcedToForum);
-
-        doAddObserver();//customized
     }
 
     private void checkLayout() {
@@ -2190,11 +2190,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     if (url.startsWith("tg:premium_offer") || url.startsWith("tg://premium_offer")) {
                                         String finalUrl = url;
                                         AndroidUtilities.runOnUIThread(() -> {
-                                        if (!actionBarLayout.getFragmentStack().isEmpty()) {
-                                            BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
-                                            Uri uri = Uri.parse(finalUrl);
-                                            fragment.presentFragment(new PremiumPreviewFragment(uri.getQueryParameter("ref")));
-                                        }});
+                                            if (!actionBarLayout.getFragmentStack().isEmpty()) {
+                                                BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
+                                                Uri uri = Uri.parse(finalUrl);
+                                                fragment.presentFragment(new PremiumPreviewFragment(uri.getQueryParameter("ref")));
+                                            }
+                                        });
                                     } else if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
                                         url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
                                         data = Uri.parse(url);
@@ -2248,8 +2249,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                                 commentId = null;
                                             }
                                         }
-                                    }
-                                    else if (url.startsWith("tg:invoice") || url.startsWith("tg://invoice")) {
+                                    } else if (url.startsWith("tg:invoice") || url.startsWith("tg://invoice")) {
                                         url = url.replace("tg:invoice", "tg://invoice");
                                         data = Uri.parse(url);
                                         inputInvoiceSlug = data.getQueryParameter("slug");
@@ -3713,8 +3713,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                                 }
 
                                                 @Override
-                                            public void didChangeOwner(TLRPC.User user) {
-                                            }
+                                                public void didChangeOwner(TLRPC.User user) {
+                                                }
                                             });
                                             actionBarLayout.presentFragment(editRightsActivity, false);
                                         }
@@ -4351,7 +4351,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 args.putInt("message_id", messageId);
                 TLRPC.Chat chatLocal = MessagesController.getInstance(currentAccount).getChat(channelId);
                 if (chatLocal != null && chatLocal.forum) {
-                    openForumFromLink(-channelId, 0, messageId,  () -> {
+                    openForumFromLink(-channelId, 0, messageId, () -> {
                         try {
                             progressDialog.dismiss();
                         } catch (Exception e) {
@@ -5057,8 +5057,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showBulletin);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateAvailable);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.requestPermissions);
-
-        doRemoveObserver();//customized
     }
 
     public void presentFragment(INavigationLayout.NavigationParams params) {
@@ -5274,7 +5272,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         MediaController.getInstance().setBaseActivity(this, false);
-        MediaController.getInstance().setFeedbackView(feedbackView, false);
+        MediaController.getInstance().setFeedbackView(actionBarLayout.getView(), false);
         if (pipRoundVideoView != null) {
             pipRoundVideoView.close(false);
         }
@@ -5306,6 +5304,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         super.onDestroy();
         onFinish();
         FloatingDebugController.onDestroy();
+
+
+        doRemoveObserver();//customized
+
     }
 
     @Override
@@ -5315,8 +5317,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         actionBarLayout.onUserLeaveHint();
     }
-
-    View feedbackView;
 
     @Override
     protected void onResume() {
@@ -5332,7 +5332,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         checkWasMutedByAdmin(true);
         //FileLog.d("UI resume time = " + (SystemClock.elapsedRealtime() - ApplicationLoader.startTime));
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4096);
-        MediaController.getInstance().setFeedbackView(feedbackView = actionBarLayout.getView(), true);
+        MediaController.getInstance().setFeedbackView(actionBarLayout.getView(), true);
         ApplicationLoader.mainInterfacePaused = false;
         showLanguageAlert(false);
         Utilities.stageQueue.postRunnable(() -> {
@@ -6003,8 +6003,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (id == NotificationCenter.chatSwithcedToForum) {
             long chatId = (long) args[0];
             ForumUtilities.switchAllFragmentsInStackToForum(chatId, actionBarLayout);
-        } else {
-            didReceivedMyNotification(id, account, args); //customized
         }
     }
 
@@ -6113,6 +6111,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private boolean checkFreeDiscSpaceShown;
     private long alreadyShownFreeDiscSpaceAlertForced;
     private static LaunchActivity staticInstanceForAlerts;
+
     private void checkFreeDiscSpace(final int force) {
         staticInstanceForAlerts = this;
         SharedConfig.checkKeepMedia();
@@ -6165,6 +6164,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
         }, 2000);
     }
+
     public static void checkFreeDiscSpaceStatic(final int force) {
         if (staticInstanceForAlerts != null) {
             staticInstanceForAlerts.checkFreeDiscSpace(force);
@@ -6230,6 +6230,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private int[] tempLocation;
+
     private void drawRippleAbove(Canvas canvas, View parent) {
         if (parent == null || rippleAbove == null || rippleAbove.getBackground() == null) {
             return;
@@ -6542,7 +6543,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         if (ContentPreviewViewer.hasInstance() && ContentPreviewViewer.getInstance().isVisible()) {
             ContentPreviewViewer.getInstance().closeWithMenu();
-        } if (SecretMediaViewer.hasInstance() && SecretMediaViewer.getInstance().isVisible()) {
+        }
+        if (SecretMediaViewer.hasInstance() && SecretMediaViewer.getInstance().isVisible()) {
             SecretMediaViewer.getInstance().closePhoto(true, false);
         } else if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().closePhoto(true, false);
@@ -7003,7 +7005,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         showGoogleRateDialog();
 
-//        initTheme();
+        initTheme();
 
         //region change profile image
         imageUpdater = new ImageUpdater(false);
@@ -7013,6 +7015,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         PromoController.getInstance().init();
 
+        doAddObserver();
     }
 
 
@@ -7458,15 +7461,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             passcodeSaveIntent = null;
         }
         drawerLayoutContainer.setAllowOpenDrawer(true, false);
-        actionBarLayout.setVisibility(View.VISIBLE);
+//        actionBarLayout.setVisibility(View.VISIBLE);
         actionBarLayout.showLastFragment();
         if (AndroidUtilities.isTablet()) {
             layersActionBarLayout.showLastFragment();
             rightActionBarLayout.showLastFragment();
-            if (layersActionBarLayout.getVisibility() == View.INVISIBLE) {
+ /*           if (layersActionBarLayout.getVisibility() == View.INVISIBLE) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);
             }
-            rightActionBarLayout.setVisibility(View.VISIBLE);
+            rightActionBarLayout.setVisibility(View.VISIBLE);*/
         }
     }
 
@@ -7714,72 +7717,75 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
     }
 
+    NotificationCenter.NotificationCenterDelegate mObserver;
     private void doRemoveObserver() {
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.openSavedMessage);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showAdmobRewarded);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.showAdmobInterstitial);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.updateGhostMode);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.updateFragmentSettings);//Customized:
+        NotificationCenter.getGlobalInstance().removeObserver(mObserver, NotificationCenter.openSavedMessage);
+        NotificationCenter.getGlobalInstance().removeObserver(mObserver, NotificationCenter.showAdmobRewarded);
+        NotificationCenter.getGlobalInstance().removeObserver(mObserver, NotificationCenter.showAdmobInterstitial);
+        NotificationCenter.getGlobalInstance().removeObserver(mObserver, NotificationCenter.updateGhostMode);
+        NotificationCenter.getGlobalInstance().removeObserver(mObserver, NotificationCenter.updateFragmentSettings);//Customized:
     }
 
+
     private void doAddObserver() {
-//        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.openSavedMessage);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.openSavedMessage);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showAdmobRewarded);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.showAdmobInterstitial);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.updateGhostMode);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.updateFragmentSettings);
+        mObserver = (id, account, args) -> {
+            if (id == NotificationCenter.updateFragmentSettings) {
+                Log.i(TAG, "didReceivedMyNotification > rebuildAllFragmentViews");
+                actionBarLayout.rebuildAllFragmentViews(false, false);
+            } else if (id == NotificationCenter.showAdmobInterstitial) {
+                Log.i(TAG, "didReceivedNotification: showAdmobInterstitial");
+                AdmobController.getInstance().showInterstitial((String) args[0]);
+            } else if (id == NotificationCenter.showAdmobRewarded) {
+                Log.i(TAG, "didReceivedNotification: showAdmobVideo");
+                showRewarded(args);
+            } else if (id == NotificationCenter.updateGhostMode) {
+                try {
+                    int arg = ((int) args[0]);
+                    if (arg == GhostController.DIALOGS ||
+                            arg == GhostController.CHAT ||
+                            arg == GhostController.DRAWER_ACTIVE_CHANGE ||
+                            arg == GhostController.ACTIVE_CHANGE) {
+                        drawerLayoutAdapter.toggleGhostMode();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "didReceivedNotification: ", e);
+                }
+            } else if (id == NotificationCenter.openSavedMessage) {
+                Log.i(TAG, "didReceivedMyNotification: NotificationCenter.openSavedMessage");
+                AndroidUtilities.runOnUIThread(() -> {
+                    int i = ((int) args[0]);
+                    Log.i(TAG, "didReceivedMyNotification: i:" + i);
+                    if (i == 0) {
+                        openSavedMessage();
+                    } else if (i == 1) {
+                        openSavedMedia();
+                    } else if (i == 2 || i == 3) {
+                        openSettings(false);
+                    } else if (i == 4) {
+                        presentFragment(new ThemeActivity(0));
+                    } else if (i == 5) {
+                        presentFragment(new GhostSettingActivity());
+                    } else if (i == 11) {
+                        if (drawerLayoutAdapter != null) {
+                            drawerLayoutAdapter.toggleGridMode();
+                        }
+                        return;
+                    }
+                    drawerLayoutContainer.closeDrawer(false);
+                });
+            }
+        };
+
+        NotificationCenter.getGlobalInstance().addObserver(mObserver, NotificationCenter.openSavedMessage);
+        NotificationCenter.getGlobalInstance().addObserver(mObserver, NotificationCenter.showAdmobRewarded);
+        NotificationCenter.getGlobalInstance().addObserver(mObserver, NotificationCenter.showAdmobInterstitial);
+        NotificationCenter.getGlobalInstance().addObserver(mObserver, NotificationCenter.updateGhostMode);
+        NotificationCenter.getGlobalInstance().addObserver(mObserver, NotificationCenter.updateFragmentSettings);
+
         updateCurrentConnectionState(currentAccount);
 
     }
 
-    public void didReceivedMyNotification(int id, final int account, Object... args) {
-        if (id == NotificationCenter.updateFragmentSettings) {
-            Log.i(TAG, "didReceivedMyNotification > rebuildAllFragmentViews");
-            actionBarLayout.rebuildAllFragmentViews(false, false);
-        } else if (id == NotificationCenter.showAdmobInterstitial) {
-            Log.i(TAG, "didReceivedNotification: showAdmobInterstitial");
-            AdmobController.getInstance().showInterstitial((String) args[0]);
-        } else if (id == NotificationCenter.showAdmobRewarded) {
-            Log.i(TAG, "didReceivedNotification: showAdmobVideo");
-            showRewarded(args);
-        } else if (id == NotificationCenter.updateGhostMode) {
-            try {
-                int arg = ((int) args[0]);
-                if (arg == GhostController.DIALOGS ||
-                        arg == GhostController.CHAT ||
-                        arg == GhostController.DRAWER_ACTIVE_CHANGE ||
-                        arg == GhostController.ACTIVE_CHANGE) {
-                    drawerLayoutAdapter.toggleGhostMode();
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "didReceivedNotification: ", e);
-            }
-        } else if (id == NotificationCenter.openSavedMessage) {
-            Log.i(TAG, "didReceivedMyNotification: NotificationCenter.openSavedMessage");
-            AndroidUtilities.runOnUIThread(() -> {
-                int i = ((int) args[0]);
-                Log.i(TAG, "didReceivedMyNotification: i:" + i);
-                if (i == 0) {
-                    openSavedMessage();
-                } else if (i == 1) {
-                    openSavedMedia();
-                } else if (i == 2 || i == 3) {
-                    openSettings(false);
-                } else if (i == 4) {
-                    presentFragment(new ThemeActivity(0));
-                } else if (i == 5) {
-                    presentFragment(new GhostSettingActivity());
-                } else if (i == 11) {
-                    if (drawerLayoutAdapter != null) {
-                        drawerLayoutAdapter.toggleGridMode();
-                    }
-                    return;
-                }
-                drawerLayoutContainer.closeDrawer(false);
-            });
-        }
-    }
 
     public void doOpenPeopleNearby() {
         if (Build.VERSION.SDK_INT >= 23) {
@@ -7887,9 +7893,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         //presentFragment(fragment);
     }
 
-    private Bundle getBundle(ArrayList<Long> dids) {
+    private Bundle getBundle(ArrayList<MessagesStorage.TopicKey> dids) {
         Bundle bundle = new Bundle();
-        long did = dids.get(0);
+        long did = dids.get(0).dialogId;
         int lower_part = (int) did;
         int high_id = (int) (did >> 32);
         if (lower_part != 0) {
@@ -7997,6 +8003,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         Log.i(TAG, "proxyChangeRunnable : runing... ");
         if (proxyControllerHelper != null) {
             proxyControllerHelper.change("launch", true);
+
+
+            
         }
     };
     //endregion

@@ -50,13 +50,16 @@ public class LocalController {
         }
 
         //change intro text
-        if (s.contains("forever. No ads.")) {
+/*        if (s.contains("forever. No ads.")) {
             s = s.replace(". No ads.", ". Maybe Contain ads.");
-        } else if (s.contains("It is **free** and **secure**")){
-            s = s.replace("It is **free** and **secure**", "Use Telegram's API");
+        }*/
+        s = s.replaceAll("Telegram|telegram|텔레그램|تلگرام|تيليجرام", appName);
+
+        if (s.contains("It is **free** and **secure**")){
+            s = s.replace("It is **free** and **secure**", "It is **free** and **secure**\n\n\n\n**Use Telegram's API**");
         }
 
-        return s.replaceAll("Telegram|telegram|텔레그램|تلگرام|تيليجرام", appName);
+        return s;
 
 
     }

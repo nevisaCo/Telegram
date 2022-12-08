@@ -17065,10 +17065,23 @@ public class MessagesController extends BaseController implements NotificationCe
             //endregion
 
             if (d instanceof TLRPC.TL_dialog) {
-                MessageObject messageObject = dialogMessage.get(d.id);
-                if (messageObject != null && messageObject.messageOwner.date < dialogsLoadedTillDate) {
+                ArrayList<MessageObject> messageObjects = dialogMessage.get(d.id);
+                if (messageObjects != null) {
+                    int maxDate = Integer.MIN_VALUE;
+                    for (int i = 0; i < messageObjects.size(); ++i) {
+                        MessageObject message = messageObjects.get(i);
+                        if (message != null && message.messageOwner != null && message.messageOwner.date > maxDate) {
+                            maxDate = message.messageOwner.date;
+                        }
+                    }
+                    if (maxDate > Integer.MIN_VALUE) {
+                        if (maxDate < dialogsLoadedTillDate) {
                     continue;
                 }
+                    }
+                }
+
+
                 if (!DialogObject.isEncryptedDialog(d.id)) {
                     if (DialogObject.isChannel(d)) {
                         TLRPC.Chat chat = getChat(-d.id);
@@ -17327,7 +17340,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public void muteChannel(long id, SharedPreferences preferences) {
         try {
             Log.i(TAG, "muteChannel: id:" + id);
-            if (!isDialogMuted(id)) {
+            if (!isDialogMuted(id,0)) {
 
                 long flags;
                 if (preferences == null) {
@@ -17344,7 +17357,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     dialog.notify_settings.mute_until = Integer.MAX_VALUE;
                 }
                 AndroidUtilities.runOnUIThread(() -> {
-                    getNotificationsController().updateServerNotificationsSettings(id);
+                    getNotificationsController().updateServerNotificationsSettings((int) id);
                     getNotificationsController().removeNotificationsForDialog(id);
                 });
             }

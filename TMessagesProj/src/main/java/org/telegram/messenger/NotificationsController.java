@@ -59,7 +59,6 @@ import androidx.core.graphics.drawable.IconCompat;
 import com.google.android.exoplayer2.util.Log;
 
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 

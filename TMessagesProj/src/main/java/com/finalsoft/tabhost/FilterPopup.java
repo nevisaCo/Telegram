@@ -77,7 +77,7 @@ public class FilterPopup extends BaseController {
             if (dialog instanceof TLRPC.TL_dialogFolder) {
                 continue;
             }
-            if (!getMessagesController().isDialogMuted(dialog.id)) {
+            if (!getMessagesController().isDialogMuted(dialog.id,0)) {
                 dialogs.add(dialog);
             }
         }
@@ -94,7 +94,7 @@ public class FilterPopup extends BaseController {
         int count = 0;
         for (TLRPC.Dialog dialog : dialogs) {
             if (!(dialog instanceof TLRPC.TL_dialogFolder)
-                    && !getMessagesController().isDialogMuted(dialog.id)) {
+                    && !getMessagesController().isDialogMuted(dialog.id,0)) {
                 count += dialog.unread_count;
             }
         }

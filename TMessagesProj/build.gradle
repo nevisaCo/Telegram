@@ -113,7 +113,7 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
+    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE) * Integer.parseInt(VERSION_RATIO)
 
     defaultConfig {
         minSdkVersion 19
@@ -144,7 +144,7 @@ android {
         buildConfigField "Integer", "MAX_ACCOUNT_COUNT", MAX_ACCOUNT_COUNT
         buildConfigField "Integer", "PRIMARY_COLOR", PRIMARY_COLOR
         buildConfigField "Integer", "APP_ID", APP_ID
-        buildConfigField "String", "APPLICATION_ID", String.valueOf("\""+ APP_PACKAGE+"\"")
+        buildConfigField "String", "APPLICATION_ID", String.valueOf("\"" + APP_PACKAGE + "\"")
         buildConfigField "String", "APP_HASH", APP_HASH
         buildConfigField "String", "OFFICIAL_CHANNELS", OFFICIAL_CHANNELS
         buildConfigField "String", "SUPPORT_GROUP", SUPPORT_GROUP
@@ -238,4 +238,5 @@ def getProps(String propName) {
         return "";
     }
 }
+
 apply plugin: 'com.google.gms.google-services'

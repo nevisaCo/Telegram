@@ -2012,7 +2012,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 }
             }
         }
-        /*
+
         if (sendingMessageObjects != null) {
             List<Long> removeKeys = new ArrayList<>();
             for (int a = 0; a < selectedDialogs.size(); a++) {

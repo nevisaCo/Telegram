@@ -102,7 +102,7 @@ class Interstitial extends AdmobBaseClass {
             @Override
             public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
                 // Handle the error
-                Log.i(TAG, loadAdError.getMessage());
+                Log.e(TAG,"onAdFailedToLoad:" + loadAdError);
                 if (mInterstitialAd == null && retry < getAttemptToFail()) {
                     new Handler().postDelayed(() -> {
                         Log.i(TAG, "onAdFailedToLoad: retrying to load ad... " + retry + 1);
@@ -135,8 +135,8 @@ class Interstitial extends AdmobBaseClass {
             if (i >= target) {
 
                 if (mInterstitialAd == null) {
-                    Log.i(TAG, "showAdmobInterstitial: mInterstitialAd is null, returned.");
                     serve(() -> show(name));
+                    Log.i(TAG, "showAdmobInterstitial: mInterstitialAd is null, returned.");
                     return;
                 }
 

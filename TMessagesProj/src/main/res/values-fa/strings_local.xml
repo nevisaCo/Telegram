@@ -407,5 +407,9 @@
 
     <string name="ShowRefreshInDialogs">نمایش ریفرش پروکسی در صفحه اصلی</string>
     <string name="PrivacyAgreement">با ادامه، شما با تمامی شرایط خدمات و سیاست حفظ حریم خصوصی تلگرام موافقت می کنید</string>
+    <string name="VpnStatus">وضعیت وی پی ان </string>
+    <string name="VpnStatusMessage">فیلترشکن گوشی شما روشن است. ممکن است ارسال پیام ها تحت تاثیر قرار بگیرد. آیا مایل به روشن/خاموش کردن پروکسی داخلی تلگرام هستید ؟</string>
+    <string name="TurnOffProxy">خاموش کردن پروکسی</string>
+    <string name="TurnOnProxy">روشن کردن پروکسی</string>
 
 </resources>

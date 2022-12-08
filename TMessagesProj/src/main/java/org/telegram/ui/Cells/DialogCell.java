@@ -809,25 +809,20 @@ public class DialogCell extends BaseCell {
         CharSequence messageNameString = null;
         CharSequence printingString = null;
 
-/*
+        //customized:
         PromoItem promoItem = null;
-        if (isDialogCell) {
-            printingString = MessagesController.getInstance(currentAccount).getPrintingString(currentDialogId, 0, true);
+
+        CharSequence buttonString = null;
+        if (!isForumCell() && (isDialogCell || isTopic)) {
+            printingString = MessagesController.getInstance(currentAccount).getPrintingString(currentDialogId, getTopicId(), true);
+
             promoItem = PromoController.getInstance().getMessageInfo(currentDialogId);//customized:
             if (promoItem != null) {
                 printingString = promoItem.getLast_message();
             }
         }
 
-
-        TextPaint currentMessagePaint = Theme.dialogs_messagePaint[paintIndex];
-*/
-
-        CharSequence buttonString = null;
-        if (!isForumCell() && (isDialogCell || isTopic)) {
-            printingString = MessagesController.getInstance(currentAccount).getPrintingString(currentDialogId, getTopicId(), true);
-        }
-        TextPaint currentMessagePaint = Theme.dialogs_messagePaint[paintIndex];
+        currentMessagePaint = Theme.dialogs_messagePaint[paintIndex];
         boolean checkMessage = true;
 
         drawNameLock = false;
@@ -2444,8 +2439,7 @@ public class DialogCell extends BaseCell {
         return currentDialogFolderId != 0;
     }
 
-    public boolean update(int mask) {
-        return update(mask, true);
+
         //region Customized:
         boolean showGhostMode = SharedStorage.showGhostMode() &&
                 SharedStorage.showGhostInChat() &&
@@ -2696,7 +2690,6 @@ public class DialogCell extends BaseCell {
 
                     dialogId = currentDialogId;
                 }
-//            Log.i("finalsoft", "addPromo > hast : =============================================" + dialogId + " - " + currentDialogId );
 
                 if (dialogId != 0) {
                     if (DialogObject.isEncryptedDialog(dialogId)) {

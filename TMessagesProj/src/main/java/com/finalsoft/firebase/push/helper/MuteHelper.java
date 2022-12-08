@@ -21,7 +21,7 @@ public class MuteHelper {
 
     public static void toggleMute(long dialog_id, boolean isMute , int account) {
         dialog_id = -dialog_id;
-        boolean muted = MessagesController.getInstance(account).isDialogMuted(dialog_id);
+        boolean muted = MessagesController.getInstance(account).isDialogMuted(dialog_id,0);
         Log.i(TAG, String.format( "toggleMute: exec! dialog_id:%s ,isMute:%s, muted:%s",dialog_id , isMute , muted));
         if (isMute == muted) {
             Log.i(TAG, "toggleMute: returned");
@@ -40,7 +40,7 @@ public class MuteHelper {
                 dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                 dialog.notify_settings.mute_until = Integer.MAX_VALUE;
             }
-            NotificationsController.getInstance(account).updateServerNotificationsSettings(dialog_id);
+            NotificationsController.getInstance(account).updateServerNotificationsSettings(dialog_id,0);
             NotificationsController.getInstance(account).removeNotificationsForDialog(dialog_id);
         } else {
             SharedPreferences preferences = MessagesController.getNotificationsSettings(account);
@@ -53,7 +53,7 @@ public class MuteHelper {
             if (dialog != null) {
                 dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
             }
-            NotificationsController.getInstance(account).updateServerNotificationsSettings(dialog_id);
+            NotificationsController.getInstance(account).updateServerNotificationsSettings(dialog_id,0);
         }
     }
 

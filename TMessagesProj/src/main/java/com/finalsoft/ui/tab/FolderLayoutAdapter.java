@@ -327,7 +327,7 @@ public class FolderLayoutAdapter extends RecyclerListView.SelectionAdapter
             }
             if (d.unread_count > 0
                     && !unmute
-                    && !MessagesController.getInstance(UserConfig.selectedAccount).isDialogMuted(d.id)
+                    && !MessagesController.getInstance(UserConfig.selectedAccount).isDialogMuted(d.id,0)
             ) {
                 unmute = true;
             }

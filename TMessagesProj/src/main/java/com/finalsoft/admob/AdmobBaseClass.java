@@ -10,6 +10,7 @@ import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.admob.models.AdCountItem;
 import com.finalsoft.admob.models.AdKeys;
+import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
 import com.google.gson.Gson;
@@ -127,6 +128,39 @@ public class AdmobBaseClass {
         SharedStorage.admobRetryOnFail(attempt);
     }
 
+    public boolean loadSingleNative() {
+        return SharedStorage.loadSingleNativeAd();
+    }
+
+    public void loadSingleNative(boolean status) {
+        SharedStorage.loadSingleNativeAd(status);
+    }
+
+    public void preServeInterstitial(boolean status) {
+        SharedStorage.preServeInterstitial(status);
+    }
+
+    public boolean preServeInterstitial() {
+        return SharedStorage.preServeInterstitial();
+    }
+
+    public void preServeReward(boolean status) {
+        SharedStorage.preServeReward(status);
+    }
+
+    public boolean preServeReward() {
+        return SharedStorage.preServeReward();
+    }
+
+
+    public void preServeNative(boolean status) {
+        SharedStorage.preServeNative(status);
+    }
+
+    public boolean preServeNative() {
+        return SharedStorage.preServeNative();
+    }
+
     private void init() {
         keysExist = true;
         JSONObject admob_keys;
@@ -137,7 +171,8 @@ public class AdmobBaseClass {
                 admob_keys = new JSONObject()
                         .put("app", "ca-app-pub-3940256099942544~3347511713")
                         .put("app_open", "ca-app-pub-3940256099942544/3419835294")
-                        .put("rewarded_interstitial", "")
+                        .put("interstitial", "ca-app-pub-3940256099942544/1033173712")
+                        .put("rewarded_interstitial", "ca-app-pub-3940256099942544/5354046379")
                         .put("banner", "ca-app-pub-3940256099942544/6300978111")
                         .put("rewarded", "ca-app-pub-3940256099942544/5224354917")
                         .put("native", "ca-app-pub-3940256099942544/2247696110");

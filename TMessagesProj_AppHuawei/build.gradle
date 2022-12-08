@@ -119,7 +119,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
+    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)* Integer.parseInt(VERSION_RATIO)
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->

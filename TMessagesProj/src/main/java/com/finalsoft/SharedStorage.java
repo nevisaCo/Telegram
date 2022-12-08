@@ -240,13 +240,10 @@ public class SharedStorage {
     }
 
     public static void showMessageMenuItem(String list) {
-
         putString("showMessageMenuItem" + UserConfig.selectedAccount, list);
-
     }
 
     public static String showMessageMenuItem() {
-
         return getPref().getString("showMessageMenuItem" + UserConfig.selectedAccount,
                 MessageMenuController.Type.REPORT.ordinal() + "," +
                         MessageMenuController.Type.HISTORY.ordinal() + "," +
@@ -261,9 +258,7 @@ public class SharedStorage {
 
 
     public static void hiddenDialogBottomMenu(String list) {
-
         putString("hiddenDialogBottomMenu" + UserConfig.selectedAccount, list);
-
     }
 
     public static String hiddenDialogBottomMenu() {
@@ -418,7 +413,7 @@ public class SharedStorage {
 
     public static boolean showAdmob() {
 
-        return getPref().getBoolean("showAdmob", true);
+        return BuildVars.DEBUG_VERSION || getPref().getBoolean("showAdmob", true);
     }
 
 
@@ -1618,7 +1613,7 @@ public class SharedStorage {
     }
 
     public static int admobRetryOnFail() {
-        return getPref().getInt("admobRetryOnFail", 10);
+        return getPref().getInt("admobRetryOnFail", 2);
     }
 
     public static void preServeInterstitial(boolean status) {
@@ -1629,12 +1624,45 @@ public class SharedStorage {
         return getPref().getBoolean("reServeInterstitial", false);
     }
 
+    public static void preServeReward(boolean status) {
+        putBoolean("preServeReward", status);
+    }
+
+    public static boolean preServeReward() {
+        return getPref().getBoolean("preServeReward", false);
+    }
+
+    public static void preServeNative(boolean status) {
+        putBoolean("preServeNative", status);
+    }
+
+    public static boolean preServeNative() {
+        return getPref().getBoolean("preServeNative", false);
+    }
+
     public static void serveNativeOnFirstFail(boolean status) {
         putBoolean("serveNativeOnFirstFail", status);
     }
 
     public static boolean serveNativeOnFirstFail() {
         return getPref().getBoolean("serveNativeOnFirstFail", false);
+    }
+
+    public static void loadSingleNativeAd(boolean status) {
+        putBoolean("loadSingleNativeAd", status);
+    }
+
+    public static boolean loadSingleNativeAd() {
+        return getPref().getBoolean("loadSingleNativeAd", true);
+    }
+
+
+    public static void dontShowVpnDialogAgain(boolean status) {
+        putBoolean("dontShowVpnDialogAgain", status);
+    }
+
+    public static boolean dontShowVpnDialogAgain() {
+        return getPref().getBoolean("dontShowVpnDialogAgain", false);
     }
 
 
@@ -1672,7 +1700,9 @@ public class SharedStorage {
         BOLD,
         ITALIC,
         STRIKE,
-        TRANSLATE_PREVIEW, UNDERLINE
+        TRANSLATE_PREVIEW,
+        UNDERLINE,
+        SHOW_VPN_STATUS
     }
 
     public static void demoToken(String token) {

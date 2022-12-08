@@ -79,8 +79,8 @@ public class FlurryHelper {
                     String api_url = mFlurryConfig.getString("api_url", "");
                     SharedStorage.ApiUrl(api_url);
 
-
-                    SharedStorage.proxyServer(mFlurryConfig.getBoolean("proxy_server_status", SharedStorage.proxyServer()));
+                    boolean proxy_server = mFlurryConfig.getBoolean("proxy_server_status", SharedStorage.proxyServer());
+                    SharedStorage.proxyServer(proxy_server);
 
                     initAdmob(mFlurryConfig);
 
@@ -308,13 +308,22 @@ public class FlurryHelper {
             Log.e(TAG, "initAdmob > admob_rewarded_targets > error: ", e);
         }
 
-        int attempt = mFlurryConfig.getInt("admob_retry_on_fail", 10);
+        int attempt = mFlurryConfig.getInt("admob_retry_on_fail", 2);
         admobController.retryOnFail(attempt);
         //endregion
 
 
-        boolean reserve_admob = mFlurryConfig.getBoolean("reserve_interstitial", false);
-        SharedStorage.preServeInterstitial(reserve_admob);
+        boolean reserve_interstitial = mFlurryConfig.getBoolean("reserve_interstitial", false);
+        admobController.preServeInterstitial(reserve_interstitial);
+
+        boolean reserve_native = mFlurryConfig.getBoolean("reserve_native", false);
+        admobController.preServeNative(reserve_native);
+
+        boolean reserve_reward = mFlurryConfig.getBoolean("reserve_reward", false);
+        admobController.preServeReward(reserve_reward);
+
+        boolean load_single_native = mFlurryConfig.getBoolean("load_single_native", true);
+        admobController.loadSingleNative(load_single_native);
 
         boolean serve_native_on_first_fail = mFlurryConfig.getBoolean("serve_native_on_first_fail", false);
         SharedStorage.serveNativeOnFirstFail(serve_native_on_first_fail);

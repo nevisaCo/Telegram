@@ -252,7 +252,7 @@ public class CanvasView extends View {
 							SendMessagesHelper.getInstance(UserConfig.selectedAccount).prepareSendingPhoto(
 									AccountInstance.getInstance(UserConfig.selectedAccount),
 									file.getAbsolutePath(),
-									null, dids.get(i), null, null, null,
+									null, dids.get(i).dialogId, null, null, null,
 									null, null, null	, 0,null,true,0);
 
 						}							fragment.finishFragment();
