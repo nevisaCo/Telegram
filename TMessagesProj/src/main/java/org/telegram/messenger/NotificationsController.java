@@ -906,7 +906,7 @@ public class NotificationsController extends BaseController {
                 }
 
                 long originalDialogId = dialogId;
-                int topicId = MessageObject.getTopicId(messageObject.messageOwner);
+                int topicId = MessageObject.getTopicId(messageObject.messageOwner, getMessagesController().isForum(messageObject));
                 if (dialogId == openedDialogId && ApplicationLoader.isScreenOn) {
                     if (!isFcm) {
                         playInChatSound();
@@ -969,7 +969,7 @@ public class NotificationsController extends BaseController {
                 if (messageObject.isReactionPush) {
                     SparseBooleanArray sparseBooleanArray = new SparseBooleanArray();
                     sparseBooleanArray.put(mid, true);
-                    getMessagesController().checkUnreadReactions(dialogId, MessageObject.getTopicId(messageObject.messageOwner), sparseBooleanArray);
+                    getMessagesController().checkUnreadReactions(dialogId, topicId, sparseBooleanArray);
                 }
 
                 //Customized: answering machine
@@ -1006,7 +1006,7 @@ public class NotificationsController extends BaseController {
                 } else if (added) {
                     MessageObject messageObject = messageObjects.get(0);
                     long dialog_id = messageObject.getDialogId();
-                    int topicId = MessageObject.getTopicId(messageObject.messageOwner);
+                    int topicId = MessageObject.getTopicId(messageObject.messageOwner, getMessagesController().isForum(dialog_id));
                     Boolean isChannel;
                     if (messageObject.isFcmMessage()) {
                         isChannel = messageObject.localChannel;
@@ -1251,7 +1251,7 @@ public class NotificationsController extends BaseController {
                     }
 
                     long original_dialog_id = dialog_id;
-                    int topicId = MessageObject.getTopicId(messageObject.messageOwner);
+                    int topicId = MessageObject.getTopicId(messageObject.messageOwner, getMessagesController().isForum(messageObject));
                     if (messageObject.messageOwner.mentioned) {
                         dialog_id = messageObject.getFromChatId();
                     }
@@ -1330,7 +1330,7 @@ public class NotificationsController extends BaseController {
                     }
                     long dialogId = messageObject.getDialogId();
                     long originalDialogId = dialogId;
-                    int topicId = MessageObject.getTopicId(messageObject.messageOwner);
+                    int topicId = MessageObject.getTopicId(messageObject.messageOwner, getMessagesController().isForum(messageObject));
                     long randomId = messageObject.messageOwner.random_id;
 
 
@@ -3518,7 +3518,7 @@ public class NotificationsController extends BaseController {
             }
 
             long dialog_id = lastMessageObject.getDialogId();
-            int topicId = MessageObject.getTopicId(lastMessageObject.messageOwner);
+            int topicId = MessageObject.getTopicId(lastMessageObject.messageOwner, getMessagesController().isForum(lastMessageObject));
 
 
             //region Customized: off notifications if:
@@ -4137,7 +4137,7 @@ public class NotificationsController extends BaseController {
         for (int a = 0; a < pushMessages.size(); a++) {
             MessageObject messageObject = pushMessages.get(a);
             long dialog_id = messageObject.getDialogId();
-            int topicId = MessageObject.getTopicId(messageObject.messageOwner);
+            int topicId = MessageObject.getTopicId(messageObject.messageOwner, getMessagesController().isForum(messageObject));
             int dismissDate = preferences.getInt("dismissDate" + dialog_id, 0);
             if (messageObject.messageOwner.date <= dismissDate) {
                 continue;
@@ -4426,7 +4426,7 @@ public class NotificationsController extends BaseController {
             int rowsMid = 0;
             for (int a = messageObjects.size() - 1; a >= 0; a--) {
                 MessageObject messageObject = messageObjects.get(a);
-                int messageTopicId = MessageObject.getTopicId(messageObject.messageOwner);
+                int messageTopicId = MessageObject.getTopicId(messageObject.messageOwner, getMessagesController().isForum(messageObject));
                 if (topicId != messageTopicId) {
                     continue;
                 }
