@@ -42,7 +42,6 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -1803,7 +1802,7 @@ public class FilterTabsView extends FrameLayout {
             return true;
         }
 
-        private void resetDefaultPosition() {
+        private Runnable resetDefaultPosition = () ->  {
             if (UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
                 return;
             }
@@ -1815,7 +1814,7 @@ public class FilterTabsView extends FrameLayout {
                     break;
                 }
             }
-        }
+        };
 
         @Override
         public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
@@ -1824,8 +1823,8 @@ public class FilterTabsView extends FrameLayout {
                 viewHolder.itemView.setPressed(true);
                 viewHolder.itemView.setBackgroundColor(Theme.getColor(backgroundColorKey));
             } else {
-                AndroidUtilities.cancelRunOnUIThread(this::resetDefaultPosition);
-                AndroidUtilities.runOnUIThread(this::resetDefaultPosition, 320);
+                AndroidUtilities.cancelRunOnUIThread(resetDefaultPosition);
+                AndroidUtilities.runOnUIThread(resetDefaultPosition, 320);
             }
             super.onSelectedChanged(viewHolder, actionState);
         }
