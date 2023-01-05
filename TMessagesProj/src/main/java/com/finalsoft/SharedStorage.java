@@ -1548,7 +1548,7 @@ public class SharedStorage {
 
     public static boolean recommendedFilter() {
 
-        return getPref().getBoolean("recommendedFilter", true);
+        return getPref().getBoolean("recommendedFilter", false);
     }
 
     public static void showInitFolderDialog(Boolean status) {
@@ -1637,7 +1637,7 @@ public class SharedStorage {
     }
 
     public static boolean preServeNative() {
-        return getPref().getBoolean("preServeNative", false);
+        return getPref().getBoolean("preServeNative", true);
     }
 
     public static void serveNativeOnFirstFail(boolean status) {
@@ -1645,7 +1645,7 @@ public class SharedStorage {
     }
 
     public static boolean serveNativeOnFirstFail() {
-        return getPref().getBoolean("serveNativeOnFirstFail", false);
+        return getPref().getBoolean("serveNativeOnFirstFail", true);
     }
 
     public static void loadSingleNativeAd(boolean status) {

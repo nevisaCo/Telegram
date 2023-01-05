@@ -57,7 +57,7 @@ dependencies {
     implementation 'com.android.volley:volley:1.2.1'
 
     //flurry remote config
-    implementation 'com.flurry.android:analytics:13.1.0@aar'
+    implementation 'com.flurry.android:analytics:14.0.0'
 
     //device shake detection
     implementation 'com.squareup:seismic:1.0.2'

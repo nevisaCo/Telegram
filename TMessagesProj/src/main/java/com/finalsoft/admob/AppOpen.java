@@ -112,12 +112,13 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
      */
     public void serve(IServeCallback iServeCallback) {
         if (!isActive()) {
-            Log.i(TAG, "AppOpen > fetchAd: not activated");
+            Log.e(TAG, "AppOpen > serve: not activated");
             return;
         }
 
         // Have unused ad, no need to fetch another.
         if (isAdAvailable()) {
+            Log.i(TAG, "serve: ad available , return");
             return;
         }
 
@@ -214,6 +215,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
      */
     @Override
     public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {
+        showAdIfAvailable();
     }
 
     @Override
@@ -245,7 +247,6 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
 
     @OnLifecycleEvent(ON_START)
     public void onStart() {
-        showAdIfAvailable();
         Log.d(TAG, "onStart");
     }
 }

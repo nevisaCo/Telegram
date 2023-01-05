@@ -32038,25 +32038,22 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                 if (!nativeShown) {
                     NativeAddCell nativeAddCell = null;
-                    AdmobController.getInstance().getUINativeItem("top_chat", new Native.IGetNativeItem() {
-                        @Override
-                        public void onServe(NativeAddCell nativeAddCell) {
-                            showNativeResult = nativeAddCell != null;
-                            if (nativeAddCell != null) {
-                                topChatPanelView.setTag("native");
-                                topChatPanelView.setClickable(true);
-                                topChatPanelView.addView(nativeAddCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 0, 35, 0));
-                                topChatPanelView.getLayoutParams().height = AndroidUtilities.dp(80);
-                                nativeShown = true;
+                    AdmobController.getInstance().getUINativeItem("top_chat", nativeAddCell1 -> {
+                        showNativeResult = nativeAddCell1 != null;
+                        if (nativeAddCell1 != null) {
+                            topChatPanelView.setTag("native");
+                            topChatPanelView.setClickable(true);
+                            topChatPanelView.addView(nativeAddCell1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 0, 35, 0));
+                            topChatPanelView.getLayoutParams().height = AndroidUtilities.dp(80);
+                            nativeShown = true;
 
-                                closeReportSpam.setOnClickListener(null);
-                                closeReportSpam.setClickable(true);
-                                closeReportSpam.setOnClickListener(view -> {
-                                    topChatPanelView.setVisibility(View.GONE);
-                                });
+                            closeReportSpam.setOnClickListener(null);
+                            closeReportSpam.setClickable(true);
+                            closeReportSpam.setOnClickListener(view -> {
+                                topChatPanelView.setVisibility(View.GONE);
+                            });
 
-                                updateTopPanel(true);
-                            }
+                            updateTopPanel(true);
                         }
                     });
 

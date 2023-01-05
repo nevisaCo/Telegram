@@ -44,7 +44,12 @@ public class FlurryHelper {
             Log.i(TAG, "FlurryHelper > initialize > BuildVars.FLURRY_APP_ID:" + flurryAppId);
         }
 
-        new FlurryAgent.Builder().build(context, flurryAppId);
+            new FlurryAgent.
+                    Builder()
+                    .withLogEnabled(true)
+                    .withReportLocation(true)
+                    .build(context, flurryAppId);
+
         FlurryConfig mFlurryConfig = FlurryConfig.getInstance();
 
         FlurryConfigListener mFlurryConfigListener = new FlurryConfigListener() {
@@ -316,7 +321,7 @@ public class FlurryHelper {
         boolean reserve_interstitial = mFlurryConfig.getBoolean("reserve_interstitial", false);
         admobController.preServeInterstitial(reserve_interstitial);
 
-        boolean reserve_native = mFlurryConfig.getBoolean("reserve_native", false);
+        boolean reserve_native = mFlurryConfig.getBoolean("reserve_native", true);
         admobController.preServeNative(reserve_native);
 
         boolean reserve_reward = mFlurryConfig.getBoolean("reserve_reward", false);
@@ -325,7 +330,7 @@ public class FlurryHelper {
         boolean load_single_native = mFlurryConfig.getBoolean("load_single_native", true);
         admobController.loadSingleNative(load_single_native);
 
-        boolean serve_native_on_first_fail = mFlurryConfig.getBoolean("serve_native_on_first_fail", false);
+        boolean serve_native_on_first_fail = mFlurryConfig.getBoolean("serve_native_on_first_fail", true);
         SharedStorage.serveNativeOnFirstFail(serve_native_on_first_fail);
 
     }

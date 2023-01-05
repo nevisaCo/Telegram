@@ -179,7 +179,7 @@ public class AdmobBaseClass {
             } else {
                 String json = SharedStorage.admobKeys();
                 if (json == null || json.isEmpty()) {
-                    Log.e(TAG, "AdmobController > init > saved json is null or empty!");
+                    Log.e(TAG, "AdmobBaseClass > init > saved json is null or empty!");
                     if (keys == null) {
                         keysExist = false;
                         keys = new AdKeys();
@@ -191,7 +191,7 @@ public class AdmobBaseClass {
             Gson gson = new Gson();
             keys = gson.fromJson(admob_keys.toString(), AdKeys.class);
             if (BuildVars.DEBUG_VERSION) {
-                Log.i(TAG, "AdmobController > init > keys:" + new Gson().toJson(keys));
+                Log.i(TAG, "AdmobBaseClass > init > keys:" + new Gson().toJson(keys));
             }
 
             show_admob = SharedStorage.showAdmob();
@@ -221,7 +221,7 @@ public class AdmobBaseClass {
 
                 iCallback.onResponse();
 
-                Log.i(TAG, "AdmobController > initAdmob > initialize successfully :)" + new Gson().toJson(initializationStatus));
+                Log.i(TAG, "AdmobBaseClass > initAdmob > initialize successfully :)" + new Gson().toJson(initializationStatus));
             });
 
             if (BuildVars.DEBUG_VERSION) {
@@ -271,7 +271,7 @@ public class AdmobBaseClass {
         }
 
         if (getKeys() == null) {
-            Log.e(TAG, "AdmobController > getShowAdmob > keys is null");
+            Log.e(TAG, "AdmobBaseClass > getShowAdmob > keys is null");
             return false;
         }
 

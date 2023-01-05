@@ -16,6 +16,8 @@ import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.OnUserEarnedRewardListener;
 import com.google.android.gms.ads.nativead.NativeAd;
 
+import org.telegram.messenger.BuildVars;
+
 import java.util.ArrayList;
 
 public class AdmobController extends AdmobBaseClass {
@@ -59,6 +61,8 @@ public class AdmobController extends AdmobBaseClass {
         Preconditions.checkNotNull(launchActivity, "Activity can't be null!");
         Preconditions.checkNotNull(iCallback, "ICallback can't be null!");
 
+        Log.i(TAG, "AdmobController init: ");
+
         this.iCallback = new ICallback() {
             @Override
             public void before() {
@@ -70,7 +74,7 @@ public class AdmobController extends AdmobBaseClass {
 
                 Reward.getInstance().init(launchActivity);
 
-                Log.i(TAG, "before: ");
+                Log.i(TAG, "AdmobController > before: ");
             }
 
             @Override
@@ -81,25 +85,25 @@ public class AdmobController extends AdmobBaseClass {
                 if (preServeNative()) {
                     Native.getInstance().serve(nativeCallback);
                 }
+
                 if (preServeInterstitial()) {
                     Interstitial.getInstance().serve(interstitialCallback);
                 }
 
                 iCallback.onResponse();
 
-                Log.i(TAG, "onResponse: ");
+                Log.i(TAG, " AdmobController > onResponse: ");
             }
 
         };
 
-        Log.i(TAG, "init: mobileAdInitializeStatus:" + mobileAdInitializeStatus);
+        Log.i(TAG, "AdmobController > init: mobileAdInitializeStatus:" + mobileAdInitializeStatus);
         if (mobileAdInitializeStatus == 1) {
             this.iCallback.before();
         } else if (mobileAdInitializeStatus == 2) {
             this.iCallback.before();
             this.iCallback.onResponse();
         } else {
-            Log.i(TAG, "init: ");
             super.init(launchActivity, this.iCallback);
         }
     }

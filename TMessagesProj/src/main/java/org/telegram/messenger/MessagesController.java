@@ -6429,7 +6429,9 @@ public class MessagesController extends BaseController implements NotificationCe
         if (getUserConfig().isClientActivated()) {
             if (ghost_mode) {
                 initGhostMode();
-            } else if (!ignoreSetOnline && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
+            } else
+
+                if (!ignoreSetOnline && getConnectionsManager().getPauseTime() == 0 && ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePausedStageQueue) {
                 if (ApplicationLoader.mainInterfacePausedStageQueueTime != 0 && Math.abs(ApplicationLoader.mainInterfacePausedStageQueueTime - System.currentTimeMillis()) > 1000) {
                     if (statusSettingState != 1 && (lastStatusUpdateTime == 0 || Math.abs(System.currentTimeMillis() - lastStatusUpdateTime) >= 55000 || offlineSent)) {
                         statusSettingState = 1;
@@ -13308,7 +13310,6 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private boolean applyFoldersUpdates(ArrayList<TLRPC.TL_updateFolderPeers> folderUpdates) {
-        Log.i(TAG, "123456 applyFoldersUpdates: ");
         if (folderUpdates == null) {
             return false;
         }

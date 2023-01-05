@@ -17,6 +17,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -208,11 +209,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
     }
 
     public int fixScrollGap(RecyclerListView animationSupportListView, int p, int offset, boolean hasHidenArchive, boolean oppened) {
-        int itemsToEnd = getItemCount() - p ;
+        int itemsToEnd = getItemCount() - p;
         int cellHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72);
         int bottom = offset + animationSupportListView.getPaddingTop() + itemsToEnd * cellHeight + itemsToEnd - 1;
         //fix height changed
-        int top =  offset + animationSupportListView.getPaddingTop() - p * cellHeight - p;
+        int top = offset + animationSupportListView.getPaddingTop() - p * cellHeight - p;
         if (oppened) {
             bottom -= AndroidUtilities.dp(44);
         } else {
@@ -844,6 +845,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
         Collections.swap(dialogs, fromIndex, toIndex);
         updateList(recyclerView);
     }
+
     @Override
     public void notifyItemMoved(int fromPosition, int toPosition) {
         super.notifyItemMoved(fromPosition, toPosition);
@@ -855,7 +857,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
 
 
     //region Customized:
-    private final static int NATIVE = 20;
+    private final static int NATIVE = 200;
     private final static String TAG = Config.TAG + "dad";
 //    private boolean nativeAds = AdmobController.getInstance().getShowNative("DialogAdapter");
     //endregion
@@ -1149,6 +1151,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                     itemInternals.add(new ItemInternal(VIEW_TYPE_DIALOG, array.get(k)));
                 }
             }
+            adNativeViewType();//customized
             return;
         }
 
@@ -1210,6 +1213,18 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 itemInternals.add(new ItemInternal(VIEW_TYPE_NEW_CHAT_HINT));
             }
             itemInternals.add(new ItemInternal(VIEW_TYPE_LAST_EMPTY));
+        }
+
+        adNativeViewType();//customized:
+    }
+
+    private void adNativeViewType() {
+        for (int kk = 0; kk < itemInternals.size(); kk++) {
+            if (itemInternals.get(kk).dialog instanceof AdDialogCell) {
+                Log.i(TAG, "updateItemList: view type:" + itemInternals.get(kk).viewType);
+                itemInternals.get(kk).viewType = NATIVE;
+                Log.i(TAG, "updateItemList: view type:" + itemInternals.get(kk).viewType);
+            }
         }
     }
 }

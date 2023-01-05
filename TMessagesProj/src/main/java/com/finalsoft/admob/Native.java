@@ -117,9 +117,11 @@ public class Native extends AdmobBaseClass {
     }
 
     public void serve(IServeCallback iCallback) {
+        Log.i(TAG, "Native start serving... ");
+
         //return id adLoader is loading...
         if (adLoader != null && adLoader.isLoading()) {
-            Log.i(TAG, "serve: return, adLoader is loading...");
+            Log.e(TAG, "serve: return, adLoader is loading...");
             return;
         }
 
@@ -138,7 +140,6 @@ public class Native extends AdmobBaseClass {
         }
 
         Calendar calendar = Calendar.getInstance();
-/*
         if (!BuildVars.DEBUG_VERSION) {
             long savedTime = SharedStorage.nativeAdmobSavedCacheTime();
             long now = calendar.getTimeInMillis();
@@ -148,7 +149,6 @@ public class Native extends AdmobBaseClass {
             }
             Log.i(TAG, String.format("loadNative: time %s", now - savedTime));
         }
-*/
 
         //endregion
 
@@ -199,7 +199,6 @@ public class Native extends AdmobBaseClass {
                         Log.e(TAG, "loadNative  > serve >  onAdFailedToLoad native > loaded native size:" + nativeServedItems.size() + " , error:" + e);
                         if (retry < getAttemptToFail()) {
                             if (nativeServedItems.isEmpty()) {
-                                emptyTry = 0;
                                 new Handler().postDelayed(() -> {
                                     if (!adLoader.isLoading()) {
                                         adLoader.loadAds(new AdRequest.Builder().build(), Math.min(nativeRequestItems.size(), 5));
@@ -257,7 +256,7 @@ public class Native extends AdmobBaseClass {
     }
 
 
-    public void getItem(String name,@NonNull IGetNativeItem iCallback) {
+    public void getItem(String name, @NonNull IGetNativeItem iCallback) {
         if (!nativeServedItems.isEmpty()) {
             NativeAd ad = getAd(name);
 
@@ -359,23 +358,20 @@ public class Native extends AdmobBaseClass {
     }
 
 
-    int emptyTry;
-
     public void addNativeDialogs() {
+        Log.i(TAG, "addNativeDialogs: start...");
         if (nativeServedItems.isEmpty()) {
-            Log.i(TAG, "addNativeDialogs >  nativeLists is empty! , return >  emptyTry : " + emptyTry);
-            emptyTry++;
-            if (emptyTry >= 100) {
-                emptyTry = 0;
-                //reserve native if the ads item are out of date.
-                Log.e(TAG, "getItem > the ads are out of date ,  serve again...");
-                if (serveNativeOnFirstFail) {
-                    serve();
-                }
+            if (serveNativeOnFirstFail) {
+                serve(() -> {
+                    if (!nativeServedItems.isEmpty()) {
+                        MessagesController.getInstance(UserConfig.selectedAccount).sortDialogs(null);
+                        MessagesController.getInstance(UserConfig.selectedAccount).loadDialogs(0, 0, 20, true);
+                        Log.i(TAG, "addNativeDialogs > serve on empty list succeeded, sort dialogs");
+                    }
+                });
             }
             return;
         }
-        emptyTry = 0;
 
         Log.i(TAG, "addNativeDialogs exec! > nativeLists count:  " + nativeServedItems.size());
         int index;

@@ -20,7 +20,7 @@ public abstract class AdapterWithDiffUtils extends RecyclerListView.SelectionAda
 
 
     public static class Item {
-        public final int viewType;
+        public int viewType;
         public boolean selectable;
 
         public Item(int viewType, boolean selectable) {
