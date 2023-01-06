@@ -1,0 +1,7 @@
+.cxx/
+/build
+/release
+/arm64
+/arm7
+/afat
+/jni

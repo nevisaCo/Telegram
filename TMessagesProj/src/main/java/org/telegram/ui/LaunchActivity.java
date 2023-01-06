@@ -234,7 +234,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class LaunchActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, ImageUpdater.ImageUpdaterDelegate {
+public class LaunchActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
     public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.t\\.me");
 
     public static boolean isResumed;
@@ -254,9 +254,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private ArrayList<TLRPC.User> contactsToSend;
     private Uri contactsToSendUri;
     private int currentConnectionState;
-    private static final ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
-    private static final ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
-    private static final ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<>();
+    private static ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
+    private static ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
+    private static ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<>();
     private ViewTreeObserver.OnGlobalLayoutListener onGlobalLayoutListener;
     private ArrayList<Parcelable> importingStickers;
     private ArrayList<String> importingStickersEmoji;
@@ -922,16 +922,16 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             getWindow().getDecorView().addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-                        @Override
-                        public void onViewAttachedToWindow(View v) {
-                            getWindowManager().addCrossWindowBlurEnabledListener(blurListener);
-                        }
+                @Override
+                public void onViewAttachedToWindow(View v) {
+                    getWindowManager().addCrossWindowBlurEnabledListener(blurListener);
+                }
 
-                        @Override
-                        public void onViewDetachedFromWindow(View v) {
-                            getWindowManager().removeCrossWindowBlurEnabledListener(blurListener);
-                        }
-                    });
+                @Override
+                public void onViewDetachedFromWindow(View v) {
+                    getWindowManager().removeCrossWindowBlurEnabledListener(blurListener);
+                }
+            });
         }
     }
 
@@ -2927,7 +2927,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     fragment.setInitialPhoneNumber(PhoneFormat.stripExceptNumbers(newContactPhone, true), false);
                 }
                 fragment.show();
-               // actionBarLayout.presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true));
+                // actionBarLayout.presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true));
                 if (AndroidUtilities.isTablet()) {
                     actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
                     rightActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
@@ -4540,7 +4540,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 } else {
                     progressDialog.showDelayed(300);
                 }
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
     }
 
@@ -7162,7 +7163,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         //region change profile image
         imageUpdater = new ImageUpdater(false);
         imageUpdater.init(this);
-        imageUpdater.delegate = this;
+        imageUpdater.delegate = imageUpdaterDelegate;
         //endregion
 
         PromoController.getInstance().init();
@@ -7423,8 +7424,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     public ImageUpdater.ImageUpdaterDelegate delegate;
     ImageUpdater imageUpdater;
 
-    @Override
-    public void didUploadPhoto(TLRPC.InputFile photo, TLRPC.InputFile video, double videoStartTimestamp, String videoPath, TLRPC.PhotoSize bigSize, TLRPC.PhotoSize smallSize) {
+    ImageUpdater.ImageUpdaterDelegate imageUpdaterDelegate = (photo, video, videoStartTimestamp, videoPath, bigSize, smallSize, isVideo) -> {
         final AlertDialog profileImageProgressDialog = new AlertDialog(this, 3);
         profileImageProgressDialog.show();
         AndroidUtilities.runOnUIThread(() -> {
@@ -7511,77 +7511,78 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         });
 
 /*        AndroidUtilities.runOnUIThread(() -> {
-            try {
-                if (file != null) {
-                    TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
-                    req.file = file;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-                        if (error == null) {
-                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
+        try {
+            if (file != null) {
+                TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
+                req.file = file;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                    if (error == null) {
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
+                        if (user == null) {
+                            user = UserConfig.getInstance(currentAccount).getCurrentUser();
                             if (user == null) {
-                                user = UserConfig.getInstance(currentAccount).getCurrentUser();
-                                if (user == null) {
-                                    return;
-                                }
-                                MessagesController.getInstance(currentAccount).putUser(user, false);
-                            } else {
-                                UserConfig.getInstance(currentAccount).setCurrentUser(user);
+                                return;
                             }
-                            TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo) response;
-                            ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
-                            TLRPC.PhotoSize small = FileLoader.getClosestPhotoSizeWithSize(sizes, 150);
-                            TLRPC.PhotoSize big = FileLoader.getClosestPhotoSizeWithSize(sizes, 800);
-                            user.photo = new TLRPC.TL_userProfilePhoto();
-                            user.photo.photo_id = photo.photo.id;
-                            if (small != null) {
-                                user.photo.photo_small = small.location;
-                            }
-                            if (big != null) {
-                                user.photo.photo_big = big.location;
-                            } else if (small != null) {
-                                user.photo.photo_small = small.location;
-                            }
-
-                            if (photo != null) {
-                                if (small != null && avatar != null) {
-                                    File destFile = FileLoader.getPathToAttach(small, true);
-                                    File src = FileLoader.getPathToAttach(avatar, true);
-                                    src.renameTo(destFile);
-                                    String oldKey = avatar.volume_id + "_" + avatar.local_id + "@50_50";
-                                    String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
-                                    ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, false), true);
-                                }
-                                if (big != null && avatarBig != null) {
-                                    File destFile = FileLoader.getPathToAttach(big, true);
-                                    File src = FileLoader.getPathToAttach(avatarBig, true);
-                                    src.renameTo(destFile);
-                                }
-                            }
-
-                            MessagesStorage.getInstance(currentAccount).clearUserPhotos(user.id);
-                            ArrayList<TLRPC.User> users = new ArrayList<>();
-                            users.add(user);
-                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
+                            MessagesController.getInstance(currentAccount).putUser(user, false);
+                        } else {
+                            UserConfig.getInstance(currentAccount).setCurrentUser(user);
                         }
-                        AndroidUtilities.runOnUIThread(() -> {
-                            avatar = null;
-                            avatarBig = null;
-                            profileImageProgressDialog.dismiss();
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
-                            UserConfig.getInstance(currentAccount).saveConfig(true);
-                        });
+                        TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo) response;
+                        ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
+                        TLRPC.PhotoSize small = FileLoader.getClosestPhotoSizeWithSize(sizes, 150);
+                        TLRPC.PhotoSize big = FileLoader.getClosestPhotoSizeWithSize(sizes, 800);
+                        user.photo = new TLRPC.TL_userProfilePhoto();
+                        user.photo.photo_id = photo.photo.id;
+                        if (small != null) {
+                            user.photo.photo_small = small.location;
+                        }
+                        if (big != null) {
+                            user.photo.photo_big = big.location;
+                        } else if (small != null) {
+                            user.photo.photo_small = small.location;
+                        }
+
+                        if (photo != null) {
+                            if (small != null && avatar != null) {
+                                File destFile = FileLoader.getPathToAttach(small, true);
+                                File src = FileLoader.getPathToAttach(avatar, true);
+                                src.renameTo(destFile);
+                                String oldKey = avatar.volume_id + "_" + avatar.local_id + "@50_50";
+                                String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
+                                ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, false), true);
+                            }
+                            if (big != null && avatarBig != null) {
+                                File destFile = FileLoader.getPathToAttach(big, true);
+                                File src = FileLoader.getPathToAttach(avatarBig, true);
+                                src.renameTo(destFile);
+                            }
+                        }
+
+                        MessagesStorage.getInstance(currentAccount).clearUserPhotos(user.id);
+                        ArrayList<TLRPC.User> users = new ArrayList<>();
+                        users.add(user);
+                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
+                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        avatar = null;
+                        avatarBig = null;
+                        profileImageProgressDialog.dismiss();
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+                        UserConfig.getInstance(currentAccount).saveConfig(true);
                     });
-                } else {
-                    avatar = smallSize.location;
-                    avatarBig = bigSize.location;
-                    profileImageProgressDialog.dismiss();
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "didUploadPhoto: ",e );
+                });
+            } else {
+                avatar = smallSize.location;
+                avatarBig = bigSize.location;
+                profileImageProgressDialog.dismiss();
             }
-        });*/
-    }
+        } catch (Exception e) {
+            Log.e(TAG, "didUploadPhoto: ",e );
+        }
+    });*/
+    };
+
     //endregion
 
     //add with
@@ -7870,6 +7871,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     NotificationCenter.NotificationCenterDelegate mObserver;
+
     private void doRemoveObserver() {
         NotificationCenter.getGlobalInstance().removeObserver(mObserver, NotificationCenter.openSavedMessage);
         NotificationCenter.getGlobalInstance().removeObserver(mObserver, NotificationCenter.showAdmobRewarded);
@@ -8157,9 +8159,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             proxyControllerHelper.change("launch", true);
 
 
-            
         }
     };
+
+
     //endregion
 
     //endregion

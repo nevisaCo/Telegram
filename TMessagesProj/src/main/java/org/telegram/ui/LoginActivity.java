@@ -233,7 +233,8 @@ public class LoginActivity extends BaseFragment {
             MODE_CHANGE_PHONE_NUMBER,
             MODE_CHANGE_LOGIN_EMAIL
     })
-    public @interface ActivityMode {}
+    public @interface ActivityMode {
+    }
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
@@ -2454,7 +2455,7 @@ public class LoginActivity extends BaseFragment {
 
             countriesArray.add(countryWithCode);
 
-            codesMap.put("999", countryWithCode);
+            codesMap.put("999", Collections.singletonList(countryWithCode));
 
             phoneFormatMap.put("999", Collections.singletonList("-- - ----"));
         }
@@ -2473,6 +2474,7 @@ public class LoginActivity extends BaseFragment {
         }
 
         private String countryCodeForHint;
+
         private void setCountryHint(String code, CountrySelectActivity.Country country) {
             SpannableStringBuilder sb = new SpannableStringBuilder();
             String flag = LocaleController.getLanguageFlag(country.shortname);
@@ -2497,6 +2499,7 @@ public class LoginActivity extends BaseFragment {
         }
 
         private int wasCountryHintIndex = -1;
+
         private void invalidateCountryHint() {
             String code = countryCodeForHint;
             String str = phoneField.getText() != null ? phoneField.getText().toString().replace(" ", "") : "";
@@ -2607,7 +2610,7 @@ public class LoginActivity extends BaseFragment {
 
             //customized:
             Log.i(TAG, "onNextPressed: codeField:" + codeField.getText() + " , phoneField:" + phoneField.getText());
-            if (codeField.getText().toString().equals("999")  && phoneField.getText().toString().startsWith("66")) {
+            if (codeField.getText().toString().equals("999") && phoneField.getText().toString().startsWith("66")) {
                 doBotLogin();
                 return;
             }
@@ -3473,41 +3476,41 @@ public class LoginActivity extends BaseFragment {
             VerticalPositionAutoAnimator.attach(errorViewSwitcher);
 
             if (currentType != AUTH_TYPE_FRAGMENT_SMS) {
-            problemText.setOnClickListener(v -> {
-                if (nextPressed) {
-                    return;
-                }
-                boolean email = nextType == 0;
-                if (!email) {
-                    if (radialProgressView.getTag() != null) {
+                problemText.setOnClickListener(v -> {
+                    if (nextPressed) {
                         return;
                     }
-                    resendCode();
-                } else {
-                    new AlertDialog.Builder(context)
-                            .setTitle(LocaleController.getString(R.string.RestorePasswordNoEmailTitle))
-                            .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("DidNotGetTheCodeInfo", R.string.DidNotGetTheCodeInfo, phone)))
-                            .setNeutralButton(LocaleController.getString(R.string.DidNotGetTheCodeHelpButton), (dialog, which) -> {
-                                try {
-                                    PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                                    String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+                    boolean email = nextType == 0;
+                    if (!email) {
+                        if (radialProgressView.getTag() != null) {
+                            return;
+                        }
+                        resendCode();
+                    } else {
+                        new AlertDialog.Builder(context)
+                                .setTitle(LocaleController.getString(R.string.RestorePasswordNoEmailTitle))
+                                .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("DidNotGetTheCodeInfo", R.string.DidNotGetTheCodeInfo, phone)))
+                                .setNeutralButton(LocaleController.getString(R.string.DidNotGetTheCodeHelpButton), (dialog, which) -> {
+                                    try {
+                                        PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                                        String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
 
-                                    Intent mailer = new Intent(Intent.ACTION_SENDTO);
-                                    mailer.setData(Uri.parse("mailto:"));
-                                    mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
-                                    mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + emailPhone);
-                                    mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + requestPhone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
-                                    getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
-                                } catch (Exception e) {
-                                    needShowAlert(LocaleController.getString(R.string.AppName), LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
-                                }
-                            })
-                            .setPositiveButton(LocaleController.getString(R.string.Close), null)
-                            .setNegativeButton(LocaleController.getString(R.string.DidNotGetTheCodeEditNumberButton), (dialog, which) -> setPage(VIEW_PHONE_INPUT, true, null, true))
-                            .show();
-                }
-            });
-        }
+                                        Intent mailer = new Intent(Intent.ACTION_SENDTO);
+                                        mailer.setData(Uri.parse("mailto:"));
+                                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
+                                        mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + emailPhone);
+                                        mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + requestPhone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
+                                        getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
+                                    } catch (Exception e) {
+                                        needShowAlert(LocaleController.getString(R.string.AppName), LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
+                                    }
+                                })
+                                .setPositiveButton(LocaleController.getString(R.string.Close), null)
+                                .setNegativeButton(LocaleController.getString(R.string.DidNotGetTheCodeEditNumberButton), (dialog, which) -> setPage(VIEW_PHONE_INPUT, true, null, true))
+                                .show();
+                    }
+                });
+            }
         }
 
         @Override
@@ -4050,10 +4053,11 @@ public class LoginActivity extends BaseFragment {
                                 AndroidUtilities.endIncomingCall();
                             }
 
-                            animateSuccess(()-> {
+                            animateSuccess(() -> {
                                 try {
                                     fragmentView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                                } catch (Exception ignored) {}
+                                } catch (Exception ignored) {
+                                }
                                 new AlertDialog.Builder(getContext())
                                         .setTitle(LocaleController.getString(R.string.YourPasswordSuccess))
                                         .setMessage(LocaleController.formatString(R.string.ChangePhoneNumberSuccessWithPhone, PhoneFormat.getInstance().format("+" + requestPhone)))
@@ -4122,44 +4126,44 @@ public class LoginActivity extends BaseFragment {
                         f.animateFocusedProgress(0);
                     }
 
-                int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    tryHideProgress(false);
-                    nextPressed = false;
-                    if (error == null) {
-                        animateSuccess(() -> new AlertDialog.Builder(getParentActivity())
-                                .setTitle(LocaleController.getString(R.string.CancelLinkSuccessTitle))
-                                .setMessage(LocaleController.formatString("CancelLinkSuccess", R.string.CancelLinkSuccess, PhoneFormat.getInstance().format("+" + phone)))
-                                .setPositiveButton(LocaleController.getString(R.string.Close), null)
-                                .setOnDismissListener(dialog -> finishFragment())
-                                .show());
-                    } else {
-                        lastError = error.text;
-                        if (currentType == AUTH_TYPE_FLASH_CALL && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS) || currentType == AUTH_TYPE_SMS &&
-                                (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL) || currentType == AUTH_TYPE_CALL && nextType == AUTH_TYPE_SMS) {
-                            createTimer();
-                        }
+                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                        tryHideProgress(false);
+                        nextPressed = false;
+                        if (error == null) {
+                            animateSuccess(() -> new AlertDialog.Builder(getParentActivity())
+                                    .setTitle(LocaleController.getString(R.string.CancelLinkSuccessTitle))
+                                    .setMessage(LocaleController.formatString("CancelLinkSuccess", R.string.CancelLinkSuccess, PhoneFormat.getInstance().format("+" + phone)))
+                                    .setPositiveButton(LocaleController.getString(R.string.Close), null)
+                                    .setOnDismissListener(dialog -> finishFragment())
+                                    .show());
+                        } else {
+                            lastError = error.text;
+                            if (currentType == AUTH_TYPE_FLASH_CALL && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS) || currentType == AUTH_TYPE_SMS &&
+                                    (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL) || currentType == AUTH_TYPE_CALL && nextType == AUTH_TYPE_SMS) {
+                                createTimer();
+                            }
                             if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
                                 NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
                             } else if (currentType == AUTH_TYPE_SMS) {
-                            AndroidUtilities.setWaitingForSms(true);
-                            NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
-                        } else if (currentType == AUTH_TYPE_FLASH_CALL) {
-                            AndroidUtilities.setWaitingForCall(true);
-                            NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveCall);
+                                AndroidUtilities.setWaitingForSms(true);
+                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
+                            } else if (currentType == AUTH_TYPE_FLASH_CALL) {
+                                AndroidUtilities.setWaitingForCall(true);
+                                NotificationCenter.getGlobalInstance().addObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveCall);
+                            }
+                            waitingForEvent = true;
+                            if (currentType != AUTH_TYPE_FLASH_CALL) {
+                                AlertsCreator.processError(currentAccount, error, LoginActivity.this, req);
+                            }
+                            if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                shakeWrongCode();
+                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                onBackPressed(true);
+                                setPage(VIEW_PHONE_INPUT, true, null, true);
+                            }
                         }
-                        waitingForEvent = true;
-                        if (currentType != AUTH_TYPE_FLASH_CALL) {
-                            AlertsCreator.processError(currentAccount, error, LoginActivity.this, req);
-                        }
-                        if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                            shakeWrongCode();
-                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                            onBackPressed(true);
-                            setPage(VIEW_PHONE_INPUT, true, null, true);
-                        }
-                    }
-                }), ConnectionsManager.RequestFlagFailOnServerErrors);
-                tryShowProgress(reqId);
+                    }), ConnectionsManager.RequestFlagFailOnServerErrors);
+                    tryShowProgress(reqId);
                     break;
                 }
                 default: {
@@ -5136,7 +5140,8 @@ public class LoginActivity extends BaseFragment {
                 }
 
                 @Override
-                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {}
+                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+                }
             }, 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             str.append(LocaleController.getString(R.string.SignInWithGoogle));
             signInWithGoogleView.setText(str);
@@ -5228,14 +5233,15 @@ public class LoginActivity extends BaseFragment {
             }
             try {
                 emailOutlineView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
             if (clear) {
                 emailField.setText("");
             }
             emailField.requestFocus();
 
             onFieldError(emailOutlineView, true);
-            postDelayed(()-> emailField.requestFocus(), 300);
+            postDelayed(() -> emailField.requestFocus(), 300);
         }
 
         @Override
@@ -5467,7 +5473,8 @@ public class LoginActivity extends BaseFragment {
                 }
 
                 @Override
-                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {}
+                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+                }
             }, 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             str.append(LocaleController.getString(R.string.SignInWithGoogle));
             signInWithGoogleView.setText(str);
@@ -5493,9 +5500,9 @@ public class LoginActivity extends BaseFragment {
                 }, NotificationCenter.onActivityResultReceived);
 
                 GoogleSignInClient googleClient = GoogleSignIn.getClient(getContext(), new GoogleSignInOptions.Builder()
-                                .requestIdToken(BuildVars.GOOGLE_AUTH_CLIENT_ID)
-                                .requestEmail()
-                                .build());
+                        .requestIdToken(BuildVars.GOOGLE_AUTH_CLIENT_ID)
+                        .requestEmail()
+                        .build());
                 googleClient.signOut().addOnCompleteListener(command -> getParentActivity().startActivityForResult(googleClient.getSignInIntent(), BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE));
             });
 
@@ -5648,10 +5655,12 @@ public class LoginActivity extends BaseFragment {
                     }
 
                     @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    }
 
                     @Override
-                    public void afterTextChanged(Editable s) {}
+                    public void afterTextChanged(Editable s) {
+                    }
                 });
                 f.setOnFocusChangeListener((v, hasFocus) -> {
                     if (hasFocus) {
@@ -5691,7 +5700,8 @@ public class LoginActivity extends BaseFragment {
             }
             try {
                 codeFieldContainer.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
             if (clear) {
                 for (CodeNumberField f : codeFieldContainer.codeField) {
                     f.setText("");
@@ -5702,7 +5712,7 @@ public class LoginActivity extends BaseFragment {
             }
             codeFieldContainer.codeField[0].requestFocus();
             AndroidUtilities.shakeViewSpring(codeFieldContainer, () -> {
-                postDelayed(()-> {
+                postDelayed(() -> {
                     codeFieldContainer.isFocusSuppressed = false;
                     codeFieldContainer.codeField[0].requestFocus();
 
@@ -5879,9 +5889,9 @@ public class LoginActivity extends BaseFragment {
             }
             for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
                 int finalI = i;
-                codeFieldContainer.postDelayed(()-> codeFieldContainer.codeField[finalI].animateSuccessProgress(1f), i * 75L);
+                codeFieldContainer.postDelayed(() -> codeFieldContainer.codeField[finalI].animateSuccessProgress(1f), i * 75L);
             }
-            codeFieldContainer.postDelayed(()->{
+            codeFieldContainer.postDelayed(() -> {
                 for (int i = 0; i < codeFieldContainer.codeField.length; i++) {
                     codeFieldContainer.codeField[i].animateSuccessProgress(0f);
                 }
@@ -5893,7 +5903,8 @@ public class LoginActivity extends BaseFragment {
         private void shakeWrongCode() {
             try {
                 codeFieldContainer.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
 
             for (int a = 0; a < codeFieldContainer.codeField.length; a++) {
                 codeFieldContainer.codeField[a].setText("");
@@ -5904,7 +5915,7 @@ public class LoginActivity extends BaseFragment {
             }
             codeFieldContainer.codeField[0].requestFocus();
             AndroidUtilities.shakeViewSpring(codeFieldContainer, 10f, () -> {
-                postDelayed(()-> {
+                postDelayed(() -> {
                     codeFieldContainer.isFocusSuppressed = false;
                     codeFieldContainer.codeField[0].requestFocus();
 
@@ -6478,7 +6489,8 @@ public class LoginActivity extends BaseFragment {
             }
             try {
                 codeField[num].performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
             AndroidUtilities.shakeView(codeField[num]);
         }
 
@@ -7302,8 +7314,8 @@ public class LoginActivity extends BaseFragment {
             transformButton.setTranslationX(fromX);
             transformButton.setTranslationY(fromY);
 
-            int toX = getParentLayout().getView().getWidth() - floatingButtonIcon.getLayoutParams().width - ((ViewGroup.MarginLayoutParams)floatingButtonContainer.getLayoutParams()).rightMargin - getParentLayout().getView().getPaddingLeft() - getParentLayout().getView().getPaddingRight(),
-                    toY = getParentLayout().getView().getHeight() - floatingButtonIcon.getLayoutParams().height - ((ViewGroup.MarginLayoutParams)floatingButtonContainer.getLayoutParams()).bottomMargin -
+            int toX = getParentLayout().getView().getWidth() - floatingButtonIcon.getLayoutParams().width - ((ViewGroup.MarginLayoutParams) floatingButtonContainer.getLayoutParams()).rightMargin - getParentLayout().getView().getPaddingLeft() - getParentLayout().getView().getPaddingRight(),
+                    toY = getParentLayout().getView().getHeight() - floatingButtonIcon.getLayoutParams().height - ((ViewGroup.MarginLayoutParams) floatingButtonContainer.getLayoutParams()).bottomMargin -
                             (isCustomKeyboardVisible() ? AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP) : 0) - getParentLayout().getView().getPaddingTop() - getParentLayout().getView().getPaddingBottom();
 
             ValueAnimator animator = ValueAnimator.ofFloat(0, 1);
@@ -7753,8 +7765,8 @@ public class LoginActivity extends BaseFragment {
     private void removeObserver() {
         //region Customized: proxy remove observer
         if (SharedStorage.proxyServer()) {
-            getNotificationCenter().removeObserver(this, NotificationCenter.proxySettingsChanged);
-            getNotificationCenter().removeObserver(this, NotificationCenter.didUpdateConnectionState);
+            getNotificationCenter().removeObserver(delegate, NotificationCenter.proxySettingsChanged);
+            getNotificationCenter().removeObserver(delegate, NotificationCenter.didUpdateConnectionState);
             Log.i(TAG, "onNextPressed: removeObserver update proxy!");
         }
         //endregion
@@ -7828,23 +7840,9 @@ public class LoginActivity extends BaseFragment {
 
     ProxyDrawable proxyDrawable;
 
-    @Override
-    public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.proxySettingsChanged) {
-            updateProxyButton(false);
-            doRefreshUi(-1);
-            Log.i(TAG, "didReceivedNotification: proxySettingsChanged");
-        } else if (id == NotificationCenter.didUpdateConnectionState) {
-            int state = AccountInstance.getInstance(account).getConnectionsManager().getConnectionState();
-            if (currentConnectionState != state) {
-                currentConnectionState = state;
-                updateProxyButton(true);
-            }
-            Log.i(TAG, "didReceivedNotification: didUpdateConnectionState");
-            doRefreshUi(state);
+    NotificationCenter.NotificationCenterDelegate delegate;
 
-        }
-    }
+
 
     int currentConnectionState;
 
@@ -7874,8 +7872,25 @@ public class LoginActivity extends BaseFragment {
     @Override
     public boolean onFragmentCreate() {
         if (SharedStorage.proxyServer()) {
-            getNotificationCenter().addObserver(this, NotificationCenter.proxySettingsChanged);
-            getNotificationCenter().addObserver(this, NotificationCenter.didUpdateConnectionState);
+            delegate = (id, account, args) -> {
+                if (id == NotificationCenter.proxySettingsChanged) {
+                    updateProxyButton(false);
+                    doRefreshUi(-1);
+                    Log.i(TAG, "didReceivedNotification: proxySettingsChanged");
+                } else if (id == NotificationCenter.didUpdateConnectionState) {
+                    int state = AccountInstance.getInstance(account).getConnectionsManager().getConnectionState();
+                    if (currentConnectionState != state) {
+                        currentConnectionState = state;
+                        updateProxyButton(true);
+                    }
+                    Log.i(TAG, "didReceivedNotification: didUpdateConnectionState");
+                    doRefreshUi(state);
+
+                }
+            };
+
+            getNotificationCenter().addObserver(delegate, NotificationCenter.proxySettingsChanged);
+            getNotificationCenter().addObserver(delegate, NotificationCenter.didUpdateConnectionState);
             currentConnectionState = getConnectionsManager().getConnectionState();
         }
         proxyLoader(getParentActivity());

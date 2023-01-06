@@ -202,7 +202,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
 
         public void setProxy(SharedConfig.ProxyInfo proxyInfo) {
             if (!proxyInfo.lock) {
-                textView.setText(String.format("%s:%s", proxyInfo.address, proxyInfo.port));
+                textView.setText(proxyInfo.address + ":" + proxyInfo.port);
             } else {
                 textView.setText(proxyInfo.name);
             }
@@ -374,6 +374,8 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         useProxySettings = preferences.getBoolean("proxy_enabled", false) && !SharedConfig.proxyList.isEmpty();
         useProxyForCalls = preferences.getBoolean("proxy_enabled_calls", false);
+
+        //customized:
         useShowProxySponsor = SharedStorage.showProxySponsor();
         useShowRefreshInDialogs = SharedStorage.proxyRefreshInDialogs();
 
@@ -435,26 +437,23 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                         SharedConfig.currentProxy = proxyList.get(0);
 
                         if (!useProxySettings) {
-                            try {
-                                SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                                SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
-                                editor.putString("proxy_ip", SharedConfig.currentProxy.address);
-                                editor.putString("proxy_pass", SharedConfig.currentProxy.password);
-                                editor.putString("proxy_user", SharedConfig.currentProxy.username);
-                                editor.putInt("proxy_port", SharedConfig.currentProxy.port);
-                                editor.putString("proxy_secret", SharedConfig.currentProxy.secret);
-                                editor.putBoolean("proxy_limit", SharedConfig.currentProxy.lock);
-                                editor.putBoolean("proxy_show_sponsor", SharedConfig.currentProxy.show_sponsor);
-                                editor.putInt("proxy_points", SharedConfig.currentProxy.points);
-                                editor.putString("proxy_name", SharedConfig.currentProxy.name);
+                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                            SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
+                            editor.putString("proxy_ip", SharedConfig.currentProxy.address);
+                            editor.putString("proxy_pass", SharedConfig.currentProxy.password);
+                            editor.putString("proxy_user", SharedConfig.currentProxy.username);
+                            editor.putInt("proxy_port", SharedConfig.currentProxy.port);
+                            editor.putString("proxy_secret", SharedConfig.currentProxy.secret);
 
-                                editor.apply();
+                            //customized:
+                            editor.putBoolean("proxy_limit", SharedConfig.currentProxy.lock);
+                            editor.putBoolean("proxy_show_sponsor", SharedConfig.currentProxy.show_sponsor);
+                            editor.putInt("proxy_points", SharedConfig.currentProxy.points);
+                            editor.putString("proxy_name", SharedConfig.currentProxy.name);
+                            updateSponsor(SharedConfig.currentProxy);
 
-                                updateSponsor(SharedConfig.currentProxy);
 
-                            } catch (Exception e) {
-                                Log.e(TAG, "createView: ", e);
-                            }
+                            editor.commit();
                         }
                     } else {
                         presentFragment(new ProxySettingsActivity());
@@ -480,6 +479,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 editor.putBoolean("proxy_enabled", useProxySettings);
                 editor.commit();
 
+                //customized:
                 changeStatus(useProxySettings);
 
                 ConnectionsManager.setProxySettings(useProxySettings, SharedConfig.currentProxy.address, SharedConfig.currentProxy.port, SharedConfig.currentProxy.username, SharedConfig.currentProxy.password, SharedConfig.currentProxy.secret);
@@ -803,25 +803,23 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
     private void checkProxyList() {
         for (int a = 0, count = proxyList.size(); a < count; a++) {
             final SharedConfig.ProxyInfo proxyInfo = proxyList.get(a);
-                if (proxyInfo.checking || SystemClock.elapsedRealtime() - proxyInfo.availableCheckTime < 2 * 60 * 1000) {
-                    continue;
-                }
-                proxyInfo.checking = true;
-                proxyInfo.proxyCheckPingId = ConnectionsManager.getInstance(currentAccount).checkProxy(proxyInfo.address, proxyInfo.port, proxyInfo.username, proxyInfo.password, proxyInfo.secret, time -> AndroidUtilities.runOnUIThread(() -> {
-                    proxyInfo.availableCheckTime = SystemClock.elapsedRealtime();
-                    proxyInfo.checking = false;
-                    if (time == -1) {
-                        proxyInfo.available = false;
-                        proxyInfo.ping = 0;
-                    } else {
-                        proxyInfo.ping = time;
-                        proxyInfo.available = true;
-                    }
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxyCheckDone, proxyInfo);
-                }));
-            } catch (Exception e) {
-                Log.e(TAG, "checkProxyList: ", e);
+            if (proxyInfo.checking || SystemClock.elapsedRealtime() - proxyInfo.availableCheckTime < 2 * 60 * 1000) {
+                continue;
             }
+            proxyInfo.checking = true;
+            proxyInfo.proxyCheckPingId = ConnectionsManager.getInstance(currentAccount).checkProxy(proxyInfo.address, proxyInfo.port, proxyInfo.username, proxyInfo.password, proxyInfo.secret, time -> AndroidUtilities.runOnUIThread(() -> {
+                proxyInfo.availableCheckTime = SystemClock.elapsedRealtime();
+                proxyInfo.checking = false;
+                if (time == -1) {
+                    proxyInfo.available = false;
+                    proxyInfo.ping = 0;
+                } else {
+                    proxyInfo.ping = time;
+                    proxyInfo.available = true;
+                }
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxyCheckDone, proxyInfo);
+            }));
+
         }
     }
 
@@ -1003,8 +1001,8 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 case 5: {
                     TextDetailProxyCell cell = (TextDetailProxyCell) holder.itemView;
                     SharedConfig.ProxyInfo info = proxyList.get(position - proxyStartRow);
-                        cell.setProxy(info);
-                        cell.setChecked(SharedConfig.currentProxy == info);
+                    cell.setProxy(info);
+                    cell.setChecked(SharedConfig.currentProxy == info);
                     cell.setItemSelected(selectedItems.contains(proxyList.get(position - proxyStartRow)), false);
                     cell.setSelectionEnabled(!selectedItems.isEmpty(), false);
                     if (info.lock) {
@@ -1073,14 +1071,12 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == useProxyRow || position == callsRow || position == proxyAddRow || position == deleteAllRow || position >= proxyStartRow && position < proxyEndRow;
-            return position == useProxyRow
-                    || position == callsRow
+            return position == useProxyRow || position == callsRow || position == proxyAddRow || position == deleteAllRow || position >= proxyStartRow && position < proxyEndRow
+
                     || position == smartChangeProxy
                     || position == showProxySponsor
                     || position == showRefreshInDialogs
-                    || position == proxyAddRow
-                    || position >= proxyStartRow && position < proxyEndRow;
+                    ;
         }
 
         @NonNull
@@ -1153,18 +1149,21 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 return 0;
             } else if (position == proxyAddRow || position == deleteAllRow) {
                 return 1;
-            } else if (position == useProxyRow || position == callsRow || position == showProxySponsor || position == showRefreshInDialogs) {
+            } else if (position == useProxyRow || position == callsRow) {
                 return 3;
             } else if (position == connectionsHeaderRow) {
                 return 2;
-            } else if (position == smartChangeProxy) {
-                return 6;
             } else if (position >= proxyStartRow && position < proxyEndRow) {
                 return 5;
+            } else if (position == showProxySponsor || position == showRefreshInDialogs) {
+                return 3;
+            } else if (position == smartChangeProxy) {
+                return 6;
             } else {
                 return 4;
             }
         }
+
     }
 
     @Override

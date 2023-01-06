@@ -10468,7 +10468,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateGhostMode, GhostController.DIALOGS);
         } else if (id == hide || id == media || id == fav || id == ghost) {
-            performSelectedDialogsAction(selectedDialogs, id, true);
+            performSelectedDialogsAction(selectedDialogs, id, true , false);
         } else if (id == refresh_proxy_item_id) {
             doRefreshOfflineProxy();
         } else if (id == vpn_menu_item_id) {
