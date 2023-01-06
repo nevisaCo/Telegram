@@ -41,7 +41,6 @@ public class ApplicationLoader extends Application {
 
     @Override
     public void onCreate() {
-        Log.i(TAG, "onCreate: qwerty 1 ApplicationLoader");
 //        initLocal(this);
 
         SharedStorage.init(this);

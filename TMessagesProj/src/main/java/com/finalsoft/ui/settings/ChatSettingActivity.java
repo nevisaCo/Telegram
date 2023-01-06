@@ -454,7 +454,7 @@ public class ChatSettingActivity extends BaseFragment {
                     } else if (position == mutualContactRow) {
                         checkBoxCell.setTextAndValueAndCheck(LocaleController.getString("ShowMutualContact", R.string.ShowMutualContact),
                                 LocaleController.getString("ShowMutualContactInfo", R.string.ShowMutualContactInfo),
-                                SharedStorage.chatSettings(SharedStorage.keys.BOOKMARK), true, true);
+                                SharedStorage.chatSettings(SharedStorage.keys.MUTUAL_CONTACT), true, true);
                     } else if (position == showEditedMsgRow) {
                         checkBoxCell.setTextAndValueAndCheck(LocaleController.getString("ShowEditedMessage", R.string.ShowEditedMessage),
                                 LocaleController.getString("ShowEditedMessageInfo", R.string.ShowEditedMessageInfo),

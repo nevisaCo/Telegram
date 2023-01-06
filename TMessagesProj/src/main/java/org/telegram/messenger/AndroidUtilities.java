@@ -124,6 +124,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
 import com.finalsoft.SharedStorage;
+import com.finalsoft.ui.MyTheme;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
@@ -1631,7 +1632,7 @@ public class AndroidUtilities {
 
     public static void updateFont() {
         current_font = SharedStorage.selectedFont();
-        Theme.typeface = getTypeface("");
+        MyTheme.typeface = getTypeface("");
     }
 
     public static Typeface getTypeface(String assetPath) {

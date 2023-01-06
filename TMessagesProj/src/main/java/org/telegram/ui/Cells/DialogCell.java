@@ -53,6 +53,7 @@ import com.finalsoft.SharedStorage;
 import com.finalsoft.controller.GhostController;
 import com.finalsoft.controller.PromoController;
 import com.finalsoft.models.PromoItem;
+import com.finalsoft.ui.MyTheme;
 import com.google.gson.Gson;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -3576,16 +3577,16 @@ public class DialogCell extends BaseCell {
             }
             //region customized
             if (dialogGhosted) {
-                setDrawableBounds(Theme.dialogs_ghostDrawable, (nameGhostLeft - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 0 : 1)), AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
-                Theme.dialogs_ghostDrawable.draw(canvas);
+                setDrawableBounds(MyTheme.dialogs_ghostDrawable, (nameGhostLeft - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 0 : 1)), AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
+                MyTheme.dialogs_ghostDrawable.draw(canvas);
             }
             if (mutual_contact) {
-                setDrawableBounds(Theme.dialogs_mutualContactDrawable,
+                setDrawableBounds(MyTheme.dialogs_mutualContactDrawable,
                         (nameMutualLeft - AndroidUtilities.dp((useForceThreeLines || SharedConfig.useThreeLinesLayout) ? 0 : 1)),
                         AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f),
                         AndroidUtilities.dp(12),
                         AndroidUtilities.dp(12));
-                Theme.dialogs_mutualContactDrawable.draw(canvas);
+                MyTheme.dialogs_mutualContactDrawable.draw(canvas);
             }
             //endregion
 

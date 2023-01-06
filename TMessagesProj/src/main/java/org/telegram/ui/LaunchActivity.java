@@ -7123,8 +7123,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @SuppressLint("NotifyDataSetChanged")
     private void initCustomData() {
-        Log.i(TAG, "onCreate: qwerty 3 initCustomData");
-
         //Customized: Check update app
         //region Customized: hide drawer menu items
         sideMenu.setOnItemLongClickListener((view, position) -> {
@@ -7244,7 +7242,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
 
     private void initAdmob() {
-        Log.i(TAG, "onCreate: qwerty 2 initAdmob");
 
         // Use an activity context to get the rewarded video instance.
         AdmobBaseClass.ICallback iCallback = new AdmobBaseClass.ICallback() {

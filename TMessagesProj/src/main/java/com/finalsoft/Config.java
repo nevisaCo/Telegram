@@ -61,7 +61,7 @@ public class Config {
     //region ADMOB
     public static final boolean ADMOB_FEATURE = true;
     public static final boolean OFF_ADMOB_FEATURE = false;
-    public static final boolean ADMOB_REWARDED_FEATURE = true;
+    public static final boolean ADMOB_REWARDED_FEATURE = false;
     public static final boolean ADMOB_BANNERS_FEATURE = true;
     public static final boolean ADMOB_NATIVE_FEATURE = true;
     public static final boolean DONATE_FEATURE = true;

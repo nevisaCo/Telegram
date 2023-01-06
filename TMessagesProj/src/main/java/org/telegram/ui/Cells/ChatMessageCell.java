@@ -78,6 +78,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
 import com.finalsoft.SharedStorage;
+import com.finalsoft.ui.MyTheme;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -3142,7 +3143,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             replySelectorCanBePressed = false;
                         }
                     }
-                } else if (markPressed) {
+                }
+                //customized:
+                else if (markPressed) {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         markPressed = false;
                         playSoundEffect(SoundEffectConstants.CLICK);
@@ -13010,20 +13013,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 //region Customized: add message bookmark
                 if (show_bookmark) {
                     if (currentMessageObject.isOutOwner()) {
-                        markStartX = currentBackgroundDrawable.getBounds().left - AndroidUtilities.dp(8) - Theme.chat_shareDrawable.getIntrinsicWidth();
+                        markStartX = currentBackgroundDrawable.getBounds().left - AndroidUtilities.dp(8) - Theme.chat_shareIconDrawable.getIntrinsicWidth();
                     } else {
                         markStartX = currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(8);
                     }
 
-                    setDrawableBounds(Theme.chat_markDrawable, markStartX, markStartY = layoutHeight - AndroidUtilities.dp(80));
-                    Theme.chat_markDrawable.draw(canvas);
+                    setDrawableBounds(MyTheme.chat_markDrawable, markStartX, markStartY = layoutHeight - AndroidUtilities.dp(80));
+                    MyTheme.chat_markDrawable.draw(canvas);
 
                     if (currentMessageObject.getId() != SharedStorage.markMessages(currentMessageObject.getDialogId())) {
-                        setDrawableBounds(Theme.chat_markIconDrawable, markStartX + AndroidUtilities.dp(4), markStartY + AndroidUtilities.dp(4));
-                        Theme.chat_markIconDrawable.draw(canvas);
+                        setDrawableBounds(MyTheme.chat_markIconDrawable, markStartX + AndroidUtilities.dp(4), markStartY + AndroidUtilities.dp(4));
+                        MyTheme.chat_markIconDrawable.draw(canvas);
                     } else {
-                        setDrawableBounds(Theme.chat_markFilledIconDrawable, markStartX + AndroidUtilities.dp(4), markStartY + AndroidUtilities.dp(4));
-                        Theme.chat_markFilledIconDrawable.draw(canvas);
+                        setDrawableBounds(MyTheme.chat_markFilledIconDrawable, markStartX + AndroidUtilities.dp(4), markStartY + AndroidUtilities.dp(4));
+                        MyTheme.chat_markFilledIconDrawable.draw(canvas);
                     }
                 }
                 //endregion
