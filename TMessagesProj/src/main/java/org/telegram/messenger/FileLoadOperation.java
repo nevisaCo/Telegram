@@ -688,7 +688,7 @@ public class FileLoadOperation {
         return start(stream, streamOffset, streamPriority);
     }
 
-    public boolean start(final FileLoadOperationStream stream, final long streamOffset, final boolean steamPriority) {
+    public boolean start(final FileLoadOperationStream stream, final long streamOffset, final boolean streamPriority) {
         startTime = System.currentTimeMillis();
         updateParams();
         if (currentDownloadChunkSize == 0) {
@@ -707,7 +707,7 @@ public class FileLoadOperation {
                 if (streamListeners == null) {
                     streamListeners = new ArrayList<>();
                 }
-                if (steamPriority) {
+                if (streamPriority) {
                     long offset = (streamOffset / (long) currentDownloadChunkSize) * (long) currentDownloadChunkSize;
                     if (priorityRequestInfo != null && priorityRequestInfo.offset != offset) {
                         requestInfos.remove(priorityRequestInfo);
@@ -1030,7 +1030,7 @@ public class FileLoadOperation {
                 if (isPreloadVideoOperation) {
                     FileLog.d("start preloading file to temp = " + cacheFileTemp);
                 } else {
-                    FileLog.d("start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal);
+                    FileLog.d("start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal + " priority" + priority);
                 }
             }
 
@@ -1431,7 +1431,11 @@ public class FileLoadOperation {
                         } else if (currentType == ConnectionsManager.FileTypePhoto) {
                             StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
                         } else if (currentType == ConnectionsManager.FileTypeFile) {
-                            StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                            if (ext != null && (ext.toLowerCase().endsWith("mp3") || ext.toLowerCase().endsWith("m4a"))) {
+                                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MUSIC, 1);
+                            } else {
+                                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                            }
                         }
                     }
                     delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
@@ -2167,7 +2171,11 @@ public class FileLoadOperation {
                         } else if (currentType == ConnectionsManager.FileTypePhoto) {
                             StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_PHOTOS, response.getObjectSize() + 4);
                         } else if (currentType == ConnectionsManager.FileTypeFile) {
-                            StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_FILES, response.getObjectSize() + 4);
+                            if (ext != null && (ext.toLowerCase().endsWith("mp3") || ext.toLowerCase().endsWith("m4a"))) {
+                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_MUSIC, response.getObjectSize() + 4);
+                            } else {
+                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_FILES, response.getObjectSize() + 4);
+                            }
                         }
                     }
                     processRequestResult(requestInfo, error);

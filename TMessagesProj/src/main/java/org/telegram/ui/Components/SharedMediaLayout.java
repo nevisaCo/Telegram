@@ -3133,7 +3133,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             req.limit = 100;
             req.peer = MessagesController.getInstance(profileActivity.getCurrentAccount()).getInputPeer(dialog_id);
             int reqIndex = sharedMediaData[type].requestIndex;
-            int reqId = ConnectionsManager.getInstance(profileActivity.getCurrentAccount()).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            int reqId = ConnectionsManager.getInstance(profileActivity.getCurrentAccount()).sendRequest(req, (response, error) ->
+                    AndroidUtilities.runOnUIThread(() ->
+                    NotificationCenter.getInstance(profileActivity.getCurrentAccount()).doOnIdle(() -> {
                 if (error != null) {
                     return;
                 }
@@ -3161,7 +3163,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                 }
                 photoVideoAdapter.notifyDataSetChanged();
-            }));
+            })));
             ConnectionsManager.getInstance(profileActivity.getCurrentAccount()).bindRequestToGuid(reqId, profileActivity.getClassGuid());
         }
     }
@@ -3254,9 +3256,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putBoolean("canSelectTopics", true);
-            args.putInt("dialogsType", 3);
+            args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
             DialogsActivity fragment = new DialogsActivity(args);
-            fragment.setDelegate((fragment1, dids, message, param) -> {
+            fragment.setDelegate((fragment1, dids, message, param, topicsFragment) -> {
                 ArrayList<MessageObject> fmessages = new ArrayList<>();
                 for (int a = 1; a >= 0; a--) {
                     ArrayList<Integer> ids = new ArrayList<>();
@@ -3308,7 +3310,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             args1.putLong("chat_id", -did);
                         }
                         if (!profileActivity.getMessagesController().checkCanOpenChat(args1, fragment1)) {
-                            return;
+                            return true;
                         }
                     }
 
@@ -3319,6 +3321,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     fragment1.presentFragment(chatActivity, true);
                     chatActivity.showFieldPanelForForward(true, fmessages);
                 }
+                return true;
             });
             profileActivity.presentFragment(fragment);
         } else if (id == gotochat) {

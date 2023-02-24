@@ -206,9 +206,9 @@ public class ReactionsEffectOverlay {
             fromHeight = holderView.loopImageView.getWidth() * holderView.getScaleX();
         } else if (reactionButton != null) {
             cell.getLocationInWindow(loc);
-            fromX = loc[0] + cell.reactionsLayoutInBubble.x + reactionButton.x + reactionButton.imageReceiver.getImageX();
-            fromY = loc[1] + cell.reactionsLayoutInBubble.y + reactionButton.y + reactionButton.imageReceiver.getImageY();
-            fromHeight = reactionButton.imageReceiver.getImageHeight();
+            fromX = loc[0] + cell.reactionsLayoutInBubble.x + reactionButton.x + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageX());
+            fromY = loc[1] + cell.reactionsLayoutInBubble.y + reactionButton.y + (reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageY());
+            fromHeight = reactionButton.imageReceiver == null ? 0 : reactionButton.imageReceiver.getImageHeight();
         } else {
             ((View) cell.getParent()).getLocationInWindow(loc);
             fromX = loc[0] + x;
@@ -593,7 +593,7 @@ public class ReactionsEffectOverlay {
 
             if (animationType != SHORT_ANIMATION) {
                 if (availableReaction != null) {
-                    emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "40_40_lastframe", null, "webp", availableReaction, 1);
+                    emojiStaticImageView.getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "40_40_lastreactframe", null, "webp", availableReaction, 1);
                 }
                 container.addView(emojiStaticImageView);
                 emojiStaticImageView.getLayoutParams().width = emojiSize;

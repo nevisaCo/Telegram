@@ -64,6 +64,7 @@ import com.finalsoft.SharedStorage;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
@@ -353,6 +354,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         public boolean isChatPreviewSpoilerRevealed;
         public boolean isAttachSpoilerRevealed;
+        public TLRPC.VideoSize emojiMarkup;
 
         public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo, int width, int height, long size) {
             this.bucketId = bucketId;
@@ -542,7 +544,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private String shouldSavePositionForCurrentAudio;
     private long lastSaveTime;
     private float currentPlaybackSpeed = 1.0f;
+    private boolean currentPlaybackSpeed2xFake = false;
     private float currentMusicPlaybackSpeed = 1.0f;
+    private boolean currentMusicPlaybackSpeed2xFake = false;
     private float fastPlaybackSpeed = 1.0f;
     private float fastMusicPlaybackSpeed = 1.0f;
     private float seekToProgressPending;
@@ -685,6 +689,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 if (writeFrame(fileBuffer, !flush ? fileBuffer.limit() : finalBuffer.position()) != 0) {
                                     fileBuffer.rewind();
                                     recordTimeCount += fileBuffer.limit() / 2 / (sampleRate / 1000);
+                                    FileLog.d("frame writed");
+                                } else {
+                                    FileLog.e("writing frame failed");
                                 }
                             }
                             if (oldLimit != -1) {
@@ -919,7 +926,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         Utilities.globalQueue.postRunnable(() -> {
             try {
                 currentPlaybackSpeed = MessagesController.getGlobalMainSettings().getFloat("playbackSpeed", 1.0f);
+                currentPlaybackSpeed2xFake = MessagesController.getGlobalMainSettings().getBoolean("playbackSpeedFake2x", false);
                 currentMusicPlaybackSpeed = MessagesController.getGlobalMainSettings().getFloat("musicPlaybackSpeed", 1.0f);
+                currentMusicPlaybackSpeed2xFake = MessagesController.getGlobalMainSettings().getBoolean("musicPlaybackSpeedFake2x", false);
                 fastPlaybackSpeed = MessagesController.getGlobalMainSettings().getFloat("fastPlaybackSpeed", 1.8f);
                 fastMusicPlaybackSpeed = MessagesController.getGlobalMainSettings().getFloat("fastMusicPlaybackSpeed", 1.8f);
                 sensorManager = (SensorManager) ApplicationLoader.applicationContext.getSystemService(Context.SENSOR_SERVICE);
@@ -2559,7 +2568,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public void setPlaybackSpeed(boolean music, float speed) {
+        setPlaybackSpeed(music, speed, false);
+    }
+
+    public void setPlaybackSpeed(boolean music, float speed, boolean fake2x) {
         if (music) {
+            currentMusicPlaybackSpeed2xFake = fake2x;
             if (currentMusicPlaybackSpeed >= 6 && speed == 1f && playingMessageObject != null) {
                 audioPlayer.pause();
                 float p = playingMessageObject.audioProgress;
@@ -2578,6 +2592,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 fastMusicPlaybackSpeed = speed;
             }
         } else {
+            currentPlaybackSpeed2xFake = fake2x;
             currentPlaybackSpeed = speed;
             if (Math.abs(speed - 1.0f) > 0.001f) {
                 fastPlaybackSpeed = speed;
@@ -2590,16 +2605,26 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         MessagesController.getGlobalMainSettings().edit()
                 .putFloat(music ? "musicPlaybackSpeed" : "playbackSpeed", speed)
-                .putFloat(music ? "fastMusicPlaybackSpeed" : "fastPlaybackSpeed", music ? fastMusicPlaybackSpeed : fastPlaybackSpeed).commit();
+                .putBoolean(music ? "musicPlaybackSpeedFake2x" : "playbackSpeedFake2x", fake2x)
+                .putFloat(music ? "fastMusicPlaybackSpeed" : "fastPlaybackSpeed", music ? fastMusicPlaybackSpeed : fastPlaybackSpeed)
+                .commit();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.messagePlayingSpeedChanged);
     }
 
     public float getPlaybackSpeed(boolean music) {
-        return music ? currentMusicPlaybackSpeed : currentPlaybackSpeed;
+        final float speed = music ? currentMusicPlaybackSpeed : currentPlaybackSpeed;
+        if (Math.abs(speed - 1.8f) < 0.01f && (music ? currentMusicPlaybackSpeed2xFake : currentPlaybackSpeed2xFake)) {
+            return 2f;
+        }
+        return speed;
     }
 
     public float getFastPlaybackSpeed(boolean music) {
-        return music ? fastMusicPlaybackSpeed : fastPlaybackSpeed;
+        final float speed = music ? fastMusicPlaybackSpeed : fastPlaybackSpeed;
+        if (Math.abs(speed - 1.8f) < 0.01f && (music ? currentPlaybackSpeed2xFake : currentMusicPlaybackSpeed2xFake)) {
+            return 2f;
+        }
+        return speed;
     }
 
     private void updateVideoState(MessageObject messageObject, int[] playCount, boolean destroyAtEnd, boolean playWhenReady, int playbackState) {
@@ -3571,6 +3596,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
             setBluetoothScoOn(true);
 
+
             sendAfterDone = 0;
             recordingAudio = new TLRPC.TL_document();
             recordingGuid = guid;
@@ -3582,14 +3608,29 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             recordingAudio.file_reference = new byte[0];
             SharedConfig.saveConfig();
 
-            recordingAudioFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), FileLoader.getAttachFileName(recordingAudio));
-
+            recordingAudioFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), FileLoader.getAttachFileName(recordingAudio)) {
+                @Override
+                public boolean delete() {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("delete voice file");
+                    }
+                    return super.delete();
+                }
+            };
+            FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE).mkdirs();
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("start recording internal " + recordingAudioFile.getPath() + " " + recordingAudioFile.exists());
+            }
+            SharedConfig.lockFile(recordingAudioFile);
             try {
-                if (startRecord(recordingAudioFile.getAbsolutePath(), sampleRate) == 0) {
+                if (startRecord(recordingAudioFile.getPath(), sampleRate) == 0) {
                     AndroidUtilities.runOnUIThread(() -> {
                         recordStartRunnable = null;
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStartError, guid);
                     });
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("cant init encoder");
+                    }
                     return;
                 }
 
@@ -3608,6 +3649,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 FileLog.e(e);
                 recordingAudio = null;
                 stopRecord();
+                SharedConfig.unlockFile(recordingAudioFile);
                 recordingAudioFile.delete();
                 recordingAudioFile = null;
                 try {
@@ -3641,7 +3683,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         generatingWaveform.put(id, messageObject);
         Utilities.globalQueue.postRunnable(() -> {
-            final byte[] waveform = getWaveform(path);
+            final byte[] waveform;
+            try {
+                waveform = getWaveform(path);
+            } catch (Exception e) {
+                FileLog.e(e);
+                return;
+            }
             AndroidUtilities.runOnUIThread(() -> {
                 MessageObject messageObject1 = generatingWaveform.remove(id);
                 if (messageObject1 == null) {
@@ -3671,9 +3719,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (send != 0) {
             final TLRPC.TL_document audioToSend = recordingAudio;
             final File recordingAudioFileToSend = recordingAudioFile;
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("stop recording internal filename " + recordingAudioFile.getPath());
+            }
             fileEncodingQueue.postRunnable(() -> {
                 stopRecord();
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("stop recording internal in queue " + recordingAudioFileToSend.exists() + " " + recordingAudioFileToSend.length());
+                }
                 AndroidUtilities.runOnUIThread(() -> {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("stop recording internal " + recordingAudioFileToSend.exists() + " " + recordingAudioFileToSend.length());
+                    }
                     audioToSend.date = ConnectionsManager.getInstance(recordingCurrentAccount).getCurrentTime();
                     audioToSend.size = (int) recordingAudioFileToSend.length();
                     TLRPC.TL_documentAttributeAudio attributeAudio = new TLRPC.TL_documentAttributeAudio();
@@ -3692,12 +3749,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, send == 2 ? audioToSend : null, send == 2 ? recordingAudioFileToSend.getAbsolutePath() : null);
                     } else {
                         NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, false, (int) duration);
+                        SharedConfig.unlockFile(recordingAudioFileToSend);
                         recordingAudioFileToSend.delete();
                     }
                     requestAudioFocus(false);
                 });
             });
         } else {
+            SharedConfig.unlockFile(recordingAudioFile);
             if (recordingAudioFile != null) {
                 recordingAudioFile.delete();
             }
@@ -3738,6 +3797,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             } catch (Exception e) {
                 FileLog.e(e);
                 if (recordingAudioFile != null) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("delete voice file");
+                    }
                     recordingAudioFile.delete();
                 }
             }

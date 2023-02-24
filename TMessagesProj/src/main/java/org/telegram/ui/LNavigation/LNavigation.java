@@ -1078,7 +1078,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
     }
 
     @Override
-    public void removeFragmentFromStack(BaseFragment fragment) {
+    public void removeFragmentFromStack(BaseFragment fragment, boolean immediate) {
         int i = fragmentStack.indexOf(fragment);
         if (i == -1) {
             return;
@@ -2306,7 +2306,7 @@ public class LNavigation extends FrameLayout implements INavigationLayout, Float
 
             removeAllViews();
 
-            if (fragment == null) {
+            if (fragment == null || getContext() == null) {
                 invalidateBackgroundColor();
                 return;
             }

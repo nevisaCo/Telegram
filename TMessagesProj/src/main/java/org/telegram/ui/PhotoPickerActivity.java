@@ -1345,7 +1345,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.closeChats) {
-            removeSelfFromStack();
+            removeSelfFromStack(true);
         }
     }
 

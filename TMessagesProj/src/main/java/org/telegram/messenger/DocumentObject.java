@@ -58,7 +58,7 @@ public class DocumentObject {
                 h = photoSize.h;
             }
             if (photoPathSize != null && w != 0 && h != 0) {
-                SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawableByPath(SvgHelper.decompress(photoPathSize.bytes), w, h);
+                SvgHelper.SvgDrawable pathThumb = SvgHelper.getDrawableByPath(photoPathSize.svgPath, w, h);
                 if (pathThumb != null) {
                     pathThumb.setupGradient(colorKey, alpha, false);
                 }
@@ -116,7 +116,10 @@ public class DocumentObject {
                 int w = 512, h = 512;
                 for (int a = 0, N = document.attributes.size(); a < N; a++) {
                     TLRPC.DocumentAttribute attribute = document.attributes.get(a);
-                    if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
+                    if (
+                        attribute instanceof TLRPC.TL_documentAttributeImageSize ||
+                        attribute instanceof TLRPC.TL_documentAttributeVideo
+                    ) {
                         w = attribute.w;
                         h = attribute.h;
                         break;

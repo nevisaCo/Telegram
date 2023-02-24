@@ -283,6 +283,7 @@ public class ApplicationLoader extends com.finalsoft.ApplicationLoader {
         AndroidUtilities.runOnUIThread(ApplicationLoader::startPushService);
 
         LauncherIconController.tryFixLauncherIconIfNeeded();
+        ProxyRotationController.init();
     }
 
     public static void startPushService() {
