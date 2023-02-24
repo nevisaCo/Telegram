@@ -8,6 +8,7 @@ package com.finalsoft.admob.ui;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -15,6 +16,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.finalsoft.Config;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
 
@@ -29,11 +31,12 @@ import java.util.List;
 
 public class NativeAddCell extends LinearLayout {
     public static final int size = 56;
+    private static final String TAG = Config.TAG + "nac";
 
-    private NativeAdView nativeAdView;
-    private BackupImageView avatarImageView;
-    private TextView titleTextView;
-    private TextView descTextView;
+    private final NativeAdView nativeAdView;
+    private final BackupImageView avatarImageView;
+    private final TextView titleTextView;
+    private final TextView descTextView;
 
 
     public NativeAddCell(@NonNull Context context) {
@@ -103,8 +106,11 @@ public class NativeAddCell extends LinearLayout {
     }
 
 
-    public void setAdd(NativeAd nativeAd) {
-
+    public void setAd(NativeAd nativeAd) {
+if  (nativeAd==null){
+    Log.e(TAG, "setAd: nativeAd is null !");
+    return;
+}
         List<NativeAd.Image> images = nativeAd.getImages();
         if (images.size() > 0) {
             NativeAd.Image nativeImage = images.get(0);

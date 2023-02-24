@@ -8,9 +8,8 @@ import android.util.Log;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.finalsoft.admob.models.AdKeys;
-import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
 import com.google.gson.Gson;
@@ -101,14 +100,14 @@ public class AdmobBaseClass {
         }
     }
 
-    protected ArrayList<AdCountItem> getItems(String name) {
-        ArrayList<AdCountItem> ci = new ArrayList<>();
+    protected ArrayList<CountItem> getItems(String name) {
+        ArrayList<CountItem> ci = new ArrayList<>();
         String s = SharedStorage.admobTargets(name);
         if (s.isEmpty()) {
             return ci;
         }
 
-        Type listType = new TypeToken<ArrayList<AdCountItem>>() {
+        Type listType = new TypeToken<ArrayList<CountItem>>() {
         }.getType();
 
         ci = new Gson().fromJson(s, listType);
@@ -221,7 +220,9 @@ public class AdmobBaseClass {
 
                 iCallback.onResponse();
 
-                Log.i(TAG, "AdmobBaseClass > initAdmob > initialize successfully :)" + new Gson().toJson(initializationStatus));
+                if (BuildVars.DEBUG_VERSION) {
+                    Log.i(TAG, "AdmobBaseClass > initAdmob > initialize successfully :)" + new Gson().toJson(initializationStatus));
+                }
             });
 
             if (BuildVars.DEBUG_VERSION) {

@@ -30,6 +30,9 @@ import android.util.Base64;
 
 import androidx.collection.LongSparseArray;
 
+import com.finalsoft.ui.adapter.DialogBottomMenuLayoutAdapter;
+import com.google.android.gms.ads.nativead.NativeAd;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.ringtone.RingtoneDataStore;
@@ -7548,4 +7551,25 @@ public class MessageObject {
         }
         return null;
     }
+
+    //region Customized:
+    private NativeAd ad;
+    private  DialogBottomMenuLayoutAdapter.DialogType dialogType;
+
+    public DialogBottomMenuLayoutAdapter.DialogType getDialogType() {
+        return dialogType;
+    }
+
+    public void setDialogType(DialogBottomMenuLayoutAdapter.DialogType dialogType) {
+        this.dialogType = dialogType;
+    }
+
+    public void setAd(NativeAd ad) {
+        this.ad = ad;
+    }
+
+    public NativeAd getAd() {
+        return ad;
+    }
+    //endregion
 }

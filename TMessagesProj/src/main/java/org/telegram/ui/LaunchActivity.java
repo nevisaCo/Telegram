@@ -18,7 +18,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Dialog;
@@ -89,7 +88,7 @@ import com.finalsoft.SharedStorage;
 import com.finalsoft.UpdateApp;
 import com.finalsoft.admob.AdmobBaseClass;
 import com.finalsoft.admob.AdmobController;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.finalsoft.contactsChanges.ContactChangesActivity;
 import com.finalsoft.controller.DrawerMenuItemsHideController;
 import com.finalsoft.controller.GhostController;
@@ -100,7 +99,6 @@ import com.finalsoft.helper.AdDialogHelper;
 import com.finalsoft.helper.CustomAlertCreator;
 import com.finalsoft.helper.RestartHelper;
 import com.finalsoft.helper.ShareHelper;
-import com.finalsoft.helper.VPNDetector;
 import com.finalsoft.helper.Voice2TextHelper;
 import com.finalsoft.proxy.ProxyController;
 import com.finalsoft.ui.DownloadManagerActivity;
@@ -1600,7 +1598,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
         passcodeView.setDelegate(() -> {
             //region customized:
-            onPassAccepted.run();
+            if (onPassAccepted != null) {
+                onPassAccepted.run();
+            }
             if (hideMode && passcodeViewDelegate != null) {
                 passcodeViewDelegate.didAcceptedPassword();
             }
@@ -7248,35 +7248,47 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             @Override
             public void before() {
                 if (BuildVars.DEBUG_VERSION) {
-                    ArrayList<AdCountItem> adCountItems = new ArrayList<>();
-                    adCountItems.add(new AdCountItem(30, AdmobBaseClass.INTERSTITIAL_OPEN_DIALOG));
-                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.INTERSTITIAL_TOGGLE_GHOST));
-                    adCountItems.add(new AdCountItem(3, AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY));
-                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.INTERSTITIAL_DONATE));
-                    AdmobController.getInstance().setInterstitialTargets(adCountItems);
-                    Log.i(TAG, "LaunchActivity > before: Interstitial count Items json:" + new Gson().toJson(adCountItems));
+                    ArrayList<CountItem> countItems = new ArrayList<>();
+                    countItems.add(new CountItem(300, AdmobBaseClass.INTERSTITIAL_OPEN_DIALOG));
+                    countItems.add(new CountItem(1, AdmobBaseClass.INTERSTITIAL_TOGGLE_GHOST));
+                    countItems.add(new CountItem(3, AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY));
+                    countItems.add(new CountItem(1, AdmobBaseClass.INTERSTITIAL_DONATE));
+                    AdmobController.getInstance().setInterstitialTargets(countItems);
+                    Log.i(TAG, "LaunchActivity > before: Interstitial count Items json:" + new Gson().toJson(countItems));
 
-                    adCountItems.clear();
-                    adCountItems.add(new AdCountItem(1, "tab_-1", 10));
-                    adCountItems.add(new AdCountItem(1, "tab_0", 12));
-                    adCountItems.add(new AdCountItem(1, "tab_1"));
-                    adCountItems.add(new AdCountItem(1, "tab_2"));
-                    adCountItems.add(new AdCountItem(1, "tab_3"));
-                    adCountItems.add(new AdCountItem(1, "tab_4"));
-                    adCountItems.add(new AdCountItem(1, "tab_5"));
-                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.NATIVE_TOP_CHAT));
-                    adCountItems.add(new AdCountItem(1, AdmobBaseClass.NATIVE_PROFILE));
-                    Log.i(TAG, "LaunchActivity > before: Native count Items json:" + new Gson().toJson(adCountItems));
-                    AdmobController.getInstance().setNativeTargets(adCountItems);
+                    countItems.clear();
+                    countItems.add(new CountItem(1, "tab_-1", 10));//archive
+                    countItems.add(new CountItem(1, "tab_0", 12));//all dialogs tab
+                    countItems.add(new CountItem(1, "tab_1"));
+                    countItems.add(new CountItem(1, "tab_2"));
+                    countItems.add(new CountItem(1, "tab_3"));
+                    countItems.add(new CountItem(1, "tab_4"));
+                    countItems.add(new CountItem(1, "tab_5"));
+                    countItems.add(new CountItem(1, AdmobBaseClass.NATIVE_TOP_CHAT));
+                    countItems.add(new CountItem(1, AdmobBaseClass.NATIVE_PROFILE));
+                    countItems.add(new CountItem(1, "messages"));
 
-                    adCountItems.clear();
-                    adCountItems.add(new AdCountItem(5, "drawer_items"));
-                    adCountItems.add(new AdCountItem(5, "donate"));
-                    AdmobController.getInstance().setRewardedTargets(adCountItems);
+                    countItems.add(new CountItem(0, "channel_messages",3,0,"small"));
+                    countItems.add(new CountItem(0, "group_messages",5,1,"message"));
+                    countItems.add(new CountItem(0, "user_messages",10,2,"message"));
 
-                    adCountItems.clear();
-                    adCountItems.add(new AdCountItem(5, AdmobBaseClass.OPEN_APP));
-                    AdmobController.getInstance().setOpenAppTargets(adCountItems);
+                    Log.i(TAG, "LaunchActivity > before: Native count Items json:" + new Gson().toJson(countItems));
+                    AdmobController.getInstance().setNativeTargets(countItems);
+
+                    countItems.clear();
+                    countItems.add(new CountItem(5, "drawer_items"));
+                    countItems.add(new CountItem(5, "donate"));
+                    AdmobController.getInstance().setRewardedTargets(countItems);
+
+                    countItems.clear();
+                    countItems.add(new CountItem(1, "channel_messages",3,0,"full_banner"));
+                    countItems.add(new CountItem(1, "group_messages",5,1,"leaderboard"));
+                    countItems.add(new CountItem(1, "user_messages",10,2,"fluid"));
+                    AdmobController.getInstance().setBannerTargets(countItems);
+
+                    countItems.clear();
+                    countItems.add(new CountItem(50, AdmobBaseClass.OPEN_APP));
+                    AdmobController.getInstance().setOpenAppTargets(countItems);
                 }
             }
 

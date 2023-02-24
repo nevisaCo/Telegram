@@ -7,7 +7,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
@@ -34,7 +34,7 @@ class Reward extends AdmobBaseClass {
     private RewardedAd mRewardedAd;
     RewardedAdLoadCallback rewardedAdLoadCallback;
     private int retry = 0;
-    ArrayList<AdCountItem> rewardedItems = new ArrayList<>();
+    ArrayList<CountItem> rewardedItems = new ArrayList<>();
 
     public static Reward getInstance() {
         if (reward == null) {
@@ -61,21 +61,21 @@ class Reward extends AdmobBaseClass {
     }
 
     private int getTarget(String name) {
-        AdCountItem adCountItem = rewardedItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
-        if (adCountItem != null) {
-            return adCountItem.getCount();
+        CountItem countItem = rewardedItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
+        if (countItem != null) {
+            return countItem.getCount();
 
         }
         return 0;
     }
 
     //add from remote config
-    public void setTargets(ArrayList<AdCountItem> adCountItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(adCountItems));
+    public void setTargets(ArrayList<CountItem> countItems) {
+        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
     }
 
     private boolean isActive() {
-        int i = rewardedItems.stream().mapToInt(AdCountItem::getCount).sum();
+        int i = rewardedItems.stream().mapToInt(CountItem::getCount).sum();
         return i > 0 && getShowAdmob();
     }
 

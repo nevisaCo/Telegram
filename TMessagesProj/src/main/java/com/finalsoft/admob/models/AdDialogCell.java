@@ -1,4 +1,4 @@
-package com.finalsoft.admob.ui;
+package com.finalsoft.admob.models;
 
 
 import com.google.android.gms.ads.nativead.NativeAd;

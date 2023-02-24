@@ -7,7 +7,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
@@ -34,7 +34,7 @@ class Interstitial extends AdmobBaseClass {
 
 
     InterstitialAd mInterstitialAd;
-    ArrayList<AdCountItem> interstitialItems = new ArrayList<>();
+    ArrayList<CountItem> interstitialItems = new ArrayList<>();
 
     void init(Activity activity) {
         this.context = activity;
@@ -46,9 +46,9 @@ class Interstitial extends AdmobBaseClass {
 
     private int getTarget(String name) {
         try {
-            AdCountItem adCountItem = interstitialItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
-            if (adCountItem != null) {
-                return adCountItem.getCount();
+            CountItem countItem = interstitialItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
+            if (countItem != null) {
+                return countItem.getCount();
 
             }
         } catch (Exception e) {
@@ -58,14 +58,14 @@ class Interstitial extends AdmobBaseClass {
     }
 
     //add from remote config
-    public void setTargets(ArrayList<AdCountItem> adCountItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(adCountItems));
+    public void setTargets(ArrayList<CountItem> countItems) {
+        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
     }
 
     private boolean isActive() {
         int i = 0;
         try {
-            i = interstitialItems.stream().mapToInt(AdCountItem::getCount).sum();
+            i = interstitialItems.stream().mapToInt(CountItem::getCount).sum();
         } catch (Exception e) {
             Log.e(TAG, "isActive: ", e);
         }

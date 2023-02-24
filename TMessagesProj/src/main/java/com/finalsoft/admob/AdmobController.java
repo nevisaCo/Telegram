@@ -10,18 +10,16 @@ import androidx.core.util.Preconditions;
 
 import com.finalsoft.ApplicationLoader;
 import com.finalsoft.Config;
-import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.AdCountItem;
-import com.finalsoft.admob.ui.NativeAddCell;
+import com.finalsoft.admob.models.CountItem;
 import com.google.android.gms.ads.OnUserEarnedRewardListener;
 import com.google.android.gms.ads.nativead.NativeAd;
-
-import org.telegram.messenger.BuildVars;
 
 import java.util.ArrayList;
 
 public class AdmobController extends AdmobBaseClass {
     private int mobileAdInitializeStatus = 0;
+
+
 
 
     public interface AdmobControllerDelegate {
@@ -73,6 +71,8 @@ public class AdmobController extends AdmobBaseClass {
                 Native.getInstance().init(launchActivity);
 
                 Reward.getInstance().init(launchActivity);
+
+                Banner.getInstance().init(launchActivity);
 
                 Log.i(TAG, "AdmobController > before: ");
             }
@@ -138,20 +138,24 @@ public class AdmobController extends AdmobBaseClass {
         Reward.getInstance().show(activity, name, listener);
     }
 
-    public void setInterstitialTargets(ArrayList<AdCountItem> adCountItems) {
-        Interstitial.getInstance().setTargets(adCountItems);
+    public void setInterstitialTargets(ArrayList<CountItem> countItems) {
+        Interstitial.getInstance().setTargets(countItems);
     }
 
-    public void setRewardedTargets(ArrayList<AdCountItem> adCountItems) {
-        Reward.getInstance().setTargets(adCountItems);
+    public void setRewardedTargets(ArrayList<CountItem> countItems) {
+        Reward.getInstance().setTargets(countItems);
     }
 
-    public void setNativeTargets(ArrayList<AdCountItem> adCountItems) {
-        Native.getInstance().setTargets(adCountItems);
+    public void setNativeTargets(ArrayList<CountItem> countItems) {
+        Native.getInstance().setTargets(countItems);
     }
 
-    public void setOpenAppTargets(ArrayList<AdCountItem> adCountItems) {
-        AppOpen.setTargets(adCountItems);
+    public void setBannerTargets(ArrayList<CountItem> countItems) {
+        Banner.getInstance().setTargets(countItems);
+    }
+
+    public void setOpenAppTargets(ArrayList<CountItem> countItems) {
+        AppOpen.setTargets(countItems);
     }
 
     public void addNativeDialogs() {
@@ -167,4 +171,11 @@ public class AdmobController extends AdmobBaseClass {
         return Native.getInstance().getAd(name);
     }
 
+    public CountItem getNativeTarget(String nativeKey) {
+        return Native.getInstance().getNativeTarget(nativeKey);
+    }
+
+    public CountItem getBannerTarget(String key) {
+        return Banner.getInstance().getBannerTarget(key);
+    }
 }

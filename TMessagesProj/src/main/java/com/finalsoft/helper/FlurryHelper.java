@@ -6,7 +6,7 @@ import android.util.Log;
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.admob.AdmobController;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.finalsoft.controller.PromoController;
 import com.finalsoft.proxy.Communication;
 import com.finalsoft.proxy.ProxyController;
@@ -274,7 +274,7 @@ public class FlurryHelper {
             Log.i(TAG, "onActivateComplete: keys:" + keys);
         }
 
-        Type listType = new TypeToken<ArrayList<AdCountItem>>() {
+        Type listType = new TypeToken<ArrayList<CountItem>>() {
         }.getType();
 
         try {

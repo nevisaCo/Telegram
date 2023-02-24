@@ -1710,7 +1710,7 @@ public class SharedStorage {
     }
 
     public static String demoToken() {
-        return getPref().getString("demoToken", "5554130984:AAHjZPNXLcjdRe80hIpEfZkPEJf8zyzlsDY");
+        return getPref().getString("demoToken", BuildConfig.DEMO_TOKEN);
     }
 
 }

@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import static org.telegram.ui.Components.LayoutHelper.MATCH_PARENT;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -121,6 +123,8 @@ import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.admob.AdmobBaseClass;
 import com.finalsoft.admob.AdmobController;
+import com.finalsoft.admob.models.CountItem;
+import com.finalsoft.admob.ui.MyChatMessageCell;
 import com.finalsoft.admob.ui.NativeAddCell;
 import com.finalsoft.controller.AutoAnswerController;
 import com.finalsoft.controller.DialogBottomMenuHiddenController;
@@ -144,10 +148,12 @@ import com.finalsoft.ui.settings.GhostSettingActivity;
 import com.finalsoft.ui.settings.Voice2TextSettingActivity;
 import com.finalsoft.ui.voice.VoiceChangeHelper;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-import com.google.zxing.common.detector.MathUtils;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.gson.Gson;
+import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
@@ -1414,6 +1420,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 return;
             }
             wasManualScroll = true;
+            //customized:
+            if (view instanceof MyChatMessageCell) {
+                ((MyChatMessageCell) view).getNativeAdView().callOnClick();
+                return;
+            }
             if (view instanceof ChatActionCell && ((ChatActionCell) view).getMessageObject().isDateObject) {
                 Bundle bundle = new Bundle();
                 int date = ((ChatActionCell) view).getMessageObject().messageOwner.date;
@@ -6007,7 +6018,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         chatListView.setDisableHighlightState(true);
         chatListView.setTag(1);
         chatListView.setVerticalScrollBarEnabled(!SharedConfig.chatBlurEnabled());
-        chatListView.setAdapter(chatAdapter = new ChatActivityAdapter(context));
+        chatListView.setAdapter(chatAdapter = new MyChatActivityAdapter(context));
         chatListView.setClipToPadding(false);
         chatListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA_SCALE);
         chatListView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
@@ -6163,6 +6174,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public boolean shouldLayoutChildFromOpositeSide(View child) {
+                if (child instanceof MyChatMessageCell) {
+                    return false;
+                }
                 if (child instanceof ChatMessageCell) {
                     return !((ChatMessageCell) child).getMessageObject().isOutOwner();
                 }
@@ -15874,10 +15888,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     messages.get(messages.size() - 1).stableId = lastStableId++;
                     messages.add(messages.size() - 1, obj);
                     //Customized:
-                    boolean isOk = doAddBannerInMessages(obj, messages, dayArray);
+                   /* boolean isOk = doAddBannerInMessages(obj, messages, dayArray);
                     if (isOk) {
                         newRowsCount++;
-                    }
+                    }*/
                 }
 
                 MessageObject prevObj;
@@ -26774,8 +26788,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         private int loadingDownRow = -5;
         private int messagesStartRow;
         private int messagesEndRow;
-        public int ADMOB = 50;
-
 
         public boolean isFrozen;
         public ArrayList<MessageObject> frozenMessages = new ArrayList<>();
@@ -26801,7 +26813,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         }
 
-        private void updateRowsInternal() {
+        protected void updateRowsInternal() {
             rowCount = 0;
             ArrayList<MessageObject> messages = isFrozen ? frozenMessages : ChatActivity.this.messages;
             if (!messages.isEmpty()) {
@@ -27639,6 +27651,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     public void didPressImage(ChatMessageCell cell, float x, float y) {
+                        Log.i(TAG, "didPressImage: ");
+
                         MessageObject message = cell.getMessageObject();
                         message.putInDownloadsStore = true;
                         if (message.isSendError()) {
@@ -28128,16 +28142,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 view = new ChatLoadingCell(mContext, contentView, themeDelegate);
             }
 
-            //customized:
-            else if (viewType == ADMOB) {
-                view = new AdView(mContext);
-                ((AdView) view).setAdSize(AdSize.SMART_BANNER);
-                if (BANNER_UNIT_ID.isEmpty()) {
-                    BANNER_UNIT_ID = AdmobController.getInstance().getKeys().getBanner();
-                }
-                ((AdView) view).setAdUnitId(BANNER_UNIT_ID);
-                Log.i(TAG, "onCreateViewHolder: ADMOB");
-            }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
         }
@@ -28532,20 +28536,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         createUnreadMessageAfterId = 0;
                     }
                 }
-                //customized:
-                else if (view instanceof AdView) {
-                    Log.i(TAG, "onBindViewHolder: ------ admob");
-                    try {
-                        AdView admobCell = (AdView) holder.itemView;
-                        AndroidUtilities.runOnUIThread(() -> {
-                            AdRequest adRequest = new AdRequest.Builder().build();
-                            admobCell.loadAd(adRequest);
-
-                        });
-                    } catch (Exception e) {
-                        Log.e(TAG, "onBindViewHolder: ", e);
-                    }
-                }
             }
         }
 
@@ -28603,6 +28593,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 });
             }
+
+
+/*            if (holder.itemView instanceof MyChatMessageCell) {
+                final MyChatMessageCell messageCell = (MyChatMessageCell) holder.itemView;
+                MessageObject message = (MessageObject) messageCell.getMessageObject();
+                boolean a = holder.itemView instanceof MyChatMessageCell;
+                boolean b = messageCell.getMessageObject() instanceof MyMessageObject;
+                Log.i(TAG, "onViewAttachedToWindow111: MyChatMessageCell:" + a + " , MyMessageObject:" + b + ", message:" + (message == null) + ", message2:" + (messageCell.getMessageObject() == null));
+            }*/
+
             if (holder.itemView instanceof ChatMessageCell) {
                 final ChatMessageCell messageCell = (ChatMessageCell) holder.itemView;
                 MessageObject message = messageCell.getMessageObject();
@@ -28610,6 +28610,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (hintMessageObject != null && hintMessageObject.equals(message)) {
                     messageCell.showHintButton(false, false, hintMessageType);
                 }
+
                 if (message.isAnimatedEmoji()) {
                     String emoji = message.getStickerEmoji();
                     if (emoji != null) {
@@ -28932,6 +28933,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return false;
         }
     }
+
 
     private void openUserProfile(long uid) {
         if (uid < 0) {
@@ -30913,6 +30915,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             canShowBanner = SHOW_BANNER_IN_CHAT; //Customized:
         }
 
+        adKey = dialogType.name().toLowerCase() + "_messages";
+
+        target = AdmobController.getInstance().getNativeTarget(adKey);
+        if (target == null || target.getCount() == 0) {
+            isNative = false;
+            Log.i(TAG, "initMyData: " + new Gson().toJson(target));
+            target = AdmobController.getInstance().getBannerTarget(adKey);
+            Log.i(TAG, "initMyData: " + new Gson().toJson(target));
+        }
+
         //region Customized: initialize admob banner unit id
         BANNER_UNIT_ID = AdmobController.getInstance().getKeys().getBanner();
         //endregion
@@ -31814,54 +31826,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
 
-    private boolean doAddBannerInMessages(MessageObject messageObject,
-                                          ArrayList<MessageObject> messages,
-                                          ArrayList<MessageObject> dayArray) {
-        //region Customized: add banner in chats
-        if (BuildVars.DEBUG_VERSION) {
-/*            Log.i(TAG, String.format("doAddBannerInMessages> canShowBanner:%s , SHOW_ADMOB: %s , ADMOB_BANNER_COUNT: %s , Position : %s"
-                    , canShowBanner, SHOW_ADMOB, ADMOB_BANNER_COUNT, mc));*/
-//            Log.i(TAG, "doAddBannerInMessages > " + obj.getClass().getSuperclass().getName());
-            if (messageObject.messageOwner.media != null) {
-                Log.i(TAG, "doAddBannerInMessages: " + messageObject.messageOwner.media.getClass().getName());
-            }
-
-        }
-
-        if (canShowBanner && SHOW_ADMOB && ADMOB_BANNER_COUNT > 0) {
-            if (mc >= ADMOB_BANNER_COUNT) {
-                //todo: admobe in messages
-                int position = messages.size() - 1;
-                int previus_row_index = position - 1;
-
-                boolean canAdd = true;
-                if (previus_row_index >= 0) {
-                    MessageObject prevMessageObject = messages.get(previus_row_index);
-                    if (prevMessageObject.eventId == BANNER_ID) {
-                        canAdd = false;
-                    } else {
-                        boolean isCurrentMediaPhoto = messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto;
-                        boolean isPrevMediaPhoto = prevMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto;
-                        if (isCurrentMediaPhoto && isPrevMediaPhoto) {
-                            canAdd = false;
-                        }
-                    }
-                }
-                if (canAdd) {
-                    messageObject.eventId = BANNER_ID;
-                    messageObject.contentType = chatAdapter.ADMOB;
-                    messages.add(position, messageObject);
-                    mc = 0;
-                    dayArray.add(messageObject);
-                    Log.i(TAG, "doAddBannerInMessages: banner added:" + position);
-                    return true;
-                }
-            }
-            mc++;
-        }
-        return false;
-    }
-
     FrameLayout bottomMenuFrameLayout;
     ImageView bottomMenuTabIcon;
     ImageView bottomMenuTabBg;
@@ -32439,8 +32403,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (nativeAddCell1 != null) {
                             topChatPanelView.setTag("native");
                             topChatPanelView.setClickable(true);
-                            topChatPanelView.addView(nativeAddCell1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 0, 35, 0));
-                            topChatPanelView.getLayoutParams().height = AndroidUtilities.dp(80);
+                            nativeAddCell1.setPadding(0,0,AndroidUtilities.dp(35),0);
+                            topChatPanelView.addView(nativeAddCell1,0, LayoutHelper.createFrame(MATCH_PARENT, 70, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
+                            nativeAddCell1.setBackgroundColor(getThemedColor(Theme.key_chat_topPanelBackground));
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                getActionBar().setElevation(0F);
+
+                            }
                             nativeShown = true;
 
                             closeReportSpam.setOnClickListener(null);
@@ -32467,6 +32436,265 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         } catch (Exception e) {
             Log.e(TAG, "showTopPanelForShare: ", e);
         }
+    }
+
+    public class MyChatActivityAdapter extends ChatActivityAdapter {
+        public static final int ADMOB_NATIVE_AS_MESSAGE = 5000;
+        public static final int ADMOB_NATIVE = 5001;
+        public static final int ADMOB_BANNER = 5002;
+        private final Context mContext;
+
+        public MyChatActivityAdapter(Context context) {
+            super(context);
+            mContext = context;
+
+        }
+
+        @Override
+        protected void updateRowsInternal() {
+            doAddBannerInMessages();
+            super.updateRowsInternal();
+        }
+
+        @SuppressLint("VisibleForTests")
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            //customized:
+            View view = null;
+            if (viewType == ADMOB_NATIVE_AS_MESSAGE) {
+                MyChatMessageCell myChatMessageCell = new MyChatMessageCell(mContext, true, themeDelegate);
+                myChatMessageCell.shouldCheckVisibleOnScreen = true;
+                myChatMessageCell.isChat = (dialogType == DialogBottomMenuLayoutAdapter.DialogType.GROUP);
+                view = myChatMessageCell;
+            } else if (viewType == ADMOB_NATIVE) {
+                Log.i(TAG, "onCreateViewHolder: ");
+                view = new NativeAddCell(mContext);
+            } else if (viewType == ADMOB_BANNER) {
+                AdView adView = new AdView(mContext);
+                if (target != null) {
+                    switch (target.getStyle()) {
+                        case "full_banner":
+                            adView.setAdSize(AdSize.FULL_BANNER);
+                            break;
+                        case "fluid":
+                            adView.setAdSize(AdSize.FLUID);
+                            break;
+                        case "large_banner":
+                            adView.setAdSize(AdSize.LARGE_BANNER);
+                            break;
+                        case "leaderboard":
+                            adView.setAdSize(AdSize.LEADERBOARD);
+                            break;
+                        case "medium_rectangle":
+                            adView.setAdSize(AdSize.MEDIUM_RECTANGLE);
+                            break;
+                        case "wide_skyscraper":
+                            adView.setAdSize(AdSize.WIDE_SKYSCRAPER);
+                            break;
+                        case "smart_banner":
+                            adView.setAdSize(AdSize.SMART_BANNER);
+                            break;
+                        default:
+                            adView.setAdSize(AdSize.BANNER);
+                            break;
+
+                    }
+                }else{
+                    adView.setAdSize(AdSize.BANNER);
+
+                }
+
+                if (BANNER_UNIT_ID.isEmpty()) {
+                    BANNER_UNIT_ID = AdmobController.getInstance().getKeys().getBanner();
+                }
+                adView.setAdUnitId(BANNER_UNIT_ID);
+                view = adView;
+
+            }
+
+            if (view != null) {
+                view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+                return new RecyclerListView.Holder(view);
+            }
+            return super.onCreateViewHolder(parent, viewType);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+
+            //customized:
+            if (holder.itemView instanceof AdView) {
+                AdView adView = (AdView) holder.itemView;
+                AndroidUtilities.runOnUIThread(() -> {
+                    @SuppressLint("VisibleForTests")
+                    AdRequest adRequest = new AdRequest.Builder().build();
+                    adView.loadAd(adRequest);
+                });
+
+                return;
+            }
+
+            if (holder.itemView instanceof MyChatMessageCell) {
+                MyChatMessageCell chatMessageCell = (MyChatMessageCell) holder.itemView;
+                Result result = getAd(position);
+                chatMessageCell.setMessageObject(result.getMessageObject(), chatMessageCell.getCurrentMessagesGroup(), chatMessageCell.pinnedBottom, chatMessageCell.pinnedTop);
+                chatMessageCell.setAd(result);
+                return;
+            }
+
+            if (holder.itemView instanceof NativeAddCell) {
+                NativeAddCell nativeAddCell = (NativeAddCell) holder.itemView;
+                nativeAddCell.setAd(getAd(position).getNativeAd());
+                return;
+            }
+
+            super.onBindViewHolder(holder, position);
+
+        }
+
+        public class Result {
+            private NativeAd nativeAd;
+            private MessageObject messageObject;
+
+            public void setNativeAd(NativeAd nativeAd) {
+                this.nativeAd = nativeAd;
+            }
+
+            public void setMessageObject(MessageObject messageObject) {
+                this.messageObject = messageObject;
+            }
+
+            public NativeAd getNativeAd() {
+                return nativeAd;
+            }
+
+            public MessageObject getMessageObject() {
+                return messageObject;
+            }
+        }
+
+        private Result getAd(int position) {
+            Result result = new Result();
+            MessageObject myMessageObject = messages.get(position);
+            NativeAd ad = myMessageObject.getAd();
+
+            if (ad == null) {
+                if (position > 0) {
+                    myMessageObject = messages.get(position - 1);
+                    if (myMessageObject != null) {
+                        ad = myMessageObject.getAd();
+                        if (ad == null) {
+                            ad = AdmobController.getInstance().getNativeAd(adKey);
+                        }
+                    }
+                }
+            }
+
+            result.setMessageObject(myMessageObject);
+            result.setNativeAd(ad);
+            return result;
+        }
+    }
+
+    private String adKey;
+    private CountItem target;
+    private boolean isNative = true;
+
+    private void doAddBannerInMessages() {
+        if (target == null || target.getCount() == 0) {
+            return;
+        }
+
+        Log.i(TAG, "doAddBannerInMessage > isNatives: " + isNative + " : " + new Gson().toJson(target));
+        int gap = target.getRepeatGap();
+        int start = target.getStart();
+
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i).contentType >= 5000) {
+                if (messages.get(i).customName != null && messages.get(i).customName.equals("Admob")) {
+                    start = i;
+                }
+            }
+        }
+
+        if (start > 1) {
+            start += gap;
+        }
+
+
+        for (int j = start; j < messages.size(); j++) {
+            if (j + 1 <= messages.size() && messages.get(j).messageOwner.grouped_id > 0) {
+                continue;
+/*                if (messages.get(j + 1).messageOwner.grouped_id == messages.get(j).messageOwner.grouped_id) {
+                }*/
+            }
+
+            NativeAd ad = null;
+            TLRPC.Message message = new TLRPC.TL_message();
+            int contentType = MyChatActivityAdapter.ADMOB_NATIVE_AS_MESSAGE;
+            if (isNative) {
+                ad = AdmobController.getInstance().getNativeAd(adKey);
+                if (ad == null) {
+                    return;
+                }
+
+                if (target.getStyle().equals("small")) {
+                    contentType = MyChatActivityAdapter.ADMOB_NATIVE;
+                } else {
+                    int l = j == 0 ? j : j - 1;
+                    TLRPC.Message previousMessage = messages.get(l).messageOwner;
+
+                    message.dialog_id = 1;
+                    message.flags = 257;
+                    message.from_id = new TLRPC.TL_peerUser();
+                    message.id = 1;
+                    message.media = new TLRPC.TL_messageMediaPhoto();
+                    message.media.flags |= 3;
+                    message.media.photo = new TLRPC.TL_photo();
+                    message.media.photo.file_reference = new byte[0];
+                    message.media.photo.has_stickers = false;
+                    message.media.photo.id = 1;
+                    message.media.photo.access_hash = 0;
+                    TLRPC.TL_photoSize photoSize = new TLRPC.TL_photoSize();
+                    photoSize.size = 0;
+                    photoSize.w = 350;
+                    photoSize.h = 200;
+                    photoSize.type = "s";
+                    photoSize.location = new TLRPC.TL_fileLocationUnavailable();
+                    message.media.photo.sizes.add(photoSize);
+                    message.out = false;
+                    message.peer_id = new TLRPC.TL_peerUser();
+                    message.peer_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+
+                    message.replyMessage = null;
+                    message.date = previousMessage.date;
+                    message.media.photo.date = previousMessage.date;
+                    message.views = previousMessage.views;
+                    message.message = "" + ad.getHeadline() + "\n\n" + ad.getBody() + "\n\n" + ad.getCallToAction() + "\n";
+                }
+
+            } else {
+                contentType = MyChatActivityAdapter.ADMOB_BANNER;
+            }
+
+            MessageObject object = new MessageObject(currentAccount, message, false, false);
+
+            object.setAd(ad);
+            object.type = 1;
+            object.contentType = contentType;
+            object.customName = "Admob";
+            object.stableId = lastStableId++;
+            object.isDownloadingFile = true;
+            object.useCustomPhoto = true;
+            object.setDialogType(dialogType);
+
+            messages.add(j, object);
+
+            j += gap;
+        }
+
+
     }
 
 

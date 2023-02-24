@@ -30,10 +30,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
-import org.telegram.messenger.AccountInstance;
-
 import com.finalsoft.Config;
-import com.finalsoft.admob.ui.AdDialogCell;
+import com.finalsoft.admob.models.AdDialogCell;
 import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.AdLoader;
 
@@ -817,7 +815,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
             case NATIVE: {
                 NativeAddCell nativeAdView = (NativeAddCell) holder.itemView;
                 AdDialogCell dialog = (AdDialogCell) getItem(i);
-                nativeAdView.setAdd(dialog.getAd());
+                nativeAdView.setAd(dialog.getAd());
                 break;
             }
         }

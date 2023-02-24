@@ -9210,7 +9210,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 //customized:
                 case NATIVE: {
                     NativeAddCell nativeAdView = (NativeAddCell) holder.itemView;
-                    nativeAdView.setAdd(nativeAd);
+                    nativeAdView.setAd(nativeAd);
                     Log.i(TAG, "onBindViewHolder: native");
                     break;
                 }

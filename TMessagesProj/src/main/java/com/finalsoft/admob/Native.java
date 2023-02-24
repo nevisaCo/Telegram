@@ -9,9 +9,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.finalsoft.admob.models.NativeServedItem;
-import com.finalsoft.admob.ui.AdDialogCell;
+import com.finalsoft.admob.models.AdDialogCell;
 import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdLoader;
@@ -19,7 +19,6 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdOptions;
-import com.google.android.gms.auth.api.signin.internal.Storage;
 import com.google.gson.Gson;
 
 import org.telegram.messenger.BuildVars;
@@ -62,37 +61,40 @@ public class Native extends AdmobBaseClass {
     AdLoader adLoader;
     public ArrayList<NativeServedItem> nativeServedItems = new ArrayList<>();
     public ArrayList<NativeAd> nativeShownOnTabs = new ArrayList<>();
-    private ArrayList<AdCountItem> nativeRequestItems = new ArrayList<>();
+    private ArrayList<CountItem> nativeRequestItems = new ArrayList<>();
 
     private int getTarget(String name) {
-        AdCountItem a = nativeRequestItems
+        CountItem a = getNativeTarget(name);
+        if (a == null) {
+            return 0;
+        }
+        return a.getCount();
+    }
+
+    public CountItem getNativeTarget(String name) {
+        return nativeRequestItems
                 .stream()
                 .filter(p -> p.getName().equals(name))
                 .findAny()
                 .orElse(null);
-
-        if (a != null) {
-            return a.getCount();
-        }
-        return 0;
     }
 
     //add from remote config
-    void setTargets(ArrayList<AdCountItem> adCountItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(adCountItems));
+    void setTargets(ArrayList<CountItem> countItems) {
+        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
     }
 
     private Activity context;
 
     void init(Activity context) {
         this.context = context;
-        nativeRequestItems = (ArrayList<AdCountItem>) getItems(KEY).stream()
+        nativeRequestItems = (ArrayList<CountItem>) getItems(KEY).stream()
                 .filter(p -> p.getCount() > 0)
                 .collect(Collectors.toList());
     }
 
     private int getRepeatGap(String name) {
-        AdCountItem a = nativeRequestItems
+        CountItem a = nativeRequestItems
                 .stream()
                 .filter(p -> p.getName().equals(name))
                 .findAny()
@@ -105,7 +107,7 @@ public class Native extends AdmobBaseClass {
     }
 
     private boolean isActive() {
-        int i = nativeRequestItems.stream().mapToInt(AdCountItem::getCount).sum();
+        int i = nativeRequestItems.stream().mapToInt(CountItem::getCount).sum();
         return i > 0 && getShowAdmob();
     }
 
@@ -262,7 +264,7 @@ public class Native extends AdmobBaseClass {
 
             if (ad != null) {
                 NativeAddCell nativeAddCell = new NativeAddCell(context, false, false);
-                nativeAddCell.setAdd(ad);
+                nativeAddCell.setAd(ad);
                 nativeAddCell.setBackgroundColor(Color.TRANSPARENT);
                 iCallback.onServe(nativeAddCell);
             }
@@ -375,7 +377,7 @@ public class Native extends AdmobBaseClass {
 
         Log.i(TAG, "addNativeDialogs exec! > nativeLists count:  " + nativeServedItems.size());
         int index;
-        for (AdCountItem item : nativeRequestItems) {
+        for (CountItem item : nativeRequestItems) {
             ArrayList<TLRPC.Dialog> dialogs = null;
 
             //filter tab only

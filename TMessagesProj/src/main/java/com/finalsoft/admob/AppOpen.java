@@ -14,7 +14,7 @@ import androidx.lifecycle.ProcessLifecycleOwner;
 
 import com.finalsoft.ApplicationLoader;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
@@ -36,7 +36,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
     private static final String KEY = "target_open_app";
     private static final String KEY_COUNTER = "open_app_";
 
-    ArrayList<AdCountItem> openAppItems;
+    ArrayList<CountItem> openAppItems;
 
     /**
      * Constructor
@@ -53,21 +53,21 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
 
 
     private int getTarget(String name) {
-        AdCountItem adCountItem = openAppItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
-        if (adCountItem != null) {
-            return adCountItem.getCount();
+        CountItem countItem = openAppItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
+        if (countItem != null) {
+            return countItem.getCount();
         }
 
         return 0;
     }
 
     //add from remote config
-    public static void setTargets(ArrayList<AdCountItem> adCountItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(adCountItems));
+    public static void setTargets(ArrayList<CountItem> countItems) {
+        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
     }
 
     private boolean isActive() {
-        int i = openAppItems.stream().mapToInt(AdCountItem::getCount).sum();
+        int i = openAppItems.stream().mapToInt(CountItem::getCount).sum();
         return i > 0 && getShowAdmob();
     }
 

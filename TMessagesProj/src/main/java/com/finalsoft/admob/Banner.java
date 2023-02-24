@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.util.Log;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.AdCountItem;
+import com.finalsoft.admob.models.CountItem;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.gson.Gson;
 
@@ -24,7 +24,7 @@ class Banner extends AdmobBaseClass {
     }
 
 
-    ArrayList<AdCountItem> bannerItems = new ArrayList<>();
+    ArrayList<CountItem> bannerItems = new ArrayList<>();
 
     void init(Activity activity) {
         this.context = activity;
@@ -36,22 +36,26 @@ class Banner extends AdmobBaseClass {
 
     private int getTarget(String name) {
 
-        AdCountItem a = bannerItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
+        CountItem a = getBannerTarget(name);
         if (a != null) {
             return a.getCount();
         }
         return 0;
     }
 
+    public CountItem getBannerTarget(String key) {
+        return bannerItems.stream().filter(p -> p.getName().equals(key)).findAny().orElse(null);
+    }
+
     //add from remote config
-    public void setTargets(ArrayList<AdCountItem> adCountItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(adCountItems));
+    public void setTargets(ArrayList<CountItem> countItems) {
+        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
     }
 
     private boolean isShow() {
         int i = 0;
-        for (AdCountItem adCountItem : bannerItems) {
-            i += adCountItem.getCount();
+        for (CountItem countItem : bannerItems) {
+            i += countItem.getCount();
         }
         return i > 0 && getShowAdmob();
     }
@@ -77,6 +81,8 @@ class Banner extends AdmobBaseClass {
 
         }
     }
+
+
     //endregion
 
 

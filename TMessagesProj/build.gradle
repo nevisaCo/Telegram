@@ -154,6 +154,7 @@ android {
         buildConfigField "String", "DOMAIN_URL", DOMAIN_URL
         buildConfigField "String", "PROXY_URL", DOMAIN_URL
         buildConfigField "String", "TAG", TAG
+        buildConfigField "String", "DEMO_TOKEN", DEMO_TOKEN
         //endregion
     }
 
