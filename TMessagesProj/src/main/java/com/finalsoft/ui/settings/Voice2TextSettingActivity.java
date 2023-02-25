@@ -8,22 +8,20 @@
 
 package com.finalsoft.ui.settings;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.AdmobController;
-import com.finalsoft.helper.AdDialogHelper;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -45,8 +43,6 @@ public class Voice2TextSettingActivity extends BaseFragment {
     private ListAdapter listAdapter;
     private RecyclerListView listView;
     @SuppressWarnings("FieldCanBeLocal")
-    private LinearLayoutManager layoutManager;
-
 
     private int showRow;
     private int signRow;
@@ -54,8 +50,8 @@ public class Voice2TextSettingActivity extends BaseFragment {
     private int sendRow;
     private int sendInfoRow;
     private int rowCount;
-    private int costRow;
-    private int costInfoRow;
+//    private int costRow;
+//    private int costInfoRow;
     private int languageRow;
 
     @Override
@@ -69,8 +65,8 @@ public class Voice2TextSettingActivity extends BaseFragment {
         sendInfoRow = rowCount++;
         signRow = rowCount++;
         signInfoRow = rowCount++;
-        costRow = rowCount++;
-        costInfoRow = rowCount++;
+//        costRow = rowCount++;
+//        costInfoRow = rowCount++;
 
         return true;
     }
@@ -103,7 +99,7 @@ public class Voice2TextSettingActivity extends BaseFragment {
 
         listView = new RecyclerListView(context);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
@@ -124,31 +120,13 @@ public class Voice2TextSettingActivity extends BaseFragment {
                 SharedStorage.sendMessageAfterV2T(!x);
             } else if (position == languageRow) {
                 presentFragment(new LanguageSelectActivity(LanguageSelectActivity.Type.V2T));
-            } else if (position == costRow) {
-                int v2tCost = BuildVars.DEBUG_VERSION ? 1 : SharedStorage.v2tCost();
-                int reward = SharedStorage.rewards();
-                boolean video_error = SharedStorage.admobVideoErrorList();
-                new AdDialogHelper(getParentActivity()).show(
-                        null, String.format(LocaleController.getString("GetCoinsText", R.string.GetCoinsText),
-                                reward,
-                                v2tCost,
-                                video_error ? 0 : SharedStorage.videoRewards(),
-                                SharedStorage.interstitialRewards()
-                        ), param -> {
-                            if (param == 1) {
-                                //video
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdmobController.VIDEO_USE_V2T, true);
-                            } else {
-                                //interstitial
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.INTERSTITIAL_USE_V2T, true);
-                            }
-                        }, false);
             }
         });
 
         return fragmentView;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onResume() {
         super.onResume();
@@ -159,7 +137,7 @@ public class Voice2TextSettingActivity extends BaseFragment {
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
-        private Context mContext;
+        private final Context mContext;
 
         public ListAdapter(Context context) {
             mContext = context;
@@ -168,8 +146,7 @@ public class Voice2TextSettingActivity extends BaseFragment {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == costRow
-                    || position == sendRow
+            return  position == sendRow
                     || position == signRow
                     || position == showRow
                     || position == languageRow;
@@ -180,8 +157,9 @@ public class Voice2TextSettingActivity extends BaseFragment {
             return rowCount;
         }
 
+        @NonNull
         @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view;
             switch (viewType) {
                 case 0:
@@ -190,7 +168,7 @@ public class Voice2TextSettingActivity extends BaseFragment {
                     break;
                 case 1:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 2:
                     view = new TextCell(mContext);
@@ -223,9 +201,7 @@ public class Voice2TextSettingActivity extends BaseFragment {
                     break;
                 case 1:
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
-                    if (position == costInfoRow) {
-                        privacyCell.setText(LocaleController.getString("Voice2TextCostInfo", R.string.Voice2TextCostInfo));
-                    } else if (position == sendInfoRow) {
+                     if (position == sendInfoRow) {
                         privacyCell.setText(LocaleController.getString("Voice2TextSendInfo", R.string.Voice2TextSendInfo));
                     } else if (position == signInfoRow) {
                         privacyCell.setText(AndroidUtilities.replaceTags(LocaleController.getString("Voice2TextSignInfo", R.string.Voice2TextSignInfo)));
@@ -240,27 +216,17 @@ public class Voice2TextSettingActivity extends BaseFragment {
                     }
                     break;
                 }
-                case 3: {
-                    if (position == costRow) {
-                        TextSettingsCell textSettingsCell = (TextSettingsCell) holder.itemView;
-                        textSettingsCell.setTextAndValue(LocaleController.getString("Voice2TextCost", R.string.Voice2TextCost),
-                                String.format(LocaleController.getString("Voice2TextCostFormat", R.string.Voice2TextCostFormat), SharedStorage.v2tCost()), false);
-                    }
-                    break;
-                }
+
             }
         }
 
         @Override
         public int getItemViewType(int i) {
-            if (i == costInfoRow || i == sendInfoRow || i == signInfoRow) {
+            if (i == sendInfoRow || i == signInfoRow) {
                 return 1;
             }
             if (i == languageRow) {
                 return 2;
-            }
-            if (i == costRow) {
-                return 3;
             }
             return 0;
         }

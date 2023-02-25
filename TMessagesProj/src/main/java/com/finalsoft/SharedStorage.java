@@ -425,54 +425,10 @@ public class SharedStorage {
 
     public static boolean showAdmobTurnOffDialog() {
 
-        return getPref().getBoolean("showAdmobTurnOffDialog", true);
-    }
-
-    public static void showBannerInChats(Boolean status) {
-
-        putBoolean("showBannerInChats", status);
-
-    }
-
-    public static boolean showBannerInChats() {
-        if (!BuildVars.ADMOB_BANNERS_FEATURE) {
-            return false;
-        }
-
-        return getPref().getBoolean("showBannerInChats", false);
-    }
-
-    public static void showBannerInGroups(Boolean status) {
-
-        putBoolean("showBannerInGroups", status);
-
-    }
-
-    public static boolean showBannerInGroups() {
-        if (!BuildVars.ADMOB_BANNERS_FEATURE) {
-            return false;
-        }
-
-        return getPref().getBoolean("showBannerInGroups", false);
+        return getPref().getBoolean("showAdmobTurnOffDialog", false);
     }
 
 
-    public static void admobPerMessage(int value) {
-
-        putInt("admobPerMessage", value);
-
-    }
-
-    public static int admobPerMessage() {
-        if (!BuildVars.ADMOB_BANNERS_FEATURE) {
-            return 0;
-        }
-
-        if (BuildVars.DEBUG_VERSION) {
-            return ApplicationLoader.ADMOB_PER_MESSAGE;
-        }
-        return getPref().getInt("admobPerMessage", ApplicationLoader.ADMOB_PER_MESSAGE);
-    }
 
     public static void admobInt(int value, int index) {
 
@@ -509,77 +465,6 @@ public class SharedStorage {
     }
 
 
-    public static void interstitialRewards(int count) {
-        putInt("interstitialRewards", count);
-    }
-
-    public static int interstitialRewards() {
-
-        return BuildVars.DEBUG_VERSION ? ApplicationLoader.INTERSTITIAL_REWARDS : pref.getInt("interstitialRewards", ApplicationLoader.INTERSTITIAL_REWARDS);
-    }
-
-    public static void videoRewards(int count) {
-
-        putInt("videoRewards", count);
-
-    }
-
-    public static int videoRewards() {
-
-        return BuildVars.DEBUG_VERSION ? ApplicationLoader.VIDEO_REWARDS : pref.getInt("videoRewards", ApplicationLoader.VIDEO_REWARDS);
-    }
-
-
-    public static void v2tCost(int v2tCost) {
-
-        putInt("v2tCost", v2tCost);
-
-    }
-
-    public static int v2tCost() {
-        if (!BuildVars.ADMOB_REWARDED_FEATURE) {
-            return 0;
-        }
-
-        return getPref().getInt("v2tCost", ApplicationLoader.V2T_COST);
-    }
-
-    public static void imageEditorCost(int imageEditorCost) {
-
-        putInt("imageEditorCost", imageEditorCost);
-
-    }
-
-    public static int imageEditorCost() {
-        if (!BuildVars.ADMOB_REWARDED_FEATURE) {
-            return 0;
-        }
-
-        if (BuildVars.DEBUG_VERSION) return ApplicationLoader.IMAGE_EDITOR_COST;
-        return getPref().getInt("imageEditorCost", ApplicationLoader.IMAGE_EDITOR_COST);
-    }
-
-
-    public static void admobVideoErrorList(String cCodeList) {
-
-        putString("admobVideoErrorList", cCodeList);
-        editor.apply();
-    }
-
-    public static boolean admobVideoErrorList() {
-
-        String s = pref.getString("admobVideoErrorList", "");
-        if (s != null && !s.isEmpty()) {
-            TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount)
-                    .getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId());
-            for (String ss : Objects.requireNonNull(s).split(",")) {
-                if (user.phone.startsWith(ss)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
 
     public static void lockOfficialChannels(Boolean status) {
@@ -1252,20 +1137,6 @@ public class SharedStorage {
 
     }
 
-    public static void proxyRefreshCost(int proxy_refresh_cost) {
-
-        putInt("proxyRefreshCost", proxy_refresh_cost);
-
-    }
-
-    public static int proxyRefreshCost() {
-        if (!BuildVars.ADMOB_REWARDED_FEATURE) {
-            return 0;
-        }
-
-        return getPref().getInt("proxyRefreshCost", ApplicationLoader.PROXY_REFRESH_COST);
-    }
-
     public static void proxyServer(Boolean status) {
 
         putBoolean("proxyServer", status);
@@ -1321,20 +1192,7 @@ public class SharedStorage {
         return getPref().getBoolean("proxyRefreshInDialogs", true);
     }
 
-    //region Download Manager
-    public static void downloadManagerCost(int cost) {
 
-        putInt("downloadManagerCost", cost);
-
-    }
-
-    public static int downloadManagerCost() {
-        if (!BuildVars.ADMOB_REWARDED_FEATURE) {
-            return 0;
-        }
-
-        return BuildVars.DEBUG_VERSION ? ApplicationLoader.DOWNLOAD_MANAGER_COST : pref.getInt("downloadManagerCost", ApplicationLoader.DOWNLOAD_MANAGER_COST);
-    }
 
     public static void downloadDay(int index, boolean status) {
 
@@ -1638,22 +1496,6 @@ public class SharedStorage {
 
     public static boolean preServeNative() {
         return getPref().getBoolean("preServeNative", true);
-    }
-
-    public static void serveNativeOnFirstFail(boolean status) {
-        putBoolean("serveNativeOnFirstFail", status);
-    }
-
-    public static boolean serveNativeOnFirstFail() {
-        return getPref().getBoolean("serveNativeOnFirstFail", true);
-    }
-
-    public static void loadSingleNativeAd(boolean status) {
-        putBoolean("loadSingleNativeAd", status);
-    }
-
-    public static boolean loadSingleNativeAd() {
-        return getPref().getBoolean("loadSingleNativeAd", true);
     }
 
 

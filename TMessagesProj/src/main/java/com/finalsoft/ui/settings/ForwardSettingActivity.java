@@ -8,12 +8,14 @@
 
 package com.finalsoft.ui.settings;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -174,6 +176,7 @@ public class ForwardSettingActivity extends BaseFragment {
         return fragmentView;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void toggleSignId(NotificationsCheckCell checkCell, Context context) {
         String mySign = SharedStorage.smartForwardSign();
         AlertDialog.Builder builder = AlertsCreator.createSimpleAlert(context,
@@ -196,6 +199,7 @@ public class ForwardSettingActivity extends BaseFragment {
         builder.create().show();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onResume() {
         super.onResume();
@@ -206,7 +210,7 @@ public class ForwardSettingActivity extends BaseFragment {
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
-        private Context mContext;
+        private final Context mContext;
 
         public ListAdapter(Context context) {
             mContext = context;
@@ -230,8 +234,9 @@ public class ForwardSettingActivity extends BaseFragment {
             return rowCount;
         }
 
+        @NonNull
         @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view;
             switch (viewType) {
                 case 0:
@@ -244,7 +249,7 @@ public class ForwardSettingActivity extends BaseFragment {
                     break;
                 case 2:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 3:
                     view = new NotificationsCheckCell(mContext);

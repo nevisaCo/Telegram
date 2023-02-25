@@ -852,7 +852,6 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
         actionBar.setTitle(title);
 
-
         listView.setOnItemClickListener((view, position) -> {
             Log.i(TAG, "initCustomUi: clicked");
             try {
@@ -861,7 +860,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 boolean search = listView.getAdapter() == searchListViewAdapter;
                 if (!search) {
-                    position -= 2;
+                    position -= (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumLocked ? 1 : 0));
                 }
                 LocaleController.LocaleInfo localeInfo;
                 if (search) {

@@ -31,8 +31,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import com.finalsoft.Config;
-import com.finalsoft.admob.models.AdDialogCell;
-import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.AdLoader;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -76,6 +74,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
+
+import co.nevisa.commonlib.admob.cells.AdDialogCell;
+import co.nevisa.commonlib.admob.cells.NativeAddCell;
 
 public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements DialogCell.DialogCellDelegate {
     public final static int VIEW_TYPE_DIALOG = 0,

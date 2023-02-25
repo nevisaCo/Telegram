@@ -3,9 +3,6 @@ package com.finalsoft.controller;
 import android.text.TextUtils;
 
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.AdmobBaseClass;
-import com.finalsoft.admob.AdmobController;
-
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
@@ -13,6 +10,10 @@ import org.telegram.tgnet.ConnectionsManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
+
+import co.nevisa.commonlib.admob.AdLocation;
+import co.nevisa.commonlib.admob.AdmobBaseClass;
+import co.nevisa.commonlib.admob.AdmobController;
 
 
 public class GhostController {
@@ -45,9 +46,9 @@ public class GhostController {
 
         MessagesController.getInstance(UserConfig.selectedAccount).updateGhostMode(status);
         ConnectionsManager.getInstance(UserConfig.selectedAccount).updateGhostMode(status);
-        if (status) {
-            AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_TOGGLE_GHOST);
-        }
+
+        AdmobController.getInstance().showInterstitial(AdLocation.INTERSTITIAL_TOGGLE_GHOST);
+        
     }
 
     public static void add(long id) {

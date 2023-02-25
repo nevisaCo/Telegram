@@ -6,29 +6,26 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.util.Log;
 
-import com.finalsoft.admob.AdmobController;
 import com.finalsoft.controller.HiddenController;
 import com.finalsoft.helper.FireBaseHelper;
 import com.finalsoft.helper.FlurryHelper;
 import com.finalsoft.helper.ca;
 import com.finalsoft.proxy.Communication;
 
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 
 import java.util.Calendar;
 import java.util.Locale;
 
-public class ApplicationLoader extends Application {
-    public static final int ADMOB_PER_DIALOG = 20;
-    public static final int ADMOB_PER_MESSAGE = 10;
-    public static final int DOWNLOAD_MANAGER_COST = 2;
-    public static final int PROXY_REFRESH_COST = 10;
-    public static final int V2T_COST = 1;
-    public static final int IMAGE_EDITOR_COST = 2;
+import co.nevisa.commonlib.AdmobApplicationLoader;
+import co.nevisa.commonlib.config.AdConfig;
+import co.nevisa.commonlib.config.BaseConfig;
 
-    public static final int INTERSTITIAL_REWARDS = 4;
-    public static final int VIDEO_REWARDS = 10;
-    public static final boolean GLOBAL_AUTO_DOWNLOAD = false;
+public class ApplicationLoader extends AdmobApplicationLoader {
+
+   public static final int PROXY_REFRESH_COST = 10;
+   public static final boolean GLOBAL_AUTO_DOWNLOAD = false;
     public static final boolean AUTO_NIGHT = false;
 
     protected static final String TAG = Config.TAG + "al";
@@ -41,12 +38,22 @@ public class ApplicationLoader extends Application {
 
     @Override
     public void onCreate() {
-//        initLocal(this);
+        //region customized: init nevisa common lib
+        BaseConfig baseConfig = new BaseConfig();
+        baseConfig.setDebugMode(BuildVars.DEBUG_VERSION);
+        baseConfig.setTag(Config.TAG + "lib");
+        baseConfig.volleyDataCacheStatus(true);
+
+        AdConfig adConfig = new AdConfig();
+        adConfig.setPreServe(true);
+        adConfig.setTestDevice(BuildVars.DEBUG_VERSION);
+        adConfig.setTestDeviceIds("");
+        adConfig.setRetryOnFail(2);
+        adConfig.setLoadSingleNative(false);
+        adConfig.setNativeRefreshTime(15);
+        super.init(baseConfig, adConfig, "");
 
         SharedStorage.init(this);
-
-        //the open-app ad need application loader context to open
-        AdmobController.getInstance().initOpenAppAd(this);
 
         HiddenController.getInstance().init();
 
@@ -104,7 +111,7 @@ public class ApplicationLoader extends Application {
                 String ad = ai.metaData.get("com.google.android.gms.ads.APPLICATION_ID") + "";
                 String map = ai.metaData.get("com.google.android.maps.v2.API_KEY") + "";
                 Log.i(TAG, "initCustomData > \nREPOSITORY_ID:" + APP_ID
-                        + "\nREPOSITORY_RSA:"+RSA
+                        + "\nREPOSITORY_RSA:" + RSA
                         + "\ncom.google.android.gms.ads.APPLICATION_ID:" + ad
                         + "\ncom.google.android.maps.v2.API_KEY:" + map
                         + "\nAPI_URL:" + API_URL

@@ -1,4 +1,4 @@
-package com.finalsoft.admob.models;
+package co.nevisa.commonlib.admob.models;
 
 import com.google.android.gms.ads.nativead.NativeAd;
 

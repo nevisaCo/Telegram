@@ -1,14 +1,15 @@
-package com.finalsoft.admob;
+package co.nevisa.commonlib.admob;
 
 import android.app.Activity;
+import android.os.Build;
 import android.util.Log;
 
-import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.CountItem;
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
+
+import co.nevisa.commonlib.Storage;
+import co.nevisa.commonlib.admob.models.CountItem;
 
 class Banner extends AdmobBaseClass {
 
@@ -30,7 +31,7 @@ class Banner extends AdmobBaseClass {
         this.context = activity;
         bannerItems = getItems(KEY);
         if (bannerItems.size() == 0) {
-            Log.e(TAG, "initInterstitial:Can't show ad, interstitial items is 0.;");
+            Log.e(TAG, "Banner > init :Can't show ad, banner items is 0.;");
         }
     }
 
@@ -44,12 +45,21 @@ class Banner extends AdmobBaseClass {
     }
 
     public CountItem getBannerTarget(String key) {
-        return bannerItems.stream().filter(p -> p.getName().equals(key)).findAny().orElse(null);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return bannerItems.stream().filter(p -> p.getName().equals(key)).findAny().orElse(null);
+        } else {
+            for (CountItem countItem : bannerItems) {
+                if (key.equals(countItem.getName())) {
+                    return countItem;
+                }
+            }
+        }
+        return null;
     }
 
     //add from remote config
     public void setTargets(ArrayList<CountItem> countItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
+        Storage.admobTargets(KEY, new Gson().toJson(countItems));
     }
 
     private boolean isShow() {
@@ -65,9 +75,8 @@ class Banner extends AdmobBaseClass {
     }
 
     private int retry = 0;
-    InterstitialAdLoadCallback interstitialAdLoadCallback;
 
-    void serve(IServeCallback iCallback) {
+    void serve() {
         if (!isShow()) {
             Log.e(TAG, "serve banner: Can't serve the banner ads ,banner is disabled");
             return;

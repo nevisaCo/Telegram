@@ -165,3 +165,10 @@
 
 -keep class de.jurihock.** { *; }
 -dontwarn de.jurihock.**
+
+#================<Admob libe>====================
+-keep class co.nevisa.commonlib.admob.models.** { *; }
+-keep class co.nevisa.commonlib.config.** { *; }
+
+#-dontoptimize
+#-dontobfuscate

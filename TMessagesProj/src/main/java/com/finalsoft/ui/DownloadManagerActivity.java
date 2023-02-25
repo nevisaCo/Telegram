@@ -106,6 +106,7 @@ import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LocationActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.TopicsFragment;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -2663,9 +2664,8 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
         }
         selectedObject = null;
     }
-
     @Override
-    public void didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param) {
+    public boolean didSelectDialogs(DialogsActivity fragment, ArrayList<MessagesStorage.TopicKey> dids, CharSequence message, boolean param, TopicsFragment topicsFragment) {
         if (dialog_id != 0 && (forwaringMessage != null || !selectedMessagesIds[0].isEmpty() || !selectedMessagesIds[1].isEmpty())) {
             ArrayList<MessageObject> fmessages = new ArrayList<>();
             if (forwaringMessage != null) {
@@ -2701,7 +2701,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                         args.putInt("chat_id", -lower_part);
                     }
                     if (!MessagesController.getInstance(currentAccount).checkCanOpenChat(args, fragment)) {
-                        return;
+                        return param;
                     }
 
                     ChatActivity chatActivity = new ChatActivity(args);
@@ -2725,6 +2725,7 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
                 updateVisibleRows();
             }
         }
+        return false;
     }
 
     @Override
@@ -3084,6 +3085,8 @@ public class DownloadManagerActivity extends BaseFragment implements Notificatio
             chatAdapter.notifyItemRemoved(chatAdapter.messagesStartRow + messages.size() - index - 1);
         }
     }
+
+
 
     public class ChatActivityAdapter extends RecyclerView.Adapter {
 

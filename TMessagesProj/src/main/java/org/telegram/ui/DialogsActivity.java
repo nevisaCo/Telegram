@@ -92,8 +92,6 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.AdmobBaseClass;
-import com.finalsoft.admob.AdmobController;
 import com.finalsoft.controller.FavController;
 import com.finalsoft.controller.GhostController;
 import com.finalsoft.controller.HiddenController;
@@ -227,6 +225,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+
+import co.nevisa.commonlib.admob.AdLocation;
+import co.nevisa.commonlib.admob.AdmobBaseClass;
+import co.nevisa.commonlib.admob.AdmobController;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, FloatingDebugProvider , ShakeDetector.Listener{
 
@@ -10728,7 +10730,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 new Handler().postDelayed(() -> proxyItem.setVisibility(View.VISIBLE), 3000);
             }
 
-            AdmobController.getInstance().showInterstitial(AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY);
+            AdmobController.getInstance().showInterstitial(AdLocation.INTERSTITIAL_REFRESH_PROXY);
 
         } catch (Exception e) {
             android.util.Log.e(TAG, "doRefreshOfflineProxy: ", e);

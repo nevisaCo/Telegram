@@ -90,16 +90,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.UpdateApp;
-import com.finalsoft.admob.AdmobBaseClass;
-import com.finalsoft.admob.AdmobController;
-import com.finalsoft.admob.models.CountItem;
 import com.finalsoft.contactsChanges.ContactChangesActivity;
 import com.finalsoft.controller.DrawerMenuItemsHideController;
 import com.finalsoft.controller.GhostController;
 import com.finalsoft.controller.PromoController;
 import com.finalsoft.firebase.FireBaseLog;
 import com.finalsoft.firebase.channel.JoinHelper;
-import com.finalsoft.helper.AdDialogHelper;
 import com.finalsoft.helper.CustomAlertCreator;
 import com.finalsoft.helper.RestartHelper;
 import com.finalsoft.helper.ShareHelper;
@@ -111,6 +107,11 @@ import com.finalsoft.ui.profile.ProfileMakerFragment;
 import com.finalsoft.ui.settings.CustomSettingsActivity;
 import com.finalsoft.ui.settings.DrawerMenuSettingsActivity;
 import com.finalsoft.ui.settings.GhostSettingActivity;
+import com.finalsoft.update.GoogleUpdateHelper;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.common.api.Status;
 import com.google.android.play.core.review.ReviewInfo;
 import com.google.android.play.core.review.ReviewManager;
@@ -237,6 +238,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import co.nevisa.commonlib.admob.AdLocation;
+import co.nevisa.commonlib.admob.AdmobBaseClass;
+import co.nevisa.commonlib.admob.AdmobController;
+import co.nevisa.commonlib.admob.interfaces.IInitializeCallback;
+import co.nevisa.commonlib.admob.interfaces.IServedCallback;
+import co.nevisa.commonlib.admob.models.CountItem;
 
 public class LaunchActivity extends BasePermissionsActivity implements INavigationLayout.INavigationLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
     public final static Pattern PREFIX_T_ME_PATTERN = Pattern.compile("^(?:http(?:s|)://|)([A-z0-9-]+?)\\.t\\.me");
@@ -1613,7 +1621,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 onPassAccepted.run();
             }
             if (hideMode && passcodeViewDelegate != null) {
-                passcodeViewDelegate.didAcceptedPassword();
+                passcodeViewDelegate.didAcceptedPassword(passcodeView);
             }
             //endregion
 
@@ -5597,6 +5605,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             VoIPFragment.onResume();
         }
         invalidateTabletMode();
+
+        GoogleUpdateHelper.getInstance().resume();//customized:
+
     }
 
     private void invalidateTabletMode() {
@@ -7259,7 +7270,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         initTheme();
 
         //region change profile image
-        imageUpdater = new ImageUpdater(false);
+        imageUpdater = new ImageUpdater(false, ImageUpdater.FOR_TYPE_USER, true);
         imageUpdater.init(this);
         imageUpdater.delegate = imageUpdaterDelegate;
         //endregion
@@ -7267,6 +7278,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         PromoController.getInstance().init();
 
         doAddObserver();
+
+        initAppUpdate();
     }
 
 
@@ -7343,138 +7356,106 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private void initAdmob() {
 
-        // Use an activity context to get the rewarded video instance.
-        AdmobBaseClass.ICallback iCallback = new AdmobBaseClass.ICallback() {
+        IInitializeCallback initializeCallback = new IInitializeCallback() {
             @Override
             public void before() {
                 if (BuildVars.DEBUG_VERSION) {
-                    ArrayList<CountItem> countItems = new ArrayList<>();
-                    countItems.add(new CountItem(300, AdmobBaseClass.INTERSTITIAL_OPEN_DIALOG));
-                    countItems.add(new CountItem(1, AdmobBaseClass.INTERSTITIAL_TOGGLE_GHOST));
-                    countItems.add(new CountItem(3, AdmobBaseClass.INTERSTITIAL_REFRESH_PROXY));
-                    countItems.add(new CountItem(1, AdmobBaseClass.INTERSTITIAL_DONATE));
-                    AdmobController.getInstance().setInterstitialTargets(countItems);
-                    Log.i(TAG, "LaunchActivity > before: Interstitial count Items json:" + new Gson().toJson(countItems));
+                    ArrayList<CountItem> targetItems = new ArrayList<>();
+                    targetItems.add(new CountItem(30, AdLocation.INTERSTITIAL_OPEN_DIALOG));
+                    targetItems.add(new CountItem(1, AdLocation.INTERSTITIAL_TOGGLE_GHOST));
+                    targetItems.add(new CountItem(3, AdLocation.INTERSTITIAL_REFRESH_PROXY));
+                    targetItems.add(new CountItem(1, AdLocation.INTERSTITIAL_DONATE));
+                    targetItems.add(new CountItem(10, AdLocation.INTERSTITIAL_OPEN_APP));
+                    AdmobController.getInstance().setInterstitialTargets(targetItems);
+                    Log.i(TAG, "LaunchActivity > before: Interstitial count Items json:" + new Gson().toJson(targetItems));
 
-                    countItems.clear();
-                    countItems.add(new CountItem(1, "tab_-1", 10));//archive
-                    countItems.add(new CountItem(1, "tab_0", 12));//all dialogs tab
-                    countItems.add(new CountItem(1, "tab_1"));
-                    countItems.add(new CountItem(1, "tab_2"));
-                    countItems.add(new CountItem(1, "tab_3"));
-                    countItems.add(new CountItem(1, "tab_4"));
-                    countItems.add(new CountItem(1, "tab_5"));
-                    countItems.add(new CountItem(1, AdmobBaseClass.NATIVE_TOP_CHAT));
-                    countItems.add(new CountItem(1, AdmobBaseClass.NATIVE_PROFILE));
-                    countItems.add(new CountItem(1, "messages"));
+                    targetItems.clear();
+                    targetItems.add(new CountItem(1, AdLocation.NATIVE_TAB_ARCHIVE, 5));//archive
+                    targetItems.add(new CountItem(1, AdLocation.NATIVE_TAB_ALL, 10));//all dialogs tab
+                    targetItems.add(new CountItem(1, "tab_1", 10));
+                    targetItems.add(new CountItem(1, "tab_2", 10));
+                    targetItems.add(new CountItem(1, "tab_3", 15));
+                    targetItems.add(new CountItem(1, "tab_4"));
+                    targetItems.add(new CountItem(1, "tab_5"));
+                    targetItems.add(new CountItem(1, AdLocation.NATIVE_TOP_CHAT));
+                    targetItems.add(new CountItem(1, AdLocation.NATIVE_PROFILE));
 
-                    countItems.add(new CountItem(0, "channel_messages",3,0,"small"));
-                    countItems.add(new CountItem(0, "group_messages",5,1,"message"));
-                    countItems.add(new CountItem(0, "user_messages",10,2,"message"));
+                    targetItems.add(new CountItem(1, "channel_messages", 3, 0, "message"));
+                    targetItems.add(new CountItem(1, "group_messages", 5, 1, "message"));
+                    targetItems.add(new CountItem(1, "user_messages", 10, 2, "message"));
 
-                    Log.i(TAG, "LaunchActivity > before: Native count Items json:" + new Gson().toJson(countItems));
-                    AdmobController.getInstance().setNativeTargets(countItems);
+                    Log.i(TAG, "LaunchActivity > before: Native count Items json:" + new Gson().toJson(targetItems));
+                    AdmobController.getInstance().setNativeTargets(targetItems);
 
-                    countItems.clear();
-                    countItems.add(new CountItem(5, "drawer_items"));
-                    countItems.add(new CountItem(5, "donate"));
-                    AdmobController.getInstance().setRewardedTargets(countItems);
+                    targetItems.clear();
+                    targetItems.add(new CountItem(5, "drawer_items"));
+                    targetItems.add(new CountItem(1, "donate"));
+                    Log.i(TAG, "LaunchActivity > before: Reward count Items json:" + new Gson().toJson(targetItems));
+                    AdmobController.getInstance().setRewardTargets(targetItems);
 
-                    countItems.clear();
-                    countItems.add(new CountItem(1, "channel_messages",3,0,"full_banner"));
-                    countItems.add(new CountItem(1, "group_messages",5,1,"leaderboard"));
-                    countItems.add(new CountItem(1, "user_messages",10,2,"fluid"));
-                    AdmobController.getInstance().setBannerTargets(countItems);
+                    targetItems.clear();
+                    targetItems.add(new CountItem(1, "channel_messages", 3, 0, "full_banner"));
+                    targetItems.add(new CountItem(1, "group_messages", 5, 1, "leaderboard"));
+                    targetItems.add(new CountItem(1, "user_messages", 10, 2, "fluid"));
+                    Log.i(TAG, "LaunchActivity > before: Banner count Items json:" + new Gson().toJson(targetItems));
+                    AdmobController.getInstance().setBannerTargets(targetItems);
 
-                    countItems.clear();
-                    countItems.add(new CountItem(50, AdmobBaseClass.OPEN_APP));
-                    AdmobController.getInstance().setOpenAppTargets(countItems);
+                    targetItems.clear();
+                    targetItems.add(new CountItem(5, AdLocation.OPEN_APP));
+                    Log.i(TAG, "LaunchActivity > before: OpenApp count Items json:" + new Gson().toJson(targetItems));
+                    AdmobController.getInstance().setOpenAppTargets(targetItems);
                 }
             }
 
             @Override
-            public void onResponse() {
-
+            public void onComplete() {
+                Log.i(TAG, "onInterstitialServed: ");
             }
         };
 
-        AdmobBaseClass.IServeCallback nativeCallback = () -> {
-            //notify when the native ad serve completed
-            MessagesController.getInstance(UserConfig.selectedAccount).sortDialogs(null);
-            MessagesController.getInstance(UserConfig.selectedAccount).loadDialogs(0, 0, 20, true);
-            Log.i(TAG, "loadNative > sort dialogs...");
+        IServedCallback servedCallback = object -> {
+            if (object == null) {
+                return;
+            }
+
+            if (object instanceof InterstitialAd || object instanceof Boolean) {
+                AdmobController.getInstance().showInterstitial(AdLocation.INTERSTITIAL_OPEN_APP);
+            }
+            if (object instanceof NativeAd) {
+                //notify when the native ad serve completed
+                MessagesController.getInstance(UserConfig.selectedAccount).sortDialogs(null);
+                MessagesController.getInstance(UserConfig.selectedAccount).loadDialogs(0, 0, 20, true);
+                Log.i(TAG, "loadNative > sort dialogs...");
+            }
+
+            if (object instanceof RewardedAd || object instanceof Boolean) {
+                showRewarded(AdLocation.REWARD_OPEN_APP);
+            }
         };
 
-        AdmobController.getInstance().init(this, iCallback, nativeCallback);
+        // Use an activity context to get the rewarded video instance.
+        AdmobController.getInstance().init(this, initializeCallback, servedCallback);
 
         //show turn off admob dialog via recommend to the share app with his friends
         offAdmob();
 
     }
 
+    AdmobBaseClass.IRewardCallback iRewardCallback = new AdmobBaseClass.IRewardCallback() {
+        @Override
+        public void onFail(Object o) {
 
-    //region VIDEO
-  /*  private void initRewarded() {
-        String rewarded_key = admobController.getRewardedUnitId();
-        if (!rewarded_key.isEmpty()) {
-            rewardedAd = new RewardedAd(LaunchActivity.this, rewarded_key);
-        } else {
-            Log.e(TAG, "showAdmobVideo > video unit id is empty! ");
         }
-    }
-*/
+
+        @Override
+        public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
+            //todo: save user earned reward coins
+        }
+    };
+
     private void showRewarded(Object... args) {
         String name = (String) args[0];
-        AdmobController.getInstance().showRewarded(LaunchActivity.this, name, rewardItem -> Toast.makeText(LaunchActivity.this, "" + rewardItem.getAmount(), Toast.LENGTH_SHORT).show());
-
-    /*    if (rewardedAd == null) {
-            Log.e(TAG, "showRewarded: rewardedAd is null");
-            return;
-        }
-        Log.i(TAG, "showAdmobVideo: run, arg:" + arg.toString());
-        if (BuildVars.DEBUG_VERSION) {
-            Toast.makeText(this, "preparing to show video...", Toast.LENGTH_SHORT).show();
-        }
-
-        rewardedAd.loadAd(new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
-            @Override
-            public void onRewardedAdLoaded() {
-                super.onRewardedAdLoaded();
-                Log.i(TAG, "showRewarded > onRewardedAdLoaded: ");
-                rewardedAd.show(LaunchActivity.this, new RewardedAdCallback() {
-                    @Override
-                    public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
-                        Log.i(TAG, "showRewarded > onRewardedAdLoaded > onUserEarnedReward: ");
-                        SharedStorage.rewardes(SharedStorage.rewardes() + rewardItem.getAmount());
-                    }
-
-                    @Override
-                    public void onRewardedAdFailedToShow(AdError adError) {
-                        super.onRewardedAdFailedToShow(adError);
-                        Log.i(TAG, "showRewarded > onRewardedAdLoaded > onRewardedAdFailedToShow: ");
-                    }
-
-                    @Override
-                    public void onRewardedAdOpened() {
-                        super.onRewardedAdOpened();
-                        Log.i(TAG, " showRewarded > onRewardedAdLoaded > onRewardedAdOpened: ");
-                    }
-
-                    @Override
-                    public void onRewardedAdClosed() {
-                        super.onRewardedAdClosed();
-                        Log.i(TAG, "showRewarded > onRewardedAdLoaded > onRewardedAdClosed: ");
-                    }
-                });
-            }
-
-            @Override
-            public void onRewardedAdFailedToLoad(LoadAdError loadAdError) {
-                super.onRewardedAdFailedToLoad(loadAdError);
-                Log.e(TAG, "showRewarded > onRewardedAdFailedToLoad: " + loadAdError.getResponseInfo());
-            }
-        });*/
-
+        AdmobController.getInstance().showReward(name, null, iRewardCallback);
     }
 
     //endregion
@@ -7500,7 +7481,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private void offAdmob() {
+        if (!BuildVars.OFF_ADMOB_FEATURE) {
+            Log.i(TAG, "offAdmob: feature is off");
+            return;
+        }
         if (!SharedStorage.showAdmobTurnOffDialog()) {
+            Log.i(TAG, "offAdmob: the feature is off by user");
             return;
         }
         if (AdmobController.getInstance().getShowAdmob() && SharedStorage.turnOffAdsTime() == 0) {
@@ -7532,8 +7518,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private TLRPC.FileLocation avatarBig;
     public ImageUpdater.ImageUpdaterDelegate delegate;
     ImageUpdater imageUpdater;
-
-    ImageUpdater.ImageUpdaterDelegate imageUpdaterDelegate = (photo, video, videoStartTimestamp, videoPath, bigSize, smallSize, isVideo) -> {
+    ImageUpdater.ImageUpdaterDelegate imageUpdaterDelegate = (photo, video, videoStartTimestamp, videoPath, bigSize, smallSize, isVideo, emojiMarkup) -> {
         final AlertDialog profileImageProgressDialog = new AlertDialog(this, 3);
         profileImageProgressDialog.show();
         AndroidUtilities.runOnUIThread(() -> {
@@ -7736,7 +7721,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private void drawerMenuItemClick(int id) {
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, "drawer_items");
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdLocation.REWARD_DRAWER_ITEM);
         if (id == DrawerLayoutAdapter.NEW_GROUP) {
             Bundle args = new Bundle();
             presentFragment(new GroupCreateActivity(args));
@@ -8095,30 +8080,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     void doDonate() {
-        if (!Config.ADMOB_REWARDED_FEATURE) {
+        AdmobController.getInstance().showReward(AdLocation.REWARD_DONATE, null, new AdmobBaseClass.IRewardCallback() {
+            @Override
+            public void onFail(Object object) {
+                AdmobController.getInstance().showInterstitial(AdLocation.INTERSTITIAL_DONATE);
+            }
 
-            AdmobController.getInstance().showInterstitial("donate");
+            @Override
+            public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
 
-            return;
-        }
-        try {
-            String video_count = SharedStorage.donateCount().getString("video");
-            String interstitial_count = SharedStorage.donateCount().getString("interstitial");
-
-            new AdDialogHelper(this).show(
-                    LocaleController.getString("Donate", R.string.Donate),
-                    String.format(LocaleController.getString("DonateDialogMessages", R.string.DonateDialogMessages), interstitial_count, video_count),
-                    param -> {
-                        if (param == 1) {
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, "donate");
-                        } else {
-                            AdmobController.getInstance().showInterstitial("donate");
-                        }
-                    }, true);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
+            }
+        });
     }
 
     private void openScheduledMessages() {
@@ -8129,7 +8101,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         //args.putInt("messagesCount", 1);
         DialogsActivity fragment = new DialogsActivity(args);
         fragment.setDelegate(
-                (fragment1, dids, message, param) ->
+                (fragment1, dids, message, param, topicsFragment) ->
                 {
                     if (dids.size() == 1) {
                         Bundle bundle = getBundle(dids);
@@ -8139,6 +8111,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     } else {
                         Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
                     }
+                    return param;
                 });
         presentFragment(fragment);
 
@@ -8209,7 +8182,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 //args.putInt("messagesCount", 1);
                 DialogsActivity fragment = new DialogsActivity(args);
                 fragment.setDelegate(
-                        (fragment1, dids, message, param) ->
+                        (fragment1, dids, message, param, topicsFragment) ->
                         {
                             if (dids.size() == 1) {
                                 Bundle bundle = getBundle(dids);
@@ -8217,8 +8190,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 presentFragment(new ChatActivity(bundle));
                                 fragment.finishFragment();
                             } else {
+
                                 Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
                             }
+                            return param;
                         });
                 presentFragment(fragment);
                 //todo:
@@ -8274,5 +8249,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     //endregion
 
+    private void initAppUpdate() {
+        try {
+            GoogleUpdateHelper.getInstance().init(LaunchActivity.this, () -> GoogleUpdateHelper.getInstance().completeUpdate());
+        } catch (Exception e) {
+            Log.e(TAG, "initAppUpdate: ", e);
+        }
+    }
     //endregion
 }

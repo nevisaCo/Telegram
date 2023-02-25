@@ -40,12 +40,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.AdmobController;
-import com.finalsoft.helper.AdDialogHelper;
 import com.finalsoft.proxy.Communication;
 import com.finalsoft.proxy.ProxyController;
 
-import org.telegram.messenger.BuildVars;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Cells.NotificationsCheckCell;
@@ -55,11 +52,7 @@ import org.telegram.ui.Components.EditTextCaption;
 import java.util.Objects;
 import java.util.Random;
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -71,8 +64,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
 
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -95,6 +86,8 @@ import org.telegram.ui.Components.SlideChooseView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import co.nevisa.commonlib.admob.AdLocation;
 
 public class ProxyListActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private final static boolean IS_PROXY_ROTATION_AVAILABLE = true;
@@ -938,12 +931,12 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
         private final static int VIEW_TYPE_SHADOW = 0,
-            VIEW_TYPE_TEXT_SETTING = 1,
-            VIEW_TYPE_HEADER = 2,
-            VIEW_TYPE_TEXT_CHECK = 3,
-            VIEW_TYPE_INFO = 4,
-            VIEW_TYPE_PROXY_DETAIL = 5,
-            VIEW_TYPE_SLIDE_CHOOSER = 6;
+                VIEW_TYPE_TEXT_SETTING = 1,
+                VIEW_TYPE_HEADER = 2,
+                VIEW_TYPE_TEXT_CHECK = 3,
+                VIEW_TYPE_INFO = 4,
+                VIEW_TYPE_PROXY_DETAIL = 5,
+                VIEW_TYPE_SLIDE_CHOOSER = 6;
 
         public static final int PAYLOAD_CHECKED_CHANGED = 0;
         public static final int PAYLOAD_SELECTION_CHANGED = 1;
@@ -1072,17 +1065,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     break;
                 }
 
-                case 6: {
-                    if (position == smartChangeProxy) {
-                        ((NotificationsCheckCell) holder.itemView).setTextAndValueAndCheck(
-                                LocaleController.getString("SmartProxyChanger", R.string.SmartProxyChanger),
-                                SharedStorage.smartProxyChangerTime() + " Seconds",
-                                SharedStorage.smartProxyChanger(),
-                                false
-                        );
-                    }
-                    break;
-                }
+
                 case VIEW_TYPE_SLIDE_CHOOSER: {
                     if (position == rotationTimeoutRow) {
                         SlideChooseView chooseView = (SlideChooseView) holder.itemView;
@@ -1096,6 +1079,18 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                             SharedConfig.saveConfig();
                         });
                         chooseView.setOptions(SharedConfig.proxyRotationTimeout, values);
+                    }
+                    break;
+                }
+
+                case 1500: {
+                    if (position == smartChangeProxy) {
+                        ((NotificationsCheckCell) holder.itemView).setTextAndValueAndCheck(
+                                LocaleController.getString("SmartProxyChanger", R.string.SmartProxyChanger),
+                                SharedStorage.smartProxyChangerTime() + " Seconds",
+                                SharedStorage.smartProxyChanger(),
+                                false
+                        );
                     }
                     break;
                 }
@@ -1156,10 +1151,11 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
             return position == useProxyRow || position == rotationRow || position == callsRow || position == proxyAddRow || position == deleteAllRow || position >= proxyStartRow && position < proxyEndRow
-                 || position == smartChangeProxy
+                    || position == smartChangeProxy
                     || position == showProxySponsor
                     || position == showRefreshInDialogs
-            ;    }
+                    ;
+        }
 
         @NonNull
         @Override
@@ -1194,7 +1190,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     view = new TextDetailProxyCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
-                case 6:
+                case 1500:
                     view = new NotificationsCheckCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
@@ -1252,7 +1248,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
             } else if (position == showProxySponsor || position == showRefreshInDialogs) {
                 return VIEW_TYPE_TEXT_CHECK;
             } else if (position == smartChangeProxy) {
-                return 6;
+                return 1500;
             } else {
                 return VIEW_TYPE_INFO;
             }
@@ -1369,28 +1365,16 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         ActionBarMenu menu = actionBar.createMenu();
         proxyRefresh = menu.addItem(0, R.drawable.ic_refresh);
         proxyRefresh.setOnClickListener(view -> {
-            int prc = SharedStorage.proxyRefreshCost();
-            if ((AdmobController.getInstance().getShowAdmob() && prc > 0) || BuildVars.DEBUG_VERSION) {
-                int myRewards = SharedStorage.rewards();
-                int proxyRefreshCost = SharedStorage.proxyRefreshCost();
-                if (myRewards >= proxyRefreshCost) {
-                    Communication.getInstance().GetProxies(true, "proxy list");
-                    Toast.makeText(getParentActivity(), String.format(LocaleController.getString("ShowInventory", R.string.ShowInventory), proxyRefreshCost, myRewards), Toast.LENGTH_SHORT).show();
-                } else {
-                    new AdDialogHelper(getParentActivity()).show(param -> {
-                        if (param == 1) {
-                            //video
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdmobController.VIDEO_REFRESH_PROXY, true);
-                        } else {
-                            //interstitial
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.INTERSTITIAL_REFRESH_PROXY, true);
-                        }
-                    });
-                }
-            } else {
-                Communication.getInstance().GetProxies("proxy list 1");
-                Toast.makeText(getParentActivity(), "Proxy Refreshed!", Toast.LENGTH_SHORT).show();
-            }
+            Communication.getInstance().GetProxies("proxy list 1");
+
+            //video
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdLocation.REWARD_REFRESH_PROXY, true);
+
+            //interstitial
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdLocation.INTERSTITIAL_REFRESH_PROXY, true);
+
+            Toast.makeText(getParentActivity(), "Proxy Refreshed!", Toast.LENGTH_SHORT).show();
+
         });
 
         proxyClear = menu.addItem(0, R.drawable.msg_clear);

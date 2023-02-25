@@ -1,13 +1,12 @@
-package com.finalsoft.admob;
+package co.nevisa.commonlib.admob;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.os.Handler;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.CountItem;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
@@ -18,12 +17,16 @@ import com.google.gson.Gson;
 
 import java.util.ArrayList;
 
+import co.nevisa.commonlib.AdmobApplicationLoader;
+import co.nevisa.commonlib.Storage;
+import co.nevisa.commonlib.admob.interfaces.IServedCallback;
+import co.nevisa.commonlib.admob.models.CountItem;
+
 class Interstitial extends AdmobBaseClass {
 
     private static Interstitial interstitial;
     private Activity context;
     private static final String KEY = "target_interstitial_";
-    private static final String KEY_COUNTER = "interstitial_";
 
     public static Interstitial getInstance() {
         if (interstitial == null) {
@@ -37,6 +40,7 @@ class Interstitial extends AdmobBaseClass {
     ArrayList<CountItem> interstitialItems = new ArrayList<>();
 
     void init(Activity activity) {
+        Log.i(TAG, "initInterstitial > init: ");
         this.context = activity;
         interstitialItems = getItems(KEY);
         if (interstitialItems.size() == 0) {
@@ -45,98 +49,91 @@ class Interstitial extends AdmobBaseClass {
     }
 
     private int getTarget(String name) {
-        try {
-            CountItem countItem = interstitialItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
-            if (countItem != null) {
+        for (CountItem countItem : interstitialItems) {
+            if (name.equals(countItem.getName())) {
                 return countItem.getCount();
-
             }
-        } catch (Exception e) {
-            Log.e(TAG, "getTarget: ", e);
         }
+
         return 0;
     }
 
     //add from remote config
     public void setTargets(ArrayList<CountItem> countItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
+        Storage.admobTargets(KEY, new Gson().toJson(countItems));
     }
 
-    private boolean isActive() {
+    private boolean isShow() {
         int i = 0;
-        try {
-            i = interstitialItems.stream().mapToInt(CountItem::getCount).sum();
-        } catch (Exception e) {
-            Log.e(TAG, "isActive: ", e);
+        for (CountItem countItem : interstitialItems) {
+            i += countItem.getCount();
         }
         return i > 0 && getShowAdmob();
     }
 
-    private int retry = 0;
-    InterstitialAdLoadCallback interstitialAdLoadCallback;
+    private boolean isShow(String name) {
+        return getTarget(name) > 0;
+    }
 
-    void serve(IServeCallback iCallback) {
-        if (!isActive()) {
+    private int retry = 0;
+
+
+    void serve(@Nullable IServedCallback iCallback) {
+        if (!isShow()) {
             Log.e(TAG, "serveInterstitial: Can't serve interstitial ads ,interstitial is disabled");
             return;
         }
 
 
-        //admob lib 20.6
+        //admob lib 20.5
         mInterstitialAd = null;
-        AdRequest adRequest = new AdRequest.Builder().build();
+        @SuppressLint("VisibleForTests") AdRequest adRequest = new AdRequest.Builder().build();
+
         String unitId = getKeys().getInterstitial();
-        interstitialAdLoadCallback = new InterstitialAdLoadCallback() {
-            @Override
-            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
-                // The mInterstitialAd reference will be null until
-                // an ad is loaded.
-                mInterstitialAd = interstitialAd;
-                Log.i(TAG, "Interstitial > onAdLoaded");
-                if (iCallback != null) {
-                    iCallback.onServe();
-                }
-                retry = 0;
-            }
+        InterstitialAd.load(AdmobApplicationLoader.getContext(), unitId, adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        // The mInterstitialAd reference will be null until
+                        // an ad is loaded.
+                        mInterstitialAd = interstitialAd;
+                        Log.i(TAG, "onAdLoaded");
+                        if (iCallback != null) {
+                            iCallback.onServed(mInterstitialAd);
+                        }
+                        retry = 0;
 
-            @Override
-            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                // Handle the error
-                Log.e(TAG,"onAdFailedToLoad:" + loadAdError);
-                if (mInterstitialAd == null && retry < getAttemptToFail()) {
-                    new Handler().postDelayed(() -> {
-                        Log.i(TAG, "onAdFailedToLoad: retrying to load ad... " + retry + 1);
-                        InterstitialAd.load(context,
-                                unitId,
-                                adRequest,
-                                interstitialAdLoadCallback);
+                    }
 
-                        retry++;
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        // Handle the error
+                        Log.i(TAG, loadAdError.getMessage());
+                        if (mInterstitialAd == null && retry < getAttemptToFail()) {
+                            serve(iCallback);
+                            retry++;
+                        }
 
-                    }, (retry + 1) * 10000L);
-
-
-                }
-
-            }
-        };
-
-        InterstitialAd.load(context, unitId, adRequest, interstitialAdLoadCallback);
+                    }
+                });
     }
 
     public void show(String name) {
-        int target = getTarget(name);
-        if (target > 0) {
-
-            int i = getCounter(KEY_COUNTER + name) + 1;
-            setCounter(KEY_COUNTER + name, i);
+        if (isShow(name)) {
+            int i = getCounter("interstitial_" + name) + 1;
+            setCounter("interstitial_" + name, i);
+            int target = getTarget(name);
             Log.i(TAG, String.format("showInterstitial:name:%s ,i:%s , target:%s", name, i, target));
 
             if (i >= target) {
 
                 if (mInterstitialAd == null) {
-                    serve(() -> show(name));
                     Log.i(TAG, "showAdmobInterstitial: mInterstitialAd is null, returned.");
+                    serve((object) -> {
+                        if (!Storage.admobPreServe()) {
+                            show(name);
+                        }
+                    });
                     return;
                 }
 
@@ -150,12 +147,11 @@ class Interstitial extends AdmobBaseClass {
                     @Override
                     public void onAdShowedFullScreenContent() {
                         super.onAdShowedFullScreenContent();
-                        setCounter(KEY_COUNTER + name, 0);
-                        if (SharedStorage.preServeInterstitial()) {
+                        setCounter("interstitial_" + name, 0);
+                        if (Storage.admobPreServe()) {
                             serve(null);
-                        } else {
-                            mInterstitialAd = null;
                         }
+                        mInterstitialAd = null;
 
                     }
 
@@ -168,7 +164,6 @@ class Interstitial extends AdmobBaseClass {
             }
         }
     }
-    //endregion
 
 
 }

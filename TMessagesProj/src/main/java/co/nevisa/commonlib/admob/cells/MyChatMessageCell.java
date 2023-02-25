@@ -1,4 +1,4 @@
-package com.finalsoft.admob.ui;
+package co.nevisa.commonlib.admob.cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.Gravity;
 
-import com.finalsoft.Config;
 import com.finalsoft.ui.adapter.DialogBottomMenuLayoutAdapter;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
@@ -18,6 +17,8 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.List;
+
+import co.nevisa.commonlib.Config;
 
 public class MyChatMessageCell extends ChatMessageCell {
     public static final int size = 56;

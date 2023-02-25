@@ -8,6 +8,7 @@
 
 package com.finalsoft.ui.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Point;
 import android.view.View;
@@ -16,7 +17,6 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.finalsoft.SharedStorage;
 import com.finalsoft.ui.ShareToolTextImageCell;
 import com.finalsoft.ui.ShareToolTextCheckCell;
 
@@ -31,17 +31,24 @@ import java.util.ArrayList;
 
 public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
-    private Context mContext;
-    private boolean show_edit_text;
-    private boolean show_text_row;
-    private ArrayList<Item> items = new ArrayList<>(11);
+    private final Context mContext;
+    private final boolean show_edit_text;
+    private final boolean show_text_row;
+    private final ArrayList<Item> items = new ArrayList<>(11);
 
     public static final int QUOTE = 0;
     public static final int SEND_TEXT = 1;
     public static final int EDIT_TEXT = 2;
     public static final int SMART = 3;
+    public static final int SETTING = 4;
 
-    public ShareToolsLayoutAdapter(Context mContext, boolean sendText, boolean editText, boolean smart, boolean quote, boolean show_edit_text, boolean show_text_row) {
+    boolean sendText;
+    boolean editText;
+    boolean smart;
+    boolean quote;
+
+    public ShareToolsLayoutAdapter(Context mContext, boolean sendText, boolean editText, boolean smart, boolean quote,
+                                   boolean show_edit_text, boolean show_text_row) {
         this.mContext = mContext;
         this.sendText = sendText;
         this.editText = editText;
@@ -53,6 +60,7 @@ public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
         resetItems();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void update(boolean sendText, boolean editText, boolean smart, boolean quote) {
         this.sendText = sendText;
         this.editText = editText;
@@ -61,19 +69,16 @@ public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
         notifyDataSetChanged();
     }
 
-    boolean sendText;
-    boolean editText;
-    boolean smart;
-    boolean quote;
+
     //endregion
 
     private void resetItems() {
         items.clear();
 
-        items.add(new ShareToolsLayoutAdapter.Item(QUOTE, LocaleController.getString("ShareTools_Quote", R.string.ShareTools_Quote), quote));
+        items.add(new Item(QUOTE, LocaleController.getString("ShareTools_Quote", R.string.ShareTools_Quote), quote));
 
         if (show_text_row) {
-            items.add(new ShareToolsLayoutAdapter.Item(SEND_TEXT, LocaleController.getString("ShareTools_Text", R.string.ShareTools_Text), sendText));
+            items.add(new Item(SEND_TEXT, LocaleController.getString("ShareTools_Text", R.string.ShareTools_Text), sendText));
         }
 
         if (BuildVars.SMART_FORWARD_FEATURE) {
@@ -81,9 +86,10 @@ public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
 
         if (show_edit_text) {
-            items.add(new ShareToolsLayoutAdapter.Item(EDIT_TEXT, LocaleController.getString("ShareTools_Edit", R.string.ShareTools_Edit), editText, R.drawable.msg_edit));
+            items.add(new Item(EDIT_TEXT, LocaleController.getString("ShareTools_Edit", R.string.ShareTools_Edit), editText, R.drawable.msg_edit));
         }
 
+        items.add(new Item(SETTING, LocaleController.getString("Settings", R.string.Settings), editText, R.drawable.msg_settings));
 
     }
 
@@ -92,6 +98,7 @@ public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
         return items.size();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void notifyDataSetChanged() {
         resetItems();
@@ -118,9 +125,12 @@ public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
             }
         }
 
-        view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        view.setLayoutParams(new RecyclerView.LayoutParams(point.x / items.size(),
-                ViewGroup.LayoutParams.MATCH_PARENT));
+        if (view != null) {
+//            view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            view.setLayoutParams(new RecyclerView.LayoutParams(point.x / items.size(),
+                    ViewGroup.LayoutParams.MATCH_PARENT));
+        }
+
 
         return new RecyclerListView.Holder(view);
     }
@@ -140,7 +150,8 @@ public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public int getItemViewType(int i) {
-        if (show_edit_text && getId(i) == EDIT_TEXT) {
+        int id = getId(i);
+        if ((show_edit_text && id == EDIT_TEXT) || id == SETTING) {
             return 1;
         }
         return 0;
@@ -151,7 +162,7 @@ public class ShareToolsLayoutAdapter extends RecyclerListView.SelectionAdapter {
         return item != null ? item.id : -1;
     }
 
-    private class Item {
+    private static class Item {
         public String text;
         public int id;
         public int icon;

@@ -1,10 +1,4 @@
-package com.finalsoft.admob.ui;
-
-/*
- * Copyright Tesfamariam Gebre, 2018-2020.
- * Boltgram, Bolt India Gram
- *  All rights reserved.
- */
+package co.nevisa.commonlib.admob.cells;
 
 import android.content.Context;
 import android.graphics.Typeface;
@@ -16,7 +10,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import com.finalsoft.Config;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
 
@@ -28,6 +21,8 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.List;
+
+import co.nevisa.commonlib.Config;
 
 public class NativeAddCell extends LinearLayout {
     public static final int size = 56;
@@ -107,10 +102,10 @@ public class NativeAddCell extends LinearLayout {
 
 
     public void setAd(NativeAd nativeAd) {
-if  (nativeAd==null){
-    Log.e(TAG, "setAd: nativeAd is null !");
-    return;
-}
+        if  (nativeAd==null){
+            Log.e(TAG, "setAd: nativeAd is null !");
+            return;
+        }
         List<NativeAd.Image> images = nativeAd.getImages();
         if (images.size() > 0) {
             NativeAd.Image nativeImage = images.get(0);

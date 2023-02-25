@@ -48,7 +48,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -102,12 +101,9 @@ import org.telegram.ui.Components.StickerEmptyView;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.AdmobController;
-import com.finalsoft.helper.AdDialogHelper;
+
+import co.nevisa.commonlib.admob.AdLocation;
 
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -810,13 +806,17 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         listView.setGlowColor(Theme.getColor(dialogBackgroundKey));
 
         //customized:
-        boolean showAdmob =  AdmobController.getInstance().getShowAdmob();
+/*        boolean showAdmob =  AdmobController.getInstance().getShowAdmob();
         int imageCost = SharedStorage.imageEditorCost();
-        boolean video_error = SharedStorage.admobVideoErrorList();
+        boolean video_error = SharedStorage.admobVideoErrorList();*/
 
         listView.setOnItemClickListener((view, position) -> {
+            //video
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdLocation.REWARD_USE_PHOTO_PICKER, true);
+            //interstitial
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdLocation.INTERSTITIAL_USE_PHOTO_PICKER, true);
 
-            //region Customized: show admob
+/*            //region Customized: show admob
             if (showAdmob && imageCost > 0 && view instanceof PhotoAttachPhotoCell) {
                 int myRewards = SharedStorage.rewards();
                 if (myRewards >= imageCost) {
@@ -831,17 +831,13 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             SharedStorage.interstitialRewards()
                     ), param -> {
                         if (param == 1) {
-                            //video
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobRewarded, AdmobController.VIDEO_USE_PHOTO_PICKER, true);
-                        } else {
-                            //interstitial
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showAdmobInterstitial, AdmobController.INTERSTITIAL_USE_PHOTO_PICKER, true);
-                        }
+    } else {
+        }
                     },false);
                     return;
                 }
             }
-            //endregion
+            //endregion*/
 
             if (selectedAlbum == null && searchResult.isEmpty()) {
                 if (position < recentSearches.size()) {

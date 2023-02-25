@@ -56,9 +56,6 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 
 import com.finalsoft.Config;
-import com.finalsoft.admob.AdmobBaseClass;
-import com.finalsoft.admob.AdmobController;
-import com.finalsoft.admob.ui.NativeAddCell;
 import com.google.android.gms.ads.nativead.NativeAd;
 
 import android.util.Property;
@@ -237,6 +234,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import co.nevisa.commonlib.admob.AdLocation;
+import co.nevisa.commonlib.admob.AdmobController;
+import co.nevisa.commonlib.admob.cells.NativeAddCell;
 
 public class ProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, SharedMediaLayout.SharedMediaPreloaderDelegate, ImageUpdater.ImageUpdaterDelegate, SharedMediaLayout.Delegate {
     private final static int PHONE_OPTION_CALL = 0,
@@ -10745,7 +10746,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void createCustomView() {
         Log.i(TAG, "createCustomView: ");
-        nativeAd = AdmobController.getInstance().getNativeAd(AdmobBaseClass.NATIVE_PROFILE);
+        nativeAd = AdmobController.getInstance().getNativeAd(AdLocation.NATIVE_PROFILE);
         if (nativeAd != null) {
             Log.i(TAG, "createCustomView: native not null");
             ad = -1;

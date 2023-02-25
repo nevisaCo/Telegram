@@ -96,6 +96,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
@@ -207,7 +208,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         }
     }
     //endregion
-    
+
     private int commonInputType;
     private boolean stickersEnabled;
 
@@ -3109,7 +3110,23 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         botWebViewButton.setVisibility(GONE);
         createBotCommandsMenuButton();
         botWebViewButton.setBotMenuButton(botCommandsMenuButton);
-        frameLayout.addView(botWebViewButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM));
+        messageEditTextContainer.addView(botWebViewButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM));
+    }
+
+    private void createRecordCircle() {
+        if (recordCircle != null) {
+            return;
+        }
+        recordCircle = new RecordCircle(getContext());
+        recordCircle.setVisibility(GONE);
+        sizeNotifierLayout.addView(recordCircle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 0, 0));
+    }
+
+    private void showRestrictedHint() {
+        if (DialogObject.isChatDialog(dialog_id)) {
+            TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-dialog_id);
+            BulletinFactory.of(parentFragment).createSimpleBulletin(R.raw.passcode_lock_close, LocaleController.formatString("SendPlainTextRestrictionHint", R.string.SendPlainTextRestrictionHint, ChatObject.getAllowedSendString(chat)), 3).show();
+        }
     }
 
     private void openWebViewMenu() {

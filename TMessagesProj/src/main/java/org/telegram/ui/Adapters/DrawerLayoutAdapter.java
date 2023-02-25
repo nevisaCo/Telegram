@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.AdmobController;
 import com.finalsoft.controller.DrawerMenuItemsHideController;
 import com.finalsoft.helper.forward.ForwardHelper;
 import com.finalsoft.ui.drawer.DrawerGridActionCell;
@@ -51,6 +50,8 @@ import org.telegram.ui.Components.SideMenultItemAnimator;
 
 import java.util.ArrayList;
 import java.util.Collections;
+
+import co.nevisa.commonlib.admob.AdmobController;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 

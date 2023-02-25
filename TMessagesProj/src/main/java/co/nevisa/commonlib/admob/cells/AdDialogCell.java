@@ -1,4 +1,4 @@
-package com.finalsoft.admob.models;
+package co.nevisa.commonlib.admob.cells;
 
 
 import com.google.android.gms.ads.nativead.NativeAd;
@@ -13,16 +13,10 @@ public class AdDialogCell extends TLRPC.Dialog {
 
     public AdDialogCell(NativeAd ad) {
         this.ad = ad;
-//        add =true;
     }
 
     public NativeAd getAd() {
         return ad;
     }
 
-/*
-    public void setAd(UnifiedNativeAd ad) {
-        this.ad = ad;
-        add =true;
-    }*/
 }

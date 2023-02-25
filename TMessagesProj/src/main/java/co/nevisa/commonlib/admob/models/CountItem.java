@@ -1,4 +1,4 @@
-package com.finalsoft.admob.models;
+package co.nevisa.commonlib.admob.models;
 
 public class CountItem {
     private final String name;
@@ -46,6 +46,4 @@ public class CountItem {
     public String getStyle() {
         return style;
     }
-
-
 }

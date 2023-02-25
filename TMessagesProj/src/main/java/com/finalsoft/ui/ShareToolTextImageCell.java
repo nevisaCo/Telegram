@@ -74,7 +74,7 @@ public class ShareToolTextImageCell extends FrameLayout {
         imageView.setColorFilter(Theme.getColor(Theme.key_switchTrackChecked));
         addView(imageView, LayoutHelper.createFrame(37, 20,
                 Gravity.LEFT | Gravity.CENTER_VERTICAL,
-                5, 0, 5, 0));
+                5+ padding, 0, 5, 0));
 
 
         textView = new TextView(context);
@@ -88,7 +88,7 @@ public class ShareToolTextImageCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.MATCH_PARENT,
                 Gravity.LEFT | Gravity.CENTER_VERTICAL,
-                47 + padding,
+                40 + padding,
                 0, padding, 0));
 
 

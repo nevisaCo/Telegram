@@ -35,7 +35,6 @@ import android.util.SparseIntArray;
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.contactsChanges.UpdateBiz;
-import com.finalsoft.admob.AdmobController;
 import com.finalsoft.controller.GhostController;
 import com.finalsoft.controller.FavController;
 import com.finalsoft.controller.HiddenController;
@@ -97,6 +96,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+
+import co.nevisa.commonlib.admob.AdmobController;
+import co.nevisa.commonlib.admob.interfaces.IServedCallback;
 
 public class MessagesController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
@@ -17712,10 +17714,16 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     private void afterSortDialogs() {
-        AdmobController.getInstance().addNativeDialogs();
+        AdmobController.getInstance().applyNativeOnCollection(refreshNeedCallback);
 
         PromoController.getInstance().addPromoToDialogs();
     }
+
+    IServedCallback refreshNeedCallback = o -> {
+        Log.e(TAG, "afterSortDialogs: sort again");
+        //if native list is empty , the serve request execute and wait for response , then refresh again
+        sortDialogs(null);
+    };
 
     private void doRemoveDialogs(TLRPC.Dialog dialog) {
         dialogsFavoriteOnly.remove(dialog);

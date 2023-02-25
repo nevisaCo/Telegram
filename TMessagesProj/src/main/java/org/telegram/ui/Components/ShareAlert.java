@@ -51,7 +51,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -116,18 +115,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import androidx.core.view.ViewCompat;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.finalsoft.Config;
 import com.finalsoft.SharedStorage;
 import com.finalsoft.controller.HiddenController;
 import com.finalsoft.ui.ShareToolTextCheckCell;
 import com.finalsoft.ui.adapter.ShareToolsLayoutAdapter;
 import com.finalsoft.helper.ShareHelper;
-import com.finalsoft.ui.ShareToolTextImageCell;
 import com.finalsoft.ui.settings.ForwardSettingActivity;
 
 public class ShareAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
@@ -146,7 +139,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private GridLayoutManager layoutManager;
     private GridLayoutManager topicsLayoutManager;
     private FillLastGridLayoutManager searchLayoutManager;
-    private ShareDialogsAdapter listAdapter;
+    private MyShareDialogsAdapter listAdapter;
     private ShareTopicsAdapter shareTopicsAdapter;
     private ShareSearchAdapter searchAdapter;
     protected ArrayList<MessageObject> sendingMessageObjects;
@@ -747,7 +740,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     }
                 } else {
                     commentTextView.hideEmojiView();
-                    editTextMessage.hideEmojiView();
+
+                    editTextMessage.hideEmojiView();//customized:
 
                     if (pickerBottomLayout != null) {
                         pickerBottomLayout.setVisibility(GONE);
@@ -1129,7 +1123,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
         });
         containerView.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
-        gridView.setAdapter(listAdapter = new ShareDialogsAdapter(context));
+        gridView.setAdapter(listAdapter = new MyShareDialogsAdapter(context));
         gridView.setGlowColor(getThemedColor(darkTheme ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_dialogScrollGlow));
         gridView.setOnItemClickListener((view, position) -> {
             if (position < 0) {
@@ -1470,7 +1464,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         writeButtonContainer.setAlpha(0.0f);
         containerView.addView(writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 10));
 
-        shareHelper = new ShareHelper(context);
+        shareHelper = new ShareHelper(context);//customized:
 
         ImageView writeButton = new ImageView(context);
         Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), getThemedColor(Theme.key_dialogFloatingButton), getThemedColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_dialogFloatingButton));
@@ -1983,27 +1977,27 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
         }
 
-        CharSequence[] text = new CharSequence[] { commentTextView.getText() };
+        CharSequence[] text = new CharSequence[]{commentTextView.getText()};
         ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(text, true);
 
         //region Customized: edit message on send
-
         boolean isCaption = sendText;
         Log.i(TAG, "ShareAlert: isCaption: " + isCaption + " , sendText:" + sendText);
         boolean fromMyName = !quote;
         String msgTxt = editTextMessage.getText().toString();
 
-        //endregion
+/*        //endregion
         if (sendingMessageObjects != null) {
             Log.i(TAG, "ShareAlert: 1");
 
             for (int a = 0; a < selectedDialogs.size(); a++) {
                 Log.i(TAG, "ShareAlert: i:" + a);
+                List<Long> removeKeys = new ArrayList<>();
 
                 long key = selectedDialogs.keyAt(a);
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                     SendMessagesHelper.getInstance(currentAccount)
-                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, entities, null, null, withSound, 0, null,false);
+                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, entities, null, null, withSound, 0, null, false);
                 }
                 if (fromMyName && sendingMessageObjects.get(0).messageOwner != null) {
                     if (isCaption && smart) {
@@ -2013,8 +2007,19 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     Log.i(TAG, "ShareAlert: 2");
                     SendMessagesHelper.getInstance(currentAccount).processProForward(sendingMessageObjects.get(0), key, isCaption, msgTxt);
                 } else {
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, false, false, false, 0);
+//                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, false, false, false, 0);
+                    int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, false, false, withSound, 0);
                     Log.i(TAG, "ShareAlert: 3");
+                    if (result != 0) {
+                        removeKeys.add(key);
+                    }
+                    if (selectedDialogs.size() == 1) {
+                        AlertsCreator.showSendMediaAlert(result, parentFragment, null);
+
+                        if (result != 0) {
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -2024,17 +2029,17 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 long key = selectedDialogs.keyAt(a);
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                     SendMessagesHelper.getInstance(currentAccount)
-                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, entities, null, null, withSound, 0, null,false);
+                            .sendMessage(commentTextView.getText().toString(), key, null, null, null, true, entities, null, null, withSound, 0, null, false);
                 }
                 if (fromMyName) {
                     Log.i(TAG, "ShareAlert: 5");
                     SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(sendingMessageObjects.get(0), key);
                 } else {
                     Log.i(TAG, "ShareAlert: 6");
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText[a], key, null, null, null, true, entities, null, null, withSound, 0, null,false);
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText[a], key, null, null, null, true, entities, null, null, withSound, 0, null, false);
                 }
             }
-        }
+        }*/
 
         if (sendingMessageObjects != null) {
             List<Long> removeKeys = new ArrayList<>();
@@ -2048,7 +2053,20 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                     SendMessagesHelper.getInstance(currentAccount).sendMessage(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
                 }
-                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, replyTopMsg);
+
+                //customized:
+                showSendersName = !fromMyName;
+                if (fromMyName && sendingMessageObjects.get(0).messageOwner != null) {
+                    if (isCaption && smart) {
+                        msgTxt = shareHelper.doSmartMessage(msgTxt, key);
+                        Log.i(TAG, "doSmartMessage > result message:" + msgTxt);
+                    }
+                    Log.i(TAG, "ShareAlert: 2");
+                    SendMessagesHelper.getInstance(currentAccount).processProForward(sendingMessageObjects.get(0), key, isCaption, msgTxt);
+                    continue;
+                }
+
+                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName, false, withSound, 0, replyTopMsg);
                 if (result != 0) {
                     removeKeys.add(key);
                 }
@@ -2086,6 +2104,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                         SendMessagesHelper.getInstance(currentAccount).sendMessage(text[0] == null ? null : text[0].toString(), key, null, replyTopMsg, null, true, entities, null, null, withSound, 0, null, false);
                     }
+                    //customized:
+                    if (fromMyName) {
+                        Log.i(TAG, "ShareAlert: 5");
+                        SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(sendingMessageObjects.get(0), key);
+                        continue;
+                    }
+
                     SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText[num], key, null, replyTopMsg, null, true, null, null, null, withSound, 0, null, false);
                 }
             }
@@ -2129,6 +2154,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         if (commentTextView != null) {
             commentTextView.onDestroy();
         }
+        //customized:
         if (editTextMessage != null) {
             editTextMessage.onDestroy();
         }
@@ -2144,7 +2170,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             commentTextView.hidePopup(true);
             return;
         }
-
+        //customized:
         if (editTextMessage != null && editTextMessage.isPopupShowing()) {
             editTextMessage.hidePopup(true);
             return;
@@ -2395,32 +2421,17 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogsNeedReload);
     }
 
-
-    public class ShareDialogsAdapter extends RecyclerListView.SelectionAdapter {
+    private class ShareDialogsAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
         private int currentCount;
-        private ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>();
-        private LongSparseArray<TLRPC.Dialog> dialogsMap = new LongSparseArray<>();
+        protected ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>();
+        protected LongSparseArray<TLRPC.Dialog> dialogsMap = new LongSparseArray<>();
 
         public ShareDialogsAdapter(Context context) {
             this.context = context;
             fetchDialogs();
         }
-
-        //region Customized
-        private boolean select_all = false;
-
-        public void selectAll(LongSparseArray<TLRPC.Dialog> select) {
-            select_all = select != null;
-            notifyDataSetChanged();
-            if (select_all) {
-                for (TLRPC.Dialog dialog : dialogs) {
-                    select.put(dialog.id, dialog);
-                }
-            }
-        }
-        //endregion
 
         public void fetchDialogs() {
             dialogs.clear();
@@ -2531,7 +2542,6 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 TLRPC.Dialog dialog = getItem(position);
                 cell.setTopic(selectedDialogTopics.get(dialog), false);
                 cell.setDialog(dialog.id, selectedDialogs.indexOfKey(dialog.id) >= 0, null);
-                cell.setChecked(select_all, true); //Customized:
             }
         }
 
@@ -3390,7 +3400,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             toolsListView.setAdapter(shareToolsLayoutAdapter);
             LinearLayoutManager lm = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
             toolsListView.setLayoutManager(lm);
-            toolsListView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackgroundGray));
+            toolsListView.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(darkTheme ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_dialogBackground), getThemedColor(darkTheme ? Theme.key_voipgroup_listSelector : Theme.key_listSelector)));
 
             toolsListView.setOnItemClickListener((view, position) -> {
                 int index = shareToolsLayoutAdapter.getId(position);
@@ -3429,6 +3439,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         editText = false;
                         smart = false;
                     }
+                } else if (index == ShareToolsLayoutAdapter.SETTING) {
+                    if (parentFragment != null) {
+                        parentFragment.presentFragment(new ForwardSettingActivity());
+                    }
                 }
 
                 if (view instanceof ShareToolTextCheckCell) {
@@ -3438,16 +3452,14 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 shareToolsLayoutAdapter.update(sendText, editText, smart, quote);
             });
 
-            toolsListView.setOnItemLongClickListener((view, position) -> {
-                if (context instanceof LaunchActivity) {
-                    ((LaunchActivity) context).presentFragment(new ForwardSettingActivity());
-                }
-                return true;
-            });
-
+            int bottomMargin = 48;
+            if (pickerBottomLayout == null) {
+                bottomMargin = 0;
+            } else {
+                gridView.setPadding(0, 0, 0, AndroidUtilities.dp(96));
+            }
             containerView.addView(toolsListView,
-                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
-
+                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, bottomMargin));
             //region Edit Text
             editTextMessage = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG, true);
             editTextMessage.onResume();
@@ -3498,6 +3510,39 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
 
         //endregion
+    }
+
+    private class MyShareDialogsAdapter extends ShareDialogsAdapter {
+
+        public MyShareDialogsAdapter(Context context) {
+            super(context);
+        }
+
+
+        private boolean select_all = false;
+
+        @SuppressLint("NotifyDataSetChanged")
+        public void selectAll(LongSparseArray<TLRPC.Dialog> select) {
+            select_all = select != null;
+            super.notifyDataSetChanged();
+            if (select_all) {
+                for (TLRPC.Dialog dialog : dialogs) {
+                    if (select != null) {
+                        select.put(dialog.id, dialog);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            super.onBindViewHolder(holder, position);
+            if (holder.getItemViewType() == 0) {
+                ShareDialogCell cell = (ShareDialogCell) holder.itemView;
+                cell.setChecked(select_all, true); //Customized:
+
+            }
+        }
     }
     //endregion
 }

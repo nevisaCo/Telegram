@@ -1,20 +1,18 @@
-package com.finalsoft.admob;
+package co.nevisa.commonlib.admob;
 
-import static androidx.lifecycle.Lifecycle.Event.ON_START;
-
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
 import androidx.lifecycle.ProcessLifecycleOwner;
 
-import com.finalsoft.ApplicationLoader;
-import com.finalsoft.SharedStorage;
-import com.finalsoft.admob.models.CountItem;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
@@ -27,12 +25,17 @@ import org.telegram.messenger.BuildVars;
 import java.util.ArrayList;
 import java.util.Date;
 
+import co.nevisa.commonlib.AdmobApplicationLoader;
+import co.nevisa.commonlib.Storage;
+import co.nevisa.commonlib.admob.interfaces.IServedCallback;
+import co.nevisa.commonlib.admob.models.CountItem;
+
 public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Application.ActivityLifecycleCallbacks {
     private final String TAG = super.TAG + "ao";
     private AppOpenAd appOpenAd = null;
     private AppOpenAd.AppOpenAdLoadCallback loadCallback;
     private Activity currentActivity;
-    private final ApplicationLoader myApplication;
+    private final AdmobApplicationLoader myApplication;
     private static final String KEY = "target_open_app";
     private static final String KEY_COUNTER = "open_app_";
 
@@ -41,7 +44,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
     /**
      * Constructor
      */
-    public AppOpen(ApplicationLoader myApplication) {
+    public AppOpen(AdmobApplicationLoader myApplication) {
         this.myApplication = myApplication;
         this.myApplication.registerActivityLifecycleCallbacks(this);
         ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
@@ -53,7 +56,18 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
 
 
     private int getTarget(String name) {
-        CountItem countItem = openAppItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
+
+        CountItem countItem = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            countItem = openAppItems.stream().filter(p -> p.getName().equals(name)).findAny().orElse(null);
+        } else {
+            for (CountItem item : openAppItems) {
+                if (name.equals(item.getName())) {
+                    countItem =item  ;
+                }
+            }
+        }
+
         if (countItem != null) {
             return countItem.getCount();
         }
@@ -62,12 +76,19 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
     }
 
     //add from remote config
-    public static void setTargets(ArrayList<CountItem> countItems) {
-        SharedStorage.admobTargets(KEY, new Gson().toJson(countItems));
+    public static void setTargets(ArrayList<CountItem> CountItems) {
+        Storage.admobTargets(KEY, new Gson().toJson(CountItems));
     }
 
     private boolean isActive() {
-        int i = openAppItems.stream().mapToInt(CountItem::getCount).sum();
+        int i = 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            i = openAppItems.stream().mapToInt(CountItem::getCount).sum();
+        } else {
+            for (CountItem countItem : openAppItems) {
+                i += countItem.getCount();
+            }
+        }
         return i > 0 && getShowAdmob();
     }
 
@@ -83,6 +104,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
     /**
      * Creates and returns ad request.
      */
+    @SuppressLint("VisibleForTests")
     private AdRequest getAdRequest() {
         return new AdRequest.Builder().build();
     }
@@ -110,7 +132,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
     /**
      * Request an ad
      */
-    public void serve(IServeCallback iServeCallback) {
+    public void serve(IServedCallback iServeCallback) {
         if (!isActive()) {
             Log.e(TAG, "AppOpen > serve: not activated");
             return;
@@ -134,7 +156,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
                 AppOpen.this.loadTime = (new Date()).getTime();
                 Log.i(TAG, "AppOpen > onAdLoaded > ad load done.");
                 if (iServeCallback != null) {
-                    iServeCallback.onServe();
+                    iServeCallback.onServed(ad);
                 }
             }
 
@@ -162,7 +184,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
      * Shows the ad if one isn't already showing.
      */
     public void showAdIfAvailable() {
-        String name = OPEN_APP;
+        String name = AdLocation.OPEN_APP;
         int target = getTarget(name);
         if (target > 0) {
             int i = getCounter(KEY_COUNTER + name) + 1;
@@ -202,7 +224,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
 
                 } else {
                     Log.d(TAG, "Can not show ad.");
-                    serve(this::showAdIfAvailable);
+                    serve(ad -> showAdIfAvailable());
                 }
             }
         } else {
@@ -245,7 +267,7 @@ public class AppOpen extends AdmobBaseClass implements LifecycleObserver, Applic
         currentActivity = null;
     }
 
-    @OnLifecycleEvent(ON_START)
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
     public void onStart() {
         Log.d(TAG, "onStart");
     }
